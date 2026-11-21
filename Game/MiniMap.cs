@@ -17,7 +17,6 @@ namespace Zetori.Game
         internal static float miniMapSize { get => CasterConfig.MiniMapSize.Value; set => CasterConfig.MiniMapSize.Value = value; }
         internal static float cameraHeight { get => CasterConfig.MiniMapHeight.Value; set => CasterConfig.MiniMapHeight.Value = value; }
 
-        private const float BorderWidth = 2f;
         private const int MinimumTextureSize = 64;
         private const int MaximumTextureSize = 2048;
 
@@ -102,13 +101,8 @@ namespace Zetori.Game
 
         private void DrawWindow(int id)
         {
-            float size = miniMapSize;
-            Color previous = GUI.color;
-            GUI.color = UI.ColorSpace.Current.Color;
-            GUI.DrawTexture(new Rect(0f, 0f, size, size), Texture2D.whiteTexture);
-            GUI.color = previous;
             if (renderTexture != null)
-                GUI.DrawTexture(new Rect(BorderWidth, BorderWidth, size - BorderWidth * 2f, size - BorderWidth * 2f), renderTexture, ScaleMode.ScaleAndCrop, false);
+                GUI.DrawTexture(new Rect(0f, 0f, miniMapSize, miniMapSize), renderTexture, ScaleMode.ScaleAndCrop, false);
             if (draggable) GUI.DragWindow();
         }
 
