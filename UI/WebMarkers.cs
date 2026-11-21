@@ -20,6 +20,12 @@ namespace Zetori.UI
 
         private GUIStyle? labelStyle;
 
+        protected override void Awake()
+        {
+            base.Awake();
+            useGUILayout = false;
+        }
+
         internal void OnGUI()
         {
             if (!WebCamera.Editing || Event.current.type != EventType.Repaint) return;

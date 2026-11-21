@@ -17,6 +17,7 @@ namespace Zetori.Replay
 
         private readonly GameObject root;
         private readonly Transform[] joints;
+        private readonly float[] jointScales;
         private readonly SkinnedMeshRenderer body;
         private readonly Material[] bodyMaterials;
         private readonly MeshRenderer? head;
@@ -25,6 +26,7 @@ namespace Zetori.Replay
         private readonly RigAppearance appearance;
         private readonly PuppetCosmetics cosmetics;
         private readonly PuppetSkins skins;
+        private readonly PuppetHandTaps handTaps;
         private int appliedMaterial = -1;
         private int appliedSkin = RecordedSkin.None;
         private Pose filteredRoot;
@@ -39,6 +41,7 @@ namespace Zetori.Replay
         internal Pose Eyes { get; private set; }
         internal ActorFrame Current { get; private set; }
         internal bool Visible => root.activeSelf;
+        internal bool IsOtherPresent => Visible && !Actor.IsLocal;
 
         internal ReplayPuppet(ReplayActor actor, RigAppearance appearance, CosmeticLibrary library)
         {
@@ -48,6 +51,7 @@ namespace Zetori.Replay
             root = new GameObject($"_Zetori Replay {actor.Name}");
             UnityEngine.Object.DontDestroyOnLoad(root);
             joints = BuildJoints(skeleton, root.transform);
+            jointScales = (float[])skeleton.RestScales.Clone();
             bodyMaterials = (Material[])appearance.BodyMaterials.Clone();
             body = BuildBody(skeleton, appearance, root.transform, joints, bodyMaterials);
             headMaterials = (Material[])appearance.HeadMaterials.Clone();
@@ -58,6 +62,7 @@ namespace Zetori.Replay
             voice = new TrackPlayer(BuildVoice(skeleton, appearance, root.transform), $"Replay {actor.Name}");
             cosmetics = new PuppetCosmetics(actor, root.transform, joints, skeleton.Layer, library);
             skins = new PuppetSkins(actor, library);
+            handTaps = new PuppetHandTaps(actor.HandTaps, BuildHandSound("Left Hand Sound", appearance, root.transform), BuildHandSound("Right Hand Sound", appearance, root.transform));
             root.SetActive(false);
         }
 
@@ -88,6 +93,7 @@ namespace Zetori.Replay
                 transform.TransformPoint(Vector3.Lerp(from.EyePosition, to.EyePosition, blend)),
                 transform.rotation * PackedRotation.Blend(from.EyeRotation, to.EyeRotation, blend));
             Eyes = CorrectLimbs(from, to, blend, follow, eyes);
+            handTaps.Place(filteredLimbs[LimbSample.LeftHand].position, filteredLimbs[LimbSample.RightHand].position);
             DressCosmetics(from, to, blend, playing);
             voice.Transform.position = Eyes.position;
             Current = blend < 0.5f ? from : to;
@@ -187,6 +193,12 @@ namespace Zetori.Replay
             catch (Exception e) { Log.ExceptionOnce($"replay-cosmetic-sounds-{Actor.Id}", e, "Playing a replay player's cosmetic sounds failed"); }
         }
 
+        internal void PlayHandTaps(float from, float to, bool playing)
+        {
+            try { handTaps.Advance(from, to, playing && root.activeSelf); }
+            catch (Exception e) { Log.ExceptionOnce($"replay-hand-taps-{Actor.Id}", e, "Playing a replay player's hand taps failed"); }
+        }
+
         private static float Follow(float step, float rigLerp, bool appeared)
         {
             if (appeared || rigLerp >= 1f || step < 0f || step > SnapStep) return 1f;
@@ -197,9 +209,13 @@ namespace Zetori.Replay
         {
             for (int i = 0; i < joints.Length; i++)
             {
-                joints[i].localRotation = PackedRotation.Blend(from.Joints[i], to.Joints[i], blend);
-                joints[i].localPosition = PackedPosition.Blend(from.JointPositions[i], to.JointPositions[i], blend);
-                joints[i].localScale = Vector3.one * Mathf.Lerp(Mathf.HalfToFloat(from.JointScales[i]), Mathf.HalfToFloat(to.JointScales[i]), blend);
+                joints[i].SetLocalPositionAndRotation(
+                    PackedPosition.Blend(from.JointPositions[i], to.JointPositions[i], blend),
+                    PackedRotation.Blend(from.Joints[i], to.Joints[i], blend));
+                float scale = Mathf.Lerp(HalfFloat.ToFloat(from.JointScales[i]), HalfFloat.ToFloat(to.JointScales[i]), blend);
+                if (scale == jointScales[i]) continue;
+                jointScales[i] = scale;
+                joints[i].localScale = Vector3.one * scale;
             }
         }
 
@@ -273,6 +289,15 @@ namespace Zetori.Replay
             go.transform.SetParent(root, false);
             AudioSource source = go.AddComponent<AudioSource>();
             skeleton.Voice.ApplyTo(source, appearance.VoiceMixer);
+            return source;
+        }
+
+        private static AudioSource BuildHandSound(string name, RigAppearance appearance, Transform root)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(root, false);
+            AudioSource source = go.AddComponent<AudioSource>();
+            appearance.HandSound.ApplyTo(source, appearance.HandMixer);
             return source;
         }
 

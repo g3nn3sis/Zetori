@@ -15,10 +15,13 @@ namespace Zetori.Game
     {
         internal static new bool enabled { get => CasterConfig.ClosestLavaEnabled.Value; set => CasterConfig.ClosestLavaEnabled.Value = value; }
 
+        private const decimal NoDistance = -1m;
+        private const float LargestRoundedDistance = 1e9f;
+
         private RectTransform? root;
         private TMP_Text? value;
         private Vector2 basePos;
-        private string lastText = string.Empty;
+        private decimal? shownTenths;
 
         protected override bool Active => enabled && (ReplaySession.Player is ReplayPlayer replay
             ? replay.Spectated != null
@@ -41,15 +44,23 @@ namespace Zetori.Game
             ApplyFontIfChanged();
 
             float? closest = ReplaySession.Player is ReplayPlayer replay ? ReplayClosest(replay) : LiveClosest();
-            if (closest == null) return;
-            float best = closest.Value;
+            if (closest != null) ShowDistance(closest.Value);
+        }
 
-            string text = float.IsPositiveInfinity(best) ? "--" : $"{best:0.0}m";
-            if (text != lastText)
-            {
-                lastText = text;
-                value!.text = $"CLOSEST LAVA  <color=#FFFFFF>{text}</color>";
-            }
+        private void ShowDistance(float distance)
+        {
+            decimal? tenths = Tenths(distance);
+            if (tenths != null && tenths == shownTenths) return;
+            shownTenths = tenths;
+            string text = float.IsPositiveInfinity(distance) ? "--" : $"{distance:0.0}m";
+            value!.text = $"CLOSEST LAVA  <color=#FFFFFF>{text}</color>";
+        }
+
+        private static decimal? Tenths(float distance)
+        {
+            if (float.IsPositiveInfinity(distance)) return NoDistance;
+            if (distance >= LargestRoundedDistance) return null;
+            return Math.Round((decimal)distance, 1, MidpointRounding.AwayFromZero);
         }
 
         private static float? LiveClosest()

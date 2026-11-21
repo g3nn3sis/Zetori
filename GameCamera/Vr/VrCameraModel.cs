@@ -121,7 +121,11 @@ namespace Zetori.GameCamera.Vr
             }
         }
 
-        internal void SetScale(float scale) => root.transform.localScale = Vector3.one * scale;
+        internal void SetScale(float scale)
+        {
+            Vector3 size = Vector3.one * scale;
+            if (!root.transform.localScale.Equals(size)) root.transform.localScale = size;
+        }
 
         internal void Show()
         {

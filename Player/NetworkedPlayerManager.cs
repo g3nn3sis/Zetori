@@ -24,6 +24,7 @@ namespace Zetori.Player
         private const float PollInterval = 1.5f;
 
         private static readonly FieldInfo? FpsField = AccessTools.Field(typeof(VRRig), "fps");
+        private static readonly AccessTools.FieldRef<VRRig, int>? FpsCounter = FpsField?.FieldType == typeof(int) ? AccessTools.FieldRefAccess<VRRig, int>(FpsField) : null;
         private static readonly FieldInfo? CosmeticsField = AccessTools.Field(typeof(VRRig), "concatStringOfCosmeticsAllowed");
         private static readonly MemberInfo? CosmeticsReadyMember =
             (MemberInfo?)typeof(VRRig).GetField("initializedCosmetics", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
@@ -162,6 +163,7 @@ namespace Zetori.Player
 
         internal static float GetFPS(VRRig rig)
         {
+            if (FpsCounter != null) return FpsCounter(rig);
             object? value = FpsField?.GetValue(rig);
             return value is IConvertible convertible ? convertible.ToSingle(CultureInfo.InvariantCulture) : 0f;
         }

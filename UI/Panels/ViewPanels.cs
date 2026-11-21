@@ -28,7 +28,6 @@ namespace Zetori.UI.Panels
                 panel.Button("Web", () => CameraManager.mode = CameraMode.Web, CameraManager.mode != CameraMode.Web);
             });
             panel.Button("Camera", () => CameraManager.mode = CameraMode.Camera, CameraManager.mode != CameraMode.Camera && VrCameraRig.HeadsetActive);
-            if (CameraManager.mode == CameraMode.Freecam || WebCamera.Editing) DrawFlightSpeeds(panel);
             DrawLens(panel);
             DrawFollow(panel);
             DrawOrbit(panel);
@@ -77,6 +76,18 @@ namespace Zetori.UI.Panels
             GorillaController.mouseClick = panel.Toggle("Mouse Click", GorillaController.mouseClick);
             DrawFlightSpeeds(panel);
         }
+
+        internal static void DrawFreecam(Panel panel)
+        {
+            if (CameraManager.ActiveMode != CameraMode.Freecam) panel.Label("Camera is not in Freecam mode");
+            CasterConfig.FreecamMovementSpeed.Value = panel.Slider("Movement Speed", CasterConfig.FreecamMovementSpeed.Value, 1f, 50f, "F1", " m/s");
+            CasterConfig.FreecamRotationSensitivity.Value = panel.Slider("Rotation Sensitivity", CasterConfig.FreecamRotationSensitivity.Value, 0.05f, 2f);
+            panel.Button("Teleport Here", TeleportToFreecam, CanTeleportToFreecam);
+        }
+
+        private static bool CanTeleportToFreecam => CameraManager.ActiveMode == CameraMode.Freecam && FreecamCamera.Active && RigTeleport.Allowed;
+
+        private static void TeleportToFreecam() => RigTeleport.HeadTo(FreecamCamera.Position, FreecamCamera.Rotation);
 
         internal static void DrawMiniMap(Panel panel)
         {

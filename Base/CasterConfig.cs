@@ -67,6 +67,9 @@ namespace Zetori.Base
         internal static ConfigEntry<Key> FlyDownKey = null!;
         internal static ConfigEntry<Key> NoClipKey = null!;
 
+        internal static ConfigEntry<float> FreecamMovementSpeed = null!;
+        internal static ConfigEntry<float> FreecamRotationSensitivity = null!;
+
         internal static ConfigEntry<bool> NameTags = null!;
         internal static ConfigEntry<bool> NameTagPlayerColor = null!;
         internal static ConfigEntry<bool> NameTagFps = null!;
@@ -119,12 +122,18 @@ namespace Zetori.Base
         internal static ConfigEntry<float> KillFeedOffsetY = null!;
         internal static ConfigEntry<HudPosition> KillFeedPosition = null!;
 
+        internal static ConfigEntry<bool> TagManagerEnabled = null!;
+        internal static ConfigEntry<bool> TagManagerRefereeOnly = null!;
+        internal static ConfigEntry<bool> TagManagerPlayerTags = null!;
+        internal static ConfigEntry<bool> TagManagerLocalFirst = null!;
+
         internal static ConfigEntry<string> PlayerName = null!;
         internal static ConfigEntry<float> PlayerRed = null!;
         internal static ConfigEntry<float> PlayerGreen = null!;
         internal static ConfigEntry<float> PlayerBlue = null!;
 
         internal static ConfigEntry<bool> DisableVSync = null!;
+        internal static ConfigEntry<bool> UncapFps = null!;
         internal static ConfigEntry<bool> DisableAfkKick = null!;
 
         internal static ConfigEntry<string> Theme = null!;
@@ -189,6 +198,9 @@ namespace Zetori.Base
             FlyDownKey = config.Bind("Freecam", "Down Key", Key.LeftShift, "Fly down while holding right mouse.");
             NoClipKey = config.Bind("Freecam", "No Clip Key", Key.E, "Hold while flying your own player to pass through walls.");
 
+            FreecamMovementSpeed = Range(config, "Freecam Camera", "Movement Speed", 10f, 1f, 50f, "How fast the camera flies in Freecam mode and while editing a camera web, in metres per second.");
+            FreecamRotationSensitivity = Range(config, "Freecam Camera", "Rotation Sensitivity", 0.3f, 0.05f, 2f, "How far the camera turns per unit of mouse movement in Freecam mode and while editing a camera web.");
+
             NameTags = config.Bind("Nametags", "Enabled", false);
             NameTagPlayerColor = config.Bind("Nametags", "Player Color", false);
             NameTagFps = config.Bind("Nametags", "Player FPS", false);
@@ -243,12 +255,18 @@ namespace Zetori.Base
             KillFeedOffsetY = Range(config, "KillFeed", "Offset Y", 0f, -500f, 500f, "Move down (negative) or up (positive), in 1080p pixels.");
             KillFeedPosition = config.Bind("KillFeed", "Position", HudPosition.TopRight, "Corner the kill feed sits in: BottomLeft, BottomRight or TopRight. Only one overlay can use a corner.");
 
+            TagManagerEnabled = config.Bind("Tag Manager", "Enabled", false, "Take full control of the room's tag game while you are master.");
+            TagManagerRefereeOnly = config.Bind("Tag Manager", "Only Me Tagged", false, "Keep yourself as the only tagged player. Nobody else can be tagged until this is off.");
+            TagManagerPlayerTags = config.Bind("Tag Manager", "Player Tags", false, "Let players tag each other normally. Off means only this panel changes who is tagged.");
+            TagManagerLocalFirst = config.Bind("Tag Manager", "Me First Each Round", false, "With Take Control on, keep the normal game's rounds running but have it pick you instead of a random player whenever it starts a round or needs a new tagged player. Only Me Tagged and Player Tags are off while this is on.");
+
             PlayerName = config.Bind("Player", "Name", "ZETORI", "Up to 12 letters or digits.");
             PlayerRed = Range(config, "Player", "Red", 0f, 0f, 1f);
             PlayerGreen = Range(config, "Player", "Green", 0f, 0f, 1f);
             PlayerBlue = Range(config, "Player", "Blue", 0f, 0f, 1f);
 
             DisableVSync = config.Bind("Game", "Disable VSync", true, "Turn off VSync so the spectator view runs at the highest frame rate.");
+            UncapFps = config.Bind("Game", "Uncap FPS", false, "Remove the game's frame rate cap so the spectator view renders as fast as possible.");
             DisableAfkKick = config.Bind("Game", "Disable AFK Kick", true, "Stop the game from kicking you for being idle while spectating.");
 
             Theme = config.Bind("Interface", "Theme Name", "Red", "Name of a theme from the UI Control panel's list.");
@@ -311,8 +329,19 @@ namespace Zetori.Base
         internal static void Reload()
         {
             if (file == null) return;
-            try { file.Reload(); }
+            try
+            {
+                HashSet<(string Section, string Key)> stored = ConfigFormat.StoredKeys(File.ReadAllText(file.ConfigFilePath));
+                file.Reload();
+                ResetUnstored(file, stored);
+            }
             catch (Exception e) { Log.Exception(e, "Reloading the config failed"); }
+        }
+
+        private static void ResetUnstored(ConfigFile config, HashSet<(string Section, string Key)> stored)
+        {
+            foreach (KeyValuePair<ConfigDefinition, ConfigEntryBase> entry in config)
+                if (!stored.Contains((entry.Key.Section, entry.Key.Key))) entry.Value.BoxedValue = entry.Value.DefaultValue;
         }
 
         internal static bool KeyPressed(ConfigEntry<Key> entry) => KeyPressed(entry.Value);

@@ -21,7 +21,22 @@ namespace Zetori.UI
             }
         }
 
-        internal static Theme Current => Themes[IndexOf(CasterConfig.Theme.Value)];
+        private static string? currentName;
+        private static int currentIndex;
+
+        internal static Theme Current
+        {
+            get
+            {
+                string name = CasterConfig.Theme.Value;
+                if (!ReferenceEquals(name, currentName))
+                {
+                    currentIndex = IndexOf(name);
+                    currentName = name;
+                }
+                return Themes[currentIndex];
+            }
+        }
 
         internal static int IndexOf(string name)
         {

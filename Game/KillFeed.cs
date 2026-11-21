@@ -26,10 +26,16 @@ namespace Zetori.Game
         private static readonly Color TaggedColor = new Color(1f, 0.33f, 0.05f, 1f);
         private static readonly string TaggedHex = ColorUtility.ToHtmlStringRGB(TaggedColor);
 
-        private sealed class Entry
+        private readonly struct Entry
         {
-            internal string Name = string.Empty;
-            internal float Born;
+            internal readonly string Name;
+            internal readonly float Born;
+
+            internal Entry(string name, float born)
+            {
+                Name = name;
+                Born = born;
+            }
         }
 
         private sealed class Row
@@ -38,7 +44,7 @@ namespace Zetori.Game
             internal RectTransform Rt = null!;
             internal TMP_Text Value = null!;
             internal CanvasGroup Group = null!;
-            internal string Text = string.Empty;
+            internal string? Name;
         }
 
         private readonly List<Entry> entries = new List<Entry>();
@@ -110,7 +116,7 @@ namespace Zetori.Game
                 float age = replay.Cursor - replayEvent.Time;
                 if (age >= Lifetime) break;
                 if (replayEvent.Kind != ReplayEventKind.Tagged) continue;
-                entries.Add(new Entry { Name = recording.Actor(replayEvent.ActorId)?.Name ?? "Player", Born = now - age });
+                entries.Add(new Entry(recording.Actor(replayEvent.ActorId)?.Name ?? "Player", now - age));
             }
         }
 
@@ -142,7 +148,7 @@ namespace Zetori.Game
 
         private void Push(string name)
         {
-            entries.Insert(0, new Entry { Name = name, Born = Time.unscaledTime });
+            entries.Insert(0, new Entry(name, Time.unscaledTime));
             if (entries.Count > MaxEntries) entries.RemoveRange(MaxEntries, entries.Count - MaxEntries);
         }
 
@@ -168,18 +174,24 @@ namespace Zetori.Game
                 Entry entry = entries[i];
                 Row row = GetRow(i);
                 Align(row, corner, alignment);
-                row.Rt.anchoredPosition = new Vector2(0f, direction * i * (rowHeight + RowSpacing));
-
-                string text = $"<color=#{TaggedHex}>{entry.Name}</color>  TAGGED";
-                if (row.Text != text) { row.Text = text; row.Value.text = text; }
+                SetAnchoredPosition(row.Rt, new Vector2(0f, direction * i * (rowHeight + RowSpacing)));
+                ShowName(row, entry.Name);
 
                 float age = now - entry.Born;
                 float fadeIn = Mathf.Clamp01(age / FadeIn);
                 float fadeOut = Mathf.Clamp01((Lifetime - age) / FadeOut);
-                row.Group.alpha = Mathf.Min(fadeIn, fadeOut);
+                float alpha = Mathf.Min(fadeIn, fadeOut);
+                if (row.Group.alpha != alpha) row.Group.alpha = alpha;
             }
             for (int i = entries.Count; i < rows.Count; i++)
                 if (rows[i].Go.activeSelf) rows[i].Go.SetActive(false);
+        }
+
+        private static void ShowName(Row row, string name)
+        {
+            if (row.Name == name) return;
+            row.Name = name;
+            row.Value.text = $"<color=#{TaggedHex}>{name}</color>  TAGGED";
         }
 
         private static void Align(Row row, Vector2 corner, TextAlignmentOptions alignment)

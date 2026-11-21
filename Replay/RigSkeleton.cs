@@ -122,7 +122,7 @@ namespace Zetori.Replay
             for (int current = joint, depth = 0; current != RootParent && depth < JointCount; current = Parents[current], depth++)
             {
                 Quaternion localRotation = frame.Joints[current].Unpack();
-                float localScale = Mathf.HalfToFloat(frame.JointScales[current]);
+                float localScale = HalfFloat.ToFloat(frame.JointScales[current]);
                 position = frame.JointPositions[current].Unpack() + localRotation * (position * localScale);
                 rotation = localRotation * rotation;
                 scale *= localScale;
@@ -231,10 +231,9 @@ namespace Zetori.Replay
             return RootParent;
         }
 
-        internal static float RelativeScale(Transform child, Transform parent)
-        {
-            float parentScale = parent.lossyScale.x;
-            return Mathf.Approximately(parentScale, 0f) ? 1f : child.lossyScale.x / parentScale;
-        }
+        internal static float RelativeScale(Transform child, Transform parent) => RelativeScale(child.lossyScale.x, parent.lossyScale.x);
+
+        internal static float RelativeScale(float childScale, float parentScale) =>
+            Mathf.Approximately(parentScale, 0f) ? 1f : childScale / parentScale;
     }
 }

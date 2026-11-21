@@ -27,7 +27,7 @@ namespace Zetori.Replay
             this.a = a;
         }
 
-        internal Color Unpack() => new Color(Mathf.HalfToFloat(r), Mathf.HalfToFloat(g), Mathf.HalfToFloat(b), Mathf.HalfToFloat(a));
+        internal Color Unpack() => new Color(HalfFloat.ToFloat(r), HalfFloat.ToFloat(g), HalfFloat.ToFloat(b), HalfFloat.ToFloat(a));
 
         internal bool Matches(PackedColor other) => r == other.r && g == other.g && b == other.b && a == other.a;
 

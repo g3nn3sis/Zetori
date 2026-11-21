@@ -49,6 +49,9 @@ namespace Zetori.Replay
             Log.Info("Replay recording started.");
         }
 
+        internal static void RecordHandTap(VRRig rig, bool isLeftHand, int surface, float volume) =>
+            recorder?.RecordHandTap(rig, isLeftHand, surface, volume);
+
         internal static void StopRecording()
         {
             ReplayRecording? recording = FinishRecording();
@@ -87,6 +90,7 @@ namespace Zetori.Replay
             try { player.Dispose(); }
             catch (Exception e) { Log.Exception(e, "Leaving the replay failed"); }
             player = null;
+            ReplayScoreboard.RestoreLive();
         }
 
         internal void Update()
@@ -100,6 +104,7 @@ namespace Zetori.Replay
                 player.Tick(Time.unscaledDeltaTime);
             }
             catch (Exception e) { Log.ExceptionOnce("replay-play", e, "Playing the replay failed"); }
+            ReplayScoreboard.Refresh(player);
         }
 
         internal void LateUpdate()

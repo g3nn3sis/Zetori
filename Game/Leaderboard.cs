@@ -89,9 +89,8 @@ namespace Zetori.Game
             int otherIndex = 0;
             foreach (ReplayPuppet puppet in replay.Puppets)
             {
-                if (puppet.Actor.IsLocal) continue;
+                if (!puppet.IsOtherPresent) continue;
                 int keyOrdinal = otherIndex++;
-                if (!puppet.Visible) continue;
                 ActorFrame frame = puppet.Current;
                 int platform = showIcons ? puppet.Actor.Platform : 0;
                 Fill(GetRow(shown++), keyOrdinal, puppet.Actor.Name, frame.Tag != ReplayTagState.None, puppet == selected, showFps, frame.Fps, platform);

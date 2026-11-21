@@ -67,8 +67,14 @@ namespace Zetori.Game
 
         protected static void Place(RectTransform target, Vector2 origin, ConfigEntry<float> scale, ConfigEntry<float> offsetX, ConfigEntry<float> offsetY)
         {
-            target.localScale = Vector3.one * scale.Value;
-            target.anchoredPosition = origin + new Vector2(offsetX.Value, offsetY.Value);
+            Vector3 size = Vector3.one * scale.Value;
+            if (!target.localScale.Equals(size)) target.localScale = size;
+            SetAnchoredPosition(target, origin + new Vector2(offsetX.Value, offsetY.Value));
+        }
+
+        protected static void SetAnchoredPosition(RectTransform target, Vector2 position)
+        {
+            if (!target.anchoredPosition.Equals(position)) target.anchoredPosition = position;
         }
 
         protected static void Place(RectTransform target, HudPosition position, float inset, ConfigEntry<float> scale, ConfigEntry<float> offsetX, ConfigEntry<float> offsetY)

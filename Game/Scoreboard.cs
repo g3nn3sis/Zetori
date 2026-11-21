@@ -41,8 +41,9 @@ namespace Zetori.Game
 
         private RectTransform? root;
         private TMP_Text? teamAName, teamAScore, teamBName, teamBScore, timerText;
-        private string aName = "", bName = "", timeText = "";
+        private string aName = "", bName = "";
         private int aScore = -1, bScore = -1;
+        private int? shownSecond;
 
         protected override bool Active => enabled;
 
@@ -100,11 +101,13 @@ namespace Zetori.Game
             int sb = CasterConfig.ScoreboardTeamBScore.Value;
             if (sb != bScore) { bScore = sb; teamBScore!.text = sb.ToString(); }
 
-            string t = FormatTime(display);
-            if (t != timeText) { timeText = t; timerText!.text = t; }
+            int second = WholeSeconds(display);
+            if (second != shownSecond) { shownSecond = second; timerText!.text = FormatTime(display); }
             Color tcol = display < 0f ? PreRollColor : Color.white;
             if (timerText!.color != tcol) timerText.color = tcol;
         }
+
+        private static int WholeSeconds(float seconds) => seconds < 0f ? -Mathf.CeilToInt(-seconds) : Mathf.FloorToInt(seconds);
 
         private static string FormatTime(float seconds)
         {

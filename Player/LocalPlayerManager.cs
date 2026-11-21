@@ -13,11 +13,13 @@ namespace Zetori.Player
     {
         internal const int MaxNameLength = 12;
         private const float ChangeCooldown = 2f;
+        private const int UncappedFrameRate = -1;
         private const string PublicJoinTriggerName = "JoinPublicRoom - Forest, Tree Exit";
 
         private static float nextChangeTime;
 
         private int gameVSyncCount;
+        private int gameFrameRate;
         private bool afkKickPending = true;
 
         internal static float Red { get => CasterConfig.PlayerRed.Value; set => CasterConfig.PlayerRed.Value = value; }
@@ -32,16 +34,29 @@ namespace Zetori.Player
             gameVSyncCount = QualitySettings.vSyncCount;
             ApplyVSync();
             CasterConfig.DisableVSync.SettingChanged += (_, _) => ApplyVSync();
+            gameFrameRate = Application.targetFrameRate;
+            CasterConfig.UncapFps.SettingChanged += (_, _) => RestoreFrameRate();
             CasterConfig.DisableAfkKick.SettingChanged += (_, _) => afkKickPending = true;
         }
 
         internal void Update()
         {
             if (afkKickPending) ApplyAfkKick();
+            EnforceUncappedFrameRate();
             ApplyMicrophoneMode();
         }
 
         private void ApplyVSync() => QualitySettings.vSyncCount = CasterConfig.DisableVSync.Value ? 0 : gameVSyncCount;
+
+        private static void EnforceUncappedFrameRate()
+        {
+            if (CasterConfig.UncapFps.Value && Application.targetFrameRate != UncappedFrameRate) Application.targetFrameRate = UncappedFrameRate;
+        }
+
+        private void RestoreFrameRate()
+        {
+            if (!CasterConfig.UncapFps.Value) Application.targetFrameRate = gameFrameRate;
+        }
 
         private void ApplyAfkKick()
         {

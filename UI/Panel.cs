@@ -31,11 +31,14 @@ namespace Zetori.UI
         private const float HeightSnap = 0.5f;
         private const float DragThreshold = 4f;
         private const float StalePressTimeout = 0.5f;
+        private const int MeasureCacheLimit = 256;
 
         private static int nextWindowId = 0x47430000;
 
         private readonly int windowId = NextWindowId();
         private readonly GUIContent measured = new GUIContent();
+        private readonly Dictionary<(string Text, float Width), int> fittedFontSizes = new Dictionary<(string Text, float Width), int>();
+        private readonly Dictionary<(string Text, float Width), float> wrappedHeights = new Dictionary<(string Text, float Width), float>();
         private readonly float[] sliceX = new float[4];
         private readonly float[] sliceY = new float[4];
         private readonly float[] sliceU = new float[4];
@@ -44,12 +47,15 @@ namespace Zetori.UI
         private float contentHeight = HeaderHeight;
         private float shownHeight = HeaderHeight;
         private bool pressed;
+        private bool inputSawPress;
         private bool dragging;
         private Vector2 dragged;
         private float releasedFor;
         private float builtScale;
         private int cornerPixels;
         private Action<Panel>? content;
+        private Color layerColor = Color.white;
+        private bool layerEnabled = true;
         private bool disposed;
 
         private Color32 accent;
@@ -89,7 +95,7 @@ namespace Zetori.UI
 
         internal void Animate(float dt)
         {
-            DropStalePress(dt);
+            FollowPress(dt);
             shownHeight = EaseHeight(shownHeight, Expanded ? contentHeight : HeaderHeight, dt);
             rect.height = shownHeight;
         }
@@ -104,6 +110,8 @@ namespace Zetori.UI
         {
             if (disposed) return;
             content = drawContent;
+            layerColor = GUI.color;
+            layerEnabled = GUI.enabled;
             EnsureTextures();
             Vector2 before = rect.position;
             rect.position = GUI.Window(windowId, rect, DrawWindow, GUIContent.none, GUIStyle.none).position;
@@ -111,6 +119,20 @@ namespace Zetori.UI
         }
 
         private void DrawWindow(int id)
+        {
+            Color outerColor = GUI.color;
+            bool outerEnabled = GUI.enabled;
+            GUI.color = layerColor;
+            GUI.enabled = layerEnabled;
+            try { DrawFrame(); }
+            finally
+            {
+                GUI.color = outerColor;
+                GUI.enabled = outerEnabled;
+            }
+        }
+
+        private void DrawFrame()
         {
             EnsureStyles();
             bool showsContent = ShowsContent;
@@ -161,6 +183,8 @@ namespace Zetori.UI
             pressed = true;
             dragged = Vector2.zero;
             releasedFor = 0f;
+            Mouse? mouse = Mouse.current;
+            inputSawPress = mouse != null && (mouse.leftButton.isPressed || mouse.leftButton.wasPressedThisFrame);
         }
 
         private void TrackPress(Vector2 moved)
@@ -172,7 +196,17 @@ namespace Zetori.UI
                 dragged += moved;
             }
             Event current = Event.current;
-            if (current.rawType == EventType.MouseUp && current.button == 0) EndPress(true);
+            bool released = current.rawType == EventType.MouseUp && current.button == 0;
+            if (released || (current.type == EventType.Repaint && InputReleasedPress)) EndPress(true);
+        }
+
+        private bool InputReleasedPress
+        {
+            get
+            {
+                Mouse? mouse = Mouse.current;
+                return inputSawPress && mouse != null && !mouse.leftButton.isPressed;
+            }
         }
 
         private void EndPress(bool togglesOnClick)
@@ -184,12 +218,13 @@ namespace Zetori.UI
             if (togglesOnClick) Expanded = !Expanded;
         }
 
-        private void DropStalePress(float dt)
+        private void FollowPress(float dt)
         {
             if (!pressed) return;
             Mouse? mouse = Mouse.current;
             if (mouse == null || mouse.leftButton.isPressed)
             {
+                inputSawPress |= mouse != null;
                 releasedFor = 0f;
                 return;
             }
@@ -234,10 +269,10 @@ namespace Zetori.UI
 
         internal void Button(string text, Action? onClick, Action onRightClick, bool interactable = true) => DrawButton(text, onClick, onRightClick, interactable, buttonStyle!);
 
-        private void DrawButton(string text, Action? onClick, Action? onRightClick, bool interactable, GUIStyle style)
+        private bool DrawButton(string text, Action? onClick, Action? onRightClick, bool interactable, GUIStyle style)
         {
             Rect area = NextRect(ButtonHeight);
-            style.fontSize = FittingFontSize(text, area.width - 6f, style);
+            if (Event.current.type == EventType.Repaint) style.fontSize = FittingFontSize(text, area.width - 6f, style);
             bool wasEnabled = GUI.enabled;
             GUI.enabled = wasEnabled && interactable;
             Event current = Event.current;
@@ -246,22 +281,28 @@ namespace Zetori.UI
                 current.Use();
                 onRightClick();
             }
-            if (GUI.Button(area, text, style)) onClick?.Invoke();
+            bool clicked = GUI.Button(area, text, style);
+            if (clicked) onClick?.Invoke();
             GUI.enabled = wasEnabled;
+            return clicked;
         }
 
-        internal bool Toggle(string label, bool value, string on = "On", string off = "Off")
-        {
-            bool result = value;
-            Button($"{label}: {(value ? on : off)}", () => result = !value);
-            return result;
-        }
+        internal bool Toggle(string label, bool value, string on = "On", string off = "Off", bool interactable = true) =>
+            DrawButton($"{label}: {(value ? on : off)}", null, null, interactable, buttonStyle!) ? !value : value;
 
         internal void Label(string text)
         {
+            GUI.Label(NextRect(Mathf.Max(LabelHeight, WrappedHeight(text, ContentWidth - 2f))), text, labelStyle);
+        }
+
+        private float WrappedHeight(string text, float width)
+        {
+            var key = (text, width);
+            if (wrappedHeights.TryGetValue(key, out float height)) return height;
             measured.text = text;
-            float wrappedHeight = Mathf.Ceil(labelStyle!.CalcHeight(measured, ContentWidth - 2f));
-            GUI.Label(NextRect(Mathf.Max(LabelHeight, wrappedHeight)), text, labelStyle);
+            height = Mathf.Ceil(labelStyle!.CalcHeight(measured, width));
+            Remember(wrappedHeights, key, height);
+            return height;
         }
 
         internal float Slider(string label, float value, float min, float max, string format = "F2", string unit = "")
@@ -308,6 +349,15 @@ namespace Zetori.UI
         private int FittingFontSize(string text, float availableWidth, GUIStyle style)
         {
             if (string.IsNullOrEmpty(text)) return ControlFontSize;
+            var key = (text, availableWidth);
+            if (fittedFontSizes.TryGetValue(key, out int size)) return size;
+            size = MeasureFittingFontSize(text, availableWidth, style);
+            Remember(fittedFontSizes, key, size);
+            return size;
+        }
+
+        private int MeasureFittingFontSize(string text, float availableWidth, GUIStyle style)
+        {
             measured.text = text;
             for (int size = ControlFontSize; size > MinimumFontSize; size--)
             {
@@ -315,6 +365,12 @@ namespace Zetori.UI
                 if (style.CalcSize(measured).x <= availableWidth) return size;
             }
             return MinimumFontSize;
+        }
+
+        private static void Remember<T>(Dictionary<(string Text, float Width), T> cache, (string Text, float Width) key, T value)
+        {
+            if (cache.Count >= MeasureCacheLimit) cache.Clear();
+            cache[key] = value;
         }
 
         private void EnsureTextures()

@@ -8,10 +8,10 @@ namespace Zetori.UI
     {
         internal static readonly PanelId[][] Columns =
         {
-            new[] { PanelId.Main, PanelId.Wasd, PanelId.Replay },
+            new[] { PanelId.Main, PanelId.Wasd, PanelId.FreecamCamera, PanelId.Replay },
             new[] { PanelId.Camera, PanelId.Web, PanelId.MiniMap },
             new[] { PanelId.Nametag, PanelId.Leaderboard, PanelId.ClosestLava, PanelId.KillFeed },
-            new[] { PanelId.Scoreboard, PanelId.Time, PanelId.MapLoader },
+            new[] { PanelId.Scoreboard, PanelId.Time, PanelId.MapLoader, PanelId.TagManager },
             new[] { PanelId.Player, PanelId.PlayerSettings, PanelId.Keybinds, PanelId.Theme, PanelId.Presets }
         };
 
@@ -19,6 +19,7 @@ namespace Zetori.UI
         {
             PanelId.Main => "Zetori",
             PanelId.Wasd => "WASD",
+            PanelId.FreecamCamera => "Freecam",
             PanelId.Replay => "Replay",
             PanelId.Camera => "Camera",
             PanelId.Web => "Camera Web",
@@ -30,6 +31,7 @@ namespace Zetori.UI
             PanelId.KillFeed => "Kill Feed",
             PanelId.Time => "Time",
             PanelId.MapLoader => "Maps",
+            PanelId.TagManager => "Tag Manager",
             PanelId.Player => "Player",
             PanelId.PlayerSettings => "Settings",
             PanelId.Theme => "UI Control",

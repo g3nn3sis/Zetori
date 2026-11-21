@@ -12,6 +12,7 @@ namespace Zetori.UI.Panels
         private readonly ReplayPanel replay = new ReplayPanel();
         private readonly KeybindPanel keybinds = new KeybindPanel();
         private readonly WebPanel web = new WebPanel();
+        private readonly TagManagerPanel tagManager = new TagManagerPanel();
 
         internal PanelContent(PanelOrchestrator owner)
         {
@@ -26,6 +27,7 @@ namespace Zetori.UI.Panels
             PanelId.Camera => ViewPanels.DrawCamera,
             PanelId.Web => web.Draw,
             PanelId.Wasd => ViewPanels.DrawWasd,
+            PanelId.FreecamCamera => ViewPanels.DrawFreecam,
             PanelId.MiniMap => ViewPanels.DrawMiniMap,
             PanelId.Nametag => OverlayPanels.DrawNameTags,
             PanelId.Leaderboard => OverlayPanels.DrawLeaderboard,
@@ -34,6 +36,7 @@ namespace Zetori.UI.Panels
             PanelId.KillFeed => OverlayPanels.DrawKillFeed,
             PanelId.Time => WorldPanels.DrawTime,
             PanelId.MapLoader => world.DrawMapLoader,
+            PanelId.TagManager => tagManager.Draw,
             PanelId.Player => SetupPanels.DrawPlayer,
             PanelId.PlayerSettings => SetupPanels.DrawSettings,
             PanelId.Theme => setup.DrawUiControl,

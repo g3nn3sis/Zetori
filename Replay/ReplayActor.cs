@@ -23,6 +23,7 @@ namespace Zetori.Replay
         internal RigSkeleton Skeleton { get; }
         internal List<ActorFrame> Frames { get; } = new List<ActorFrame>();
         internal VoiceTrack Voice { get; } = new VoiceTrack();
+        internal List<HandTap> HandTaps { get; } = new List<HandTap>();
         internal bool IsLocal { get; }
         internal int Platform { get; set; }
         internal IReadOnlyList<RecordedCosmetic> Cosmetics => cosmetics;
@@ -99,6 +100,19 @@ namespace Zetori.Replay
         {
             int count = ReplayIO.ReadCount(reader);
             for (int i = 0; i < count; i++) sounds.Add(CosmeticSoundTrack.Read(reader, cosmetics));
+        }
+
+        internal void WriteHandTaps(BinaryWriter writer)
+        {
+            writer.Write(HandTaps.Count);
+            foreach (HandTap tap in HandTaps) tap.Write(writer);
+        }
+
+        internal void ReadHandTaps(BinaryReader reader)
+        {
+            int count = ReplayIO.ReadCount(reader);
+            HandTaps.Capacity = count;
+            for (int i = 0; i < count; i++) HandTaps.Add(HandTap.Read(reader));
         }
 
         internal bool TryFindSpan(float time, float sampleInterval, out int index, out float blend)

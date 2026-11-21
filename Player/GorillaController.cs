@@ -21,18 +21,19 @@ namespace Zetori.Player
 
         private const float MaxPitch = 80f;
         private const float ClickRange = 500f;
-        private const float GravityCompensation = 1.12f;
 
         private float yaw, pitch;
         private bool flying;
         private bool noClipActive;
+        private Rigidbody? heldBody;
         private readonly List<MeshCollider> disabledColliders = new List<MeshCollider>();
 
         internal void FixedUpdate()
         {
             GTPlayer? player = GTPlayer.Instance;
             if (player == null || player.playerRigidBody == null) return;
-            if (!XRSettings.isDeviceActive) Float(player);
+            if (XRSettings.isDeviceActive) ReleaseHeight();
+            else Float(player.playerRigidBody);
             Mouse? mouse = Mouse.current;
             if (mouseClick && !flying && mouse != null && GorillaTagger.Instance != null)
             {
@@ -41,12 +42,25 @@ namespace Zetori.Player
             }
         }
 
-        private static void Float(GTPlayer player)
+        private void Float(Rigidbody body)
         {
-            Rigidbody body = player.playerRigidBody;
-            body.AddForce(-Physics.gravity * body.mass * (player.scale * GravityCompensation), ForceMode.Force);
+            HoldHeight(body);
             body.linearVelocity = Vector3.zero;
             body.angularVelocity = Vector3.zero;
+        }
+
+        private void HoldHeight(Rigidbody body)
+        {
+            if (heldBody != body) ReleaseHeight();
+            if ((body.constraints & RigidbodyConstraints.FreezePositionY) != 0) return;
+            body.constraints |= RigidbodyConstraints.FreezePositionY;
+            heldBody = body;
+        }
+
+        private void ReleaseHeight()
+        {
+            if (heldBody != null) heldBody.constraints &= ~RigidbodyConstraints.FreezePositionY;
+            heldBody = null;
         }
 
         internal void Update()
@@ -136,6 +150,7 @@ namespace Zetori.Player
         protected override void OnDestroy()
         {
             SetNoClip(false);
+            ReleaseHeight();
             base.OnDestroy();
         }
     }

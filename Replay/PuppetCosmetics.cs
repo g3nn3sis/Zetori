@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: LicenseRef-Zetori-Source-Available
 // Unauthorized use, modification, or distribution is prohibited. See LICENSE.
 
+using GorillaTag.CosmeticSystem;
 using UnityEngine;
 
 namespace Zetori.Replay
@@ -9,6 +10,7 @@ namespace Zetori.Replay
     internal sealed class PuppetCosmetics : IDisposable
     {
         private const float LeadSwitch = 0.5f;
+        private const string SkinBoneSuffix = "_new";
 
         private readonly ReplayActor actor;
         private readonly Transform root;
@@ -39,9 +41,9 @@ namespace Zetori.Replay
             {
                 shown.TryGetValue(pose.Key, out int occurrence);
                 shown[pose.Key] = occurrence + 1;
-                CosmeticVisual? visual = Visual(pose.Key, occurrence);
+                CosmeticVisual? visual = Visual(pose, occurrence);
                 if (visual == null) continue;
-                Place(visual.Root, pose.Joint);
+                Place(visual, pose.Joint);
                 if (TryMatch(trail, pose, occurrence, out CosmeticPose partner))
                 {
                     CosmeticPose start = fromLeads ? pose : partner;
@@ -81,33 +83,57 @@ namespace Zetori.Replay
         {
             if (!worn.TryGetValue(cosmetic, out List<CosmeticVisual> visuals) || visuals.Count == 0) return null;
             CosmeticVisual first = visuals[0];
-            return first.Root.gameObject.activeSelf ? first.Node(node) : null;
+            return first.Shown ? first.Node(node) : null;
         }
 
-        private CosmeticVisual? Visual(int key, int occurrence)
+        private CosmeticVisual? Visual(CosmeticPose pose, int occurrence)
         {
-            if (!worn.TryGetValue(key, out List<CosmeticVisual> visuals))
+            if (!worn.TryGetValue(pose.Key, out List<CosmeticVisual> visuals))
             {
                 visuals = new List<CosmeticVisual>();
-                worn.Add(key, visuals);
+                worn.Add(pose.Key, visuals);
             }
             while (visuals.Count <= occurrence)
             {
-                RecordedCosmetic cosmetic = actor.Cosmetics[key];
-                GameObject? template = library.Template(cosmetic.Key);
+                RecordedCosmetic cosmetic = actor.Cosmetics[pose.Key];
+                CosmeticTemplate? template = library.Template(cosmetic.Key);
                 if (template == null) return null;
-                GameObject copy = UnityEngine.Object.Instantiate(template, root, false);
-                foreach (Transform part in copy.GetComponentsInChildren<Transform>(true)) part.gameObject.layer = layer;
-                visuals.Add(new CosmeticVisual(copy, cosmetic));
+                visuals.Add(Dress(template, cosmetic, pose));
             }
             return visuals[occurrence];
         }
 
-        private void Place(Transform visual, int joint)
+        private CosmeticVisual Dress(CosmeticTemplate template, RecordedCosmetic cosmetic, CosmeticPose pose)
+        {
+            GameObject copy = UnityEngine.Object.Instantiate(template.Prefab, root, false);
+            foreach (Transform part in copy.GetComponentsInChildren<Transform>(true)) part.gameObject.layer = layer;
+            Parent(copy.transform, pose.Joint);
+            CosmeticPose.Apply(copy.transform, pose, pose, 0f);
+            Transform[] followers = template.Rig(copy.transform, GameBone);
+            return new CosmeticVisual(copy, cosmetic, followers);
+        }
+
+        private Transform? GameBone(int bone)
+        {
+            if (!GTHardCodedBones.TryGetBoneName(bone, out string name)) return null;
+            string skinned = name + SkinBoneSuffix;
+            string[] names = actor.Skeleton.JointNames;
+            int count = Math.Min(actor.Skeleton.BoneCount, joints.Length);
+            for (int i = 0; i < count; i++)
+                if (names[i] == skinned || names[i] == name) return joints[i];
+            return null;
+        }
+
+        private void Place(CosmeticVisual visual, int joint)
+        {
+            Parent(visual.Root, joint);
+            visual.SetShown(true);
+        }
+
+        private void Parent(Transform visual, int joint)
         {
             Transform parent = joint == RigSkeleton.RootParent ? root : joints[joint];
             if (visual.parent != parent) visual.SetParent(parent, false);
-            if (!visual.gameObject.activeSelf) visual.gameObject.SetActive(true);
         }
 
         private static bool TryMatch(CosmeticPose[] poses, CosmeticPose pose, int occurrence, out CosmeticPose match)
@@ -128,11 +154,7 @@ namespace Zetori.Replay
             foreach (KeyValuePair<int, List<CosmeticVisual>> pair in worn)
             {
                 shown.TryGetValue(pair.Key, out int count);
-                for (int i = count; i < pair.Value.Count; i++)
-                {
-                    GameObject visual = pair.Value[i].Root.gameObject;
-                    if (visual.activeSelf) visual.SetActive(false);
-                }
+                for (int i = count; i < pair.Value.Count; i++) pair.Value[i].SetShown(false);
             }
         }
 

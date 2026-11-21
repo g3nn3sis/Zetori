@@ -16,15 +16,24 @@ namespace Zetori.GameCamera.Modes
         private static float yaw, pitch;
         private static bool looking;
 
+        internal static bool Active { get; private set; }
+        internal static Vector3 Position => position;
+        internal static Quaternion Rotation => Quaternion.Euler(pitch, yaw, 0f);
+
         internal static void Enter(CameraWrapper camera)
         {
             position = camera.Transform.position;
             Vector3 euler = camera.Transform.rotation.eulerAngles;
             yaw = euler.y;
             pitch = Mathf.Clamp(Mathf.DeltaAngle(0f, euler.x), -MaxPitch, MaxPitch);
+            Active = true;
         }
 
-        internal static void Exit() => SetLooking(false);
+        internal static void Exit()
+        {
+            Active = false;
+            SetLooking(false);
+        }
 
         internal static void Run(CameraWrapper camera)
         {
@@ -33,16 +42,16 @@ namespace Zetori.GameCamera.Modes
             bool look = mouse != null && keyboard != null && mouse.rightButton.isPressed;
             SetLooking(look);
             if (look) Fly(mouse!);
-            camera.SetPose(position, Quaternion.Euler(pitch, yaw, 0f));
+            camera.SetPose(position, Rotation);
         }
 
         private static void Fly(Mouse mouse)
         {
             Vector2 delta = mouse.delta.ReadValue();
-            float sensitivity = CasterConfig.MouseSpeed.Value;
+            float sensitivity = CasterConfig.FreecamRotationSensitivity.Value;
             yaw += delta.x * sensitivity;
             pitch = Mathf.Clamp(pitch - delta.y * sensitivity, -MaxPitch, MaxPitch);
-            position += MoveDirection() * (CasterConfig.MovementSpeed.Value * Time.deltaTime);
+            position += MoveDirection() * (CasterConfig.FreecamMovementSpeed.Value * Time.deltaTime);
         }
 
         private static Vector3 MoveDirection()

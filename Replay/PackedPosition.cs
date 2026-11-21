@@ -25,7 +25,7 @@ namespace Zetori.Replay
             this.z = z;
         }
 
-        internal Vector3 Unpack() => new Vector3(Mathf.HalfToFloat(x), Mathf.HalfToFloat(y), Mathf.HalfToFloat(z));
+        internal Vector3 Unpack() => new Vector3(HalfFloat.ToFloat(x), HalfFloat.ToFloat(y), HalfFloat.ToFloat(z));
 
         internal static Vector3 Blend(PackedPosition from, PackedPosition to, float t) => Vector3.Lerp(from.Unpack(), to.Unpack(), t);
 

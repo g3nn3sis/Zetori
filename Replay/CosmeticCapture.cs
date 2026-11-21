@@ -227,7 +227,7 @@ namespace Zetori.Replay
 
         private void ForgetDestroyed()
         {
-            if (!lives.Any(live => live.Root == null)) return;
+            if (!AnyLiveDestroyed()) return;
             for (int i = lives.Count - 1; i >= 0; i--)
             {
                 if (lives[i].Root != null) continue;
@@ -235,6 +235,13 @@ namespace Zetori.Replay
                 lives.RemoveAt(i);
             }
             foreach (GameObject gone in identified.Keys.Where(item => item == null).ToArray()) identified.Remove(gone);
+        }
+
+        private bool AnyLiveDestroyed()
+        {
+            for (int i = 0; i < lives.Count; i++)
+                if (lives[i].Root == null) return true;
+            return false;
         }
 
         public void Dispose()

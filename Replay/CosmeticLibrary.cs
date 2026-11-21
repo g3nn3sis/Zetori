@@ -18,7 +18,7 @@ namespace Zetori.Replay
         private sealed class Entry
         {
             internal AsyncOperationHandle<GameObject> Load;
-            internal GameObject? Template;
+            internal CosmeticTemplate? Template;
             internal GorillaSkin? Skin;
             internal bool Finished;
         }
@@ -43,7 +43,7 @@ namespace Zetori.Replay
             }
         }
 
-        internal GameObject? Template(CosmeticKey key) => Ready(key)?.Template;
+        internal CosmeticTemplate? Template(CosmeticKey key) => Ready(key)?.Template;
 
         internal bool TryCosmeticSkin(ReplayActor actor, string playFabId, out GorillaSkin? skin)
         {
@@ -129,17 +129,18 @@ namespace Zetori.Replay
             entry.Template = BuildTemplate(key, VisualRoot(loaded, key.Kind));
         }
 
-        private static GameObject? BuildTemplate(CosmeticKey key, Transform source)
+        private static CosmeticTemplate? BuildTemplate(CosmeticKey key, Transform source)
         {
             GameObject copy = UnityEngine.Object.Instantiate(source.gameObject, Shelf, false);
             try
             {
+                CosmeticFollower[] followers = CosmeticFollower.Of(copy.transform);
                 CosmeticStripper.Strip(copy);
                 copy.transform.localPosition = Vector3.zero;
                 copy.transform.localRotation = Quaternion.identity;
                 copy.transform.localScale = Vector3.one;
                 copy.SetActive(true);
-                return copy;
+                return new CosmeticTemplate(copy, followers);
             }
             catch (Exception e)
             {
@@ -167,7 +168,7 @@ namespace Zetori.Replay
         {
             foreach (Entry entry in entries.Values)
             {
-                if (entry.Template != null) UnityEngine.Object.Destroy(entry.Template);
+                if (entry.Template != null) UnityEngine.Object.Destroy(entry.Template.Prefab);
                 if (!entry.Load.IsValid()) continue;
                 if (entry.Load.IsDone) Release(entry.Load);
                 else entry.Load.Completed += Release;

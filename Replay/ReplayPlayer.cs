@@ -88,6 +88,7 @@ namespace Zetori.Replay
             {
                 puppet.Pose(Cursor, step, RigLerp, ArmExaggeration.Active && IsSpectating(puppet), Playing);
                 puppet.UpdateVoice(Cursor, Playing);
+                puppet.PlayHandTaps(Cursor - step, Cursor, Playing);
             }
             ApplyEnvironment();
             if (Spectated == null) SpectateNextVisible(1);
@@ -113,18 +114,7 @@ namespace Zetori.Replay
         internal void SpectateOther(int otherIndex)
         {
             int seen = 0;
-            SpectateWhere(p => !p.Actor.IsLocal && seen++ == otherIndex);
-        }
-
-        internal int OtherOrdinal(ReplayPuppet puppet)
-        {
-            int ordinal = 0;
-            foreach (ReplayPuppet candidate in puppets)
-            {
-                if (candidate == puppet) return ordinal;
-                if (!candidate.Actor.IsLocal) ordinal++;
-            }
-            return -1;
+            SpectateWhere(p => p.IsOtherPresent && seen++ == otherIndex);
         }
 
         private void SpectateWhere(Func<ReplayPuppet, bool> match)

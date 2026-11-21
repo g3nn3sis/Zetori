@@ -13,6 +13,8 @@ namespace Zetori.Replay
         private const int Unset = -1;
 
         private readonly RecordedCosmetic record;
+        private readonly Transform[] followers;
+        private readonly bool[] followerActive;
         private readonly Transform?[] nodes;
         private readonly Renderer?[] renderers;
         private readonly ParticleSystem?[] particles;
@@ -35,11 +37,14 @@ namespace Zetori.Replay
         private byte[]? decodedTo;
 
         internal Transform Root { get; }
+        internal bool Shown => Root.gameObject.activeSelf;
 
-        internal CosmeticVisual(GameObject copy, RecordedCosmetic record)
+        internal CosmeticVisual(GameObject copy, RecordedCosmetic record, Transform[] followers)
         {
             Root = copy.transform;
             this.record = record;
+            this.followers = followers;
+            followerActive = followers.Select(follower => follower.gameObject.activeSelf).ToArray();
             Transform[] copied = CosmeticNodes.Of(Root);
             int[] matches = CosmeticNodes.Align(record.NodeNames, copied);
             int count = matches.Length;
@@ -72,6 +77,14 @@ namespace Zetori.Replay
         }
 
         internal Transform? Node(int index) => index >= 0 && index < nodes.Length ? nodes[index] : null;
+
+        internal void SetShown(bool shown)
+        {
+            if (Shown == shown) return;
+            Root.gameObject.SetActive(shown);
+            for (int i = 0; i < followers.Length; i++)
+                if (followers[i] != null) followers[i].gameObject.SetActive(shown && followerActive[i]);
+        }
 
         internal void Pose(CosmeticPose from, CosmeticPose to, float blend, bool playing)
         {

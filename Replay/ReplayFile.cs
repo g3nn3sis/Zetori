@@ -16,7 +16,8 @@ namespace Zetori.Replay
         private const string Extension = ".gcreplay";
         private const string TemporaryExtension = ".tmp";
         private const uint Magic = 0x50524347;
-        private const int FormatVersion = 9;
+        private const int FormatVersion = 10;
+        private const int LastVersionWithoutHandTaps = 9;
         private const int LastVersionWithoutCosmetics = 7;
 
         internal static string NewName() => DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss", CultureInfo.InvariantCulture);
@@ -133,13 +134,14 @@ namespace Zetori.Replay
             foreach (ActorFrame frame in actor.Frames) frame.Write(writer, actor);
             actor.Voice.Write(writer);
             actor.WriteSounds(writer);
+            actor.WriteHandTaps(writer);
         }
 
         private static ReplayRecording Read(BinaryReader reader)
         {
             if (reader.ReadUInt32() != Magic) throw new InvalidDataException("Not a Zetori replay.");
             int version = reader.ReadInt32();
-            if (version != FormatVersion && version != LastVersionWithoutCosmetics) throw new InvalidDataException($"Replay format {version} is from another Zetori version and cannot be played; record it again.");
+            if (version != FormatVersion && version != LastVersionWithoutHandTaps && version != LastVersionWithoutCosmetics) throw new InvalidDataException($"Replay format {version} is from another Zetori version and cannot be played; record it again.");
             var recording = new ReplayRecording { Duration = reader.ReadSingle() };
             int environments = ReplayIO.ReadCount(reader);
             for (int i = 0; i < environments; i++)
@@ -148,12 +150,13 @@ namespace Zetori.Replay
             for (int i = 0; i < events; i++)
                 recording.Events.Add(new ReplayEvent(reader.ReadSingle(), (ReplayEventKind)reader.ReadInt32(), reader.ReadInt32(), reader.ReadInt32()));
             int actors = ReplayIO.ReadCount(reader);
-            bool hasCosmetics = version == FormatVersion;
-            for (int i = 0; i < actors; i++) recording.Actors.Add(ReadActor(reader, i, hasCosmetics));
+            bool hasCosmetics = version != LastVersionWithoutCosmetics;
+            bool hasHandTaps = version == FormatVersion;
+            for (int i = 0; i < actors; i++) recording.Actors.Add(ReadActor(reader, i, hasCosmetics, hasHandTaps));
             return recording;
         }
 
-        private static ReplayActor ReadActor(BinaryReader reader, int id, bool hasCosmetics)
+        private static ReplayActor ReadActor(BinaryReader reader, int id, bool hasCosmetics, bool hasHandTaps)
         {
             string name = reader.ReadString();
             var color = new Color(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
@@ -167,6 +170,7 @@ namespace Zetori.Replay
             for (int i = 0; i < frames; i++) actor.Frames.Add(ActorFrame.Read(reader, actor, hasCosmetics, scratch));
             actor.Voice.Read(reader);
             if (hasCosmetics) actor.ReadSounds(reader);
+            if (hasHandTaps) actor.ReadHandTaps(reader);
             return actor;
         }
     }

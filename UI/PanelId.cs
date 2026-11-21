@@ -24,6 +24,8 @@ namespace Zetori.UI
         Replay,
         Keybinds,
         Web,
+        FreecamCamera,
+        TagManager,
         Count
     }
 }

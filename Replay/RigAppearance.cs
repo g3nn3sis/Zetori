@@ -24,9 +24,13 @@ namespace Zetori.Replay
         internal Material[] HeadMaterials { get; }
         internal bool HeadSharesSkin { get; }
         internal AudioMixerGroup? VoiceMixer { get; }
+        internal VoiceSettings HandSound { get; }
+        internal AudioMixerGroup? HandMixer { get; }
 
-        private RigAppearance(Mesh bodyMesh, Material[] bodyMaterials, Material[] tagMaterials, Mesh? faceMesh, Material[] faceMaterials, HeadParts head, AudioMixerGroup? voiceMixer)
+        private RigAppearance(Mesh bodyMesh, Material[] bodyMaterials, Material[] tagMaterials, Mesh? faceMesh, Material[] faceMaterials, HeadParts head, AudioMixerGroup? voiceMixer, AudioSource? handSource)
         {
+            HandSound = VoiceSettings.From(handSource);
+            HandMixer = handSource != null ? handSource.outputAudioMixerGroup : null;
             HeadMesh = head.Mesh;
             HeadMaterials = head.Materials ?? Array.Empty<Material>();
             HeadSharesSkin = head.SharesSkin;
@@ -77,7 +81,8 @@ namespace Zetori.Replay
                 hasFace ? faceFilter!.sharedMesh : null,
                 hasFace ? Copy(face!.sharedMaterials) : Array.Empty<Material>(),
                 skeleton.HeadMeshVisible ? HeadPartsOf(template, body, bodyMaterials) : default,
-                FindVoiceMixer());
+                FindVoiceMixer(),
+                template.leftHandPlayer);
         }
 
         private readonly struct HeadParts

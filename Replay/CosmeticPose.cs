@@ -45,8 +45,7 @@ namespace Zetori.Replay
 
         internal static void Apply(Transform target, CosmeticPose from, CosmeticPose to, float blend)
         {
-            target.localPosition = PackedPosition.Blend(from.position, to.position, blend);
-            target.localRotation = PackedRotation.Blend(from.rotation, to.rotation, blend);
+            target.SetLocalPositionAndRotation(PackedPosition.Blend(from.position, to.position, blend), PackedRotation.Blend(from.rotation, to.rotation, blend));
             target.localScale = PackedPosition.Blend(from.scale, to.scale, blend);
         }
 

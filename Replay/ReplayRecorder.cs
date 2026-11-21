@@ -19,6 +19,9 @@ namespace Zetori.Replay
         {
             internal VRRig Rig = null!;
             internal Transform[] Joints = Array.Empty<Transform>();
+            internal Vector3[] JointPositions = Array.Empty<Vector3>();
+            internal Quaternion[] JointRotations = Array.Empty<Quaternion>();
+            internal float[] JointScales = Array.Empty<float>();
             internal ReplayActor Actor = null!;
             internal CosmeticCapture Cosmetics = null!;
             internal VoiceTap? Tap;
@@ -47,6 +50,13 @@ namespace Zetori.Replay
             nextSample = Mathf.Max(nextSample + ReplayRecording.SampleInterval, now);
             SampleEnvironment(now);
             SampleRigs(now);
+        }
+
+        internal void RecordHandTap(VRRig rig, bool isLeftHand, int surface, float volume)
+        {
+            string? key = KeyOf(rig);
+            if (key == null || !bindings.TryGetValue(key, out Binding binding) || binding.Rig != rig) return;
+            binding.Actor.HandTaps.Add(new HandTap(Elapsed, isLeftHand, surface, volume));
         }
 
         internal ReplayRecording Finish()
@@ -119,6 +129,9 @@ namespace Zetori.Replay
             {
                 Rig = rig,
                 Joints = joints,
+                JointPositions = new Vector3[joints.Length],
+                JointRotations = new Quaternion[joints.Length],
+                JointScales = new float[joints.Length],
                 Actor = actor,
                 Cosmetics = new CosmeticCapture(rig, actor, joints),
                 Tap = voice != null ? voice.gameObject.AddComponent<VoiceTap>() : null,
@@ -151,24 +164,27 @@ namespace Zetori.Replay
             VRRig rig = binding.Rig;
             RigSkeleton skeleton = binding.Actor.Skeleton;
             Transform root = rig.transform;
-            Quaternion inverseRoot = Quaternion.Inverse(root.rotation);
+            Vector3 rootPosition = root.position;
+            Quaternion rootRotation = root.rotation;
+            float rootScale = root.lossyScale.x;
+            Quaternion inverseRoot = Quaternion.Inverse(rootRotation);
             Pose eyes = HeadView.Eyes(rig);
             CosmeticPose[] cosmetics = CaptureCosmetics(binding);
             int skin = CaptureSkin(binding);
             var frame = new ActorFrame
             {
                 Time = now,
-                Position = root.position,
-                Rotation = new PackedRotation(root.rotation),
-                RawPosition = rig.isOfflineVRRig ? root.position : rig.syncPos,
-                RawRotation = new PackedRotation(rig.isOfflineVRRig ? root.rotation : rig.syncRotation),
+                Position = rootPosition,
+                Rotation = new PackedRotation(rootRotation),
+                RawPosition = rig.isOfflineVRRig ? rootPosition : rig.syncPos,
+                RawRotation = new PackedRotation(rig.isOfflineVRRig ? rootRotation : rig.syncRotation),
                 Limbs = new[]
                 {
-                    CaptureLimb(rig.head, rig.isOfflineVRRig, root),
-                    CaptureLimb(rig.leftHand, rig.isOfflineVRRig, root),
-                    CaptureLimb(rig.rightHand, rig.isOfflineVRRig, root),
+                    CaptureLimb(rig.head, rig.isOfflineVRRig, root, inverseRoot),
+                    CaptureLimb(rig.leftHand, rig.isOfflineVRRig, root, inverseRoot),
+                    CaptureLimb(rig.rightHand, rig.isOfflineVRRig, root, inverseRoot),
                 },
-                Scale = root.lossyScale.x,
+                Scale = rootScale,
                 EyePosition = root.InverseTransformPoint(eyes.position),
                 EyeRotation = new PackedRotation(inverseRoot * eyes.rotation),
                 Joints = new PackedRotation[skeleton.JointCount],
@@ -180,17 +196,35 @@ namespace Zetori.Replay
                 Cosmetics = cosmetics,
                 Skin = skin,
             };
-            for (int i = 0; i < skeleton.JointCount; i++)
-            {
-                Transform joint = binding.Joints[i];
-                Transform parent = skeleton.ParentOf(binding.Joints, root, i);
-                frame.Joints[i] = new PackedRotation(Quaternion.Inverse(parent.rotation) * joint.rotation);
-                frame.JointPositions[i] = new PackedPosition(parent.InverseTransformPoint(joint.position));
-                frame.JointScales[i] = Mathf.FloatToHalf(RigSkeleton.RelativeScale(joint, parent));
-            }
+            CaptureJoints(binding, skeleton, root, rootRotation, rootScale, frame);
             binding.Actor.Frames.Add(frame);
             if (!rig.isOfflineVRRig && binding.Actor.Platform == 0) binding.Actor.Platform = NetworkedPlayerManager.GetPlatform(rig);
             DetectTag(binding, frame.Tag, now);
+        }
+
+        private static void CaptureJoints(Binding binding, RigSkeleton skeleton, Transform root, Quaternion rootRotation, float rootScale, in ActorFrame frame)
+        {
+            Transform[] joints = binding.Joints;
+            Vector3[] positions = binding.JointPositions;
+            Quaternion[] rotations = binding.JointRotations;
+            float[] scales = binding.JointScales;
+            for (int i = 0; i < skeleton.JointCount; i++)
+            {
+                positions[i] = joints[i].position;
+                rotations[i] = joints[i].rotation;
+                scales[i] = joints[i].lossyScale.x;
+            }
+            for (int i = 0; i < skeleton.JointCount; i++)
+            {
+                int parent = skeleton.Parents[i];
+                bool rooted = parent == RigSkeleton.RootParent;
+                Transform parentTransform = skeleton.ParentOf(joints, root, i);
+                Quaternion parentRotation = rooted ? rootRotation : rotations[parent];
+                float parentScale = rooted ? rootScale : scales[parent];
+                frame.Joints[i] = new PackedRotation(Quaternion.Inverse(parentRotation) * rotations[i]);
+                frame.JointPositions[i] = new PackedPosition(parentTransform.InverseTransformPoint(positions[i]));
+                frame.JointScales[i] = Mathf.FloatToHalf(RigSkeleton.RelativeScale(scales[i], parentScale));
+            }
         }
 
         private static CosmeticPose[] CaptureCosmetics(Binding binding)
@@ -213,11 +247,10 @@ namespace Zetori.Replay
             }
         }
 
-        private static LimbSample CaptureLimb(VRMap? map, bool local, Transform root)
+        private static LimbSample CaptureLimb(VRMap? map, bool local, Transform root, Quaternion inverseRoot)
         {
             Transform? target = map?.rigTarget;
             if (map == null || target == null) return new LimbSample(Vector3.zero, Quaternion.identity, Vector3.zero, Quaternion.identity);
-            Quaternion inverseRoot = Quaternion.Inverse(root.rotation);
             Vector3 shownPosition = root.InverseTransformPoint(target.position);
             Quaternion shownRotation = inverseRoot * target.rotation;
             if (local) return new LimbSample(shownPosition, shownRotation, shownPosition, shownRotation);
