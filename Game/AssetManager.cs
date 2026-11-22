@@ -23,6 +23,8 @@ namespace Zetori.Game
             base.Awake();
             try { discoveredFonts = DiscoverFonts(); }
             catch (Exception e) { Log.Exception(e, "Font discovery failed"); }
+            try { discoveredFonts = discoveredFonts.Concat(BundledFonts.Load()).ToArray(); }
+            catch (Exception e) { Log.Exception(e, "Loading bundled fonts failed"); }
             smallSteamSprite = LoadIconSprite("Zetori.Icons.steam.png");
             smallMetaSprite = LoadIconSprite("Zetori.Icons.meta.png");
         }

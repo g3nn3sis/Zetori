@@ -86,6 +86,10 @@
 		<EmbeddedResource Include="Resources\Icons\steam.png" LogicalName="Zetori.Icons.steam.png" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<EmbeddedResource Include="Resources\Fonts\*.ttf;Resources\Fonts\OFL.txt" LogicalName="Zetori.Fonts.%(Filename)%(Extension)" />
+	</ItemGroup>
+
 	<!-- VR camera tablet exported from Resources\Models\vr_camera.blend: meshes plus the baked body texture. -->
 	<ItemGroup>
 		<EmbeddedResource Include="Resources\Models\vr_camera.zmdl" LogicalName="Zetori.Models.vr_camera.zmdl" />
