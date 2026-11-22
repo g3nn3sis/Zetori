@@ -33,6 +33,7 @@ namespace Zetori.UI
             ClosePanelsOnEnteringVr();
             if (CasterConfig.KeyPressed(CasterConfig.MenuKey)) Visible = !Visible;
             SyncTimelineToggle();
+            timeline?.Tick(Time.unscaledDeltaTime);
             float step = Time.unscaledDeltaTime / FadeDuration;
             panelProgress = Mathf.MoveTowards(panelProgress, Visible ? 1f : 0f, step);
             timelineProgress = Mathf.MoveTowards(timelineProgress, TimelineVisible ? 1f : 0f, step);

@@ -6,6 +6,7 @@ using BepInEx.Configuration;
 using Zetori.Game;
 using Zetori.GameCamera;
 using Zetori.GameCamera.Vr;
+using Zetori.UI;
 using System.IO;
 using System.Text;
 using UnityEngine;
@@ -42,6 +43,7 @@ namespace Zetori.Base
         internal static ConfigEntry<Key> PreviousPlayerKey = null!;
         internal static ConfigEntry<Key> ReplayPauseKey = null!;
         internal static ConfigEntry<Key> ReplayTimelineKey = null!;
+        internal static ConfigEntry<TimelineEdge> ReplayTimelineEdge = null!;
         internal static ConfigEntry<Key> OrbitLeftKey = null!;
         internal static ConfigEntry<Key> OrbitRightKey = null!;
         internal static ConfigEntry<Key> OrbitUpKey = null!;
@@ -178,6 +180,7 @@ namespace Zetori.Base
             OrbitResetKey = config.Bind("Camera", "Reset Orbit Key", Key.R, "Put the orbit camera back behind the spectated player.");
             ReplayPauseKey = config.Bind("Replay", "Pause Key", Key.P, "Pause and unpause the replay while in replay mode.");
             ReplayTimelineKey = config.Bind("Replay", "Timeline Key", Key.F1, "Show and hide the replay timeline while in replay mode.");
+            ReplayTimelineEdge = config.Bind("Replay", "Timeline Position", TimelineEdge.Top, "Screen edge the replay timeline docks to: Top or Bottom. Drag the timeline to move it.");
 
             WebName = config.Bind("Web", "Name", string.Empty, "Name of the saved camera web to use, from the Webs folder.");
             WebDynamic = config.Bind("Web", "Dynamic", true, "On picks the node nearest the action by itself, off steps through nodes with the node keys.");

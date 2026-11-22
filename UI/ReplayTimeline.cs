@@ -2,9 +2,11 @@
 // SPDX-License-Identifier: LicenseRef-Zetori-Source-Available
 // Unauthorized use, modification, or distribution is prohibited. See LICENSE.
 
+using Zetori.Base;
 using Zetori.GameCamera;
 using Zetori.Replay;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace Zetori.UI
 {
@@ -12,8 +14,12 @@ namespace Zetori.UI
     {
         internal const float Margin = 8f;
         internal const float Height = 48f;
-        internal static float Bottom => Margin + Height;
+        internal static TimelineEdge Edge => CasterConfig.ReplayTimelineEdge.Value;
+        internal static bool DockedTop => Edge == TimelineEdge.Top;
+        internal static float Bottom => DockY(Edge) + Height;
 
+        private const float DockDamping = 16f;
+        private const float DockSnap = 0.5f;
         private const float Inset = 10f;
         private const float Spacing = 8f;
         private const float ButtonWidth = 56f;
@@ -28,6 +34,7 @@ namespace Zetori.UI
         private const float HoverRadius = 4f;
         private const float TooltipWidth = 220f;
         private const float TooltipHeight = 20f;
+        private const float TooltipGap = 2f;
         private const int FontSize = 12;
         private const int SliceBorder = 10;
 
@@ -41,10 +48,15 @@ namespace Zetori.UI
         private static readonly Color EnvironmentColor = new Color(0.55f, 0.7f, 1f, 1f);
 
         private readonly int scrubHint = "ZetoriReplayScrub".GetHashCode();
+        private readonly int dragHint = "ZetoriReplayTimelineDrag".GetHashCode();
         private Texture2D? background, button;
         private GUIStyle? backgroundStyle, buttonStyle, clockStyle, tooltipStyle;
         private Color32 builtAccent;
         private bool resumeAfterScrub;
+        private float barY = DockY(Edge);
+        private float grabOffset;
+        private bool dragging;
+        private bool inputSawPress;
 
         internal static string Format(float seconds)
         {
@@ -52,10 +64,36 @@ namespace Zetori.UI
             return $"{total / 60}:{total % 60:00}";
         }
 
+        private static float DockY(TimelineEdge edge) =>
+            edge == TimelineEdge.Top ? Margin : Mathf.Max(Margin, UiScale.Height - Margin - Height);
+
+        private static TimelineEdge NearestEdge(float y) =>
+            Mathf.Abs(y - DockY(TimelineEdge.Top)) <= Mathf.Abs(y - DockY(TimelineEdge.Bottom)) ? TimelineEdge.Top : TimelineEdge.Bottom;
+
+        internal void Tick(float dt)
+        {
+            if (dragging)
+            {
+                FollowPress();
+                return;
+            }
+            float target = DockY(Edge);
+            float next = Mathf.Lerp(barY, target, 1f - Mathf.Exp(-DockDamping * dt));
+            barY = Mathf.Abs(next - target) < DockSnap ? target : next;
+        }
+
+        private void FollowPress()
+        {
+            Mouse? mouse = Mouse.current;
+            if (mouse == null) return;
+            if (mouse.leftButton.isPressed) inputSawPress = true;
+            else if (inputSawPress) Release();
+        }
+
         internal void Draw(ReplayPlayer replay)
         {
             EnsureStyles(ColorSpace.Current.Color);
-            var bar = new Rect(Margin, Margin, UiScale.Width - Margin * 2f, Height);
+            var bar = new Rect(Margin, barY, UiScale.Width - Margin * 2f, Height);
             GUI.Box(bar, GUIContent.none, backgroundStyle);
 
             float buttonY = bar.y + (Height - ButtonHeight) * 0.5f;
@@ -73,10 +111,45 @@ namespace Zetori.UI
             }
 
             Rect track = Rect.MinMaxRect(x + KnobWidth * 0.5f, bar.y, stopX - Spacing - KnobWidth * 0.5f, bar.yMax);
-            if (track.width <= 0f) return;
-            Scrub(track, replay);
+            bool hasTrack = track.width > 0f;
+            if (hasTrack) Scrub(track, replay);
+            Drag(bar);
+            if (!hasTrack) return;
             DrawTrack(track, replay);
             DrawHover(track, bar, replay);
+        }
+
+        private void Drag(Rect bar)
+        {
+            Event e = Event.current;
+            int id = GUIUtility.GetControlID(dragHint, FocusType.Passive, bar);
+            if (dragging && GUIUtility.hotControl != id) Release();
+            else if (!dragging && GUIUtility.hotControl == id) GUIUtility.hotControl = 0;
+            switch (e.GetTypeForControl(id))
+            {
+                case EventType.MouseDown when GUI.enabled && e.button == 0 && bar.Contains(e.mousePosition):
+                    GUIUtility.hotControl = id;
+                    dragging = true;
+                    inputSawPress = false;
+                    grabOffset = e.mousePosition.y - barY;
+                    e.Use();
+                    break;
+                case EventType.MouseDrag when dragging:
+                    barY = Mathf.Clamp(e.mousePosition.y - grabOffset, DockY(TimelineEdge.Top), DockY(TimelineEdge.Bottom));
+                    e.Use();
+                    break;
+                case EventType.MouseUp when dragging:
+                    GUIUtility.hotControl = 0;
+                    Release();
+                    e.Use();
+                    break;
+            }
+        }
+
+        private void Release()
+        {
+            dragging = false;
+            CasterConfig.ReplayTimelineEdge.Value = NearestEdge(barY);
         }
 
         private void Scrub(Rect track, ReplayPlayer replay)
@@ -137,7 +210,7 @@ namespace Zetori.UI
         private void DrawHover(Rect track, Rect bar, ReplayPlayer replay)
         {
             Vector2 mouse = Event.current.mousePosition;
-            if (!track.Contains(mouse)) return;
+            if (dragging || !track.Contains(mouse)) return;
             ReplayRecording recording = replay.Recording;
             float time = TimeAt(track, mouse.x, replay);
             string text = Format(time);
@@ -149,7 +222,8 @@ namespace Zetori.UI
                 break;
             }
             float x = Mathf.Clamp(mouse.x - TooltipWidth * 0.5f, bar.x, bar.xMax - TooltipWidth);
-            GUI.Label(new Rect(x, bar.yMax + 2f, TooltipWidth, TooltipHeight), text, tooltipStyle);
+            float y = NearestEdge(bar.y) == TimelineEdge.Top ? bar.yMax + TooltipGap : bar.y - TooltipGap - TooltipHeight;
+            GUI.Label(new Rect(x, y, TooltipWidth, TooltipHeight), text, tooltipStyle);
         }
 
         private static float TimeAt(Rect track, float x, ReplayPlayer replay) =>

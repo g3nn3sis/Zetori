@@ -90,7 +90,7 @@ namespace Zetori.UI
                 heights[i] = panels[i].Rect.height;
             }
             PanelId? leader = SyncReplayLayout() ? PanelId.Replay : (PanelId?)null;
-            float top = leader != null ? Mathf.Lerp(Margin, ReplayTimeline.Bottom + Gap, timelinePresence) : Margin;
+            float top = leader != null && ReplayTimeline.DockedTop ? Mathf.Lerp(Margin, ReplayTimeline.Bottom + Gap, timelinePresence) : Margin;
             SyncSnapping();
             if (snapping) PlaceSnapped(leader, top, blend);
             else PlaceFree(leader != null ? top : 0f, blend);
