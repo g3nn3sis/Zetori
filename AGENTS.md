@@ -26,5 +26,7 @@ Start here, then follow the right door:
   reflection and attached to the persistent `_Zetori` object. No registry.
 - Settings live in `CasterConfig`; never rename an existing section/key. Don't edit
   `External/` (vendored). Keep per-frame code allocation-free.
+- **Git:** commit directly on `master` — no per-feature local branches merged back in. See
+  [CLAUDE.md](CLAUDE.md#git).
 
 **Working instructions are in [CLAUDE.md](CLAUDE.md). Read it before changing code.**

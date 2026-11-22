@@ -30,6 +30,11 @@ A successful plugin build **copies `Zetori-<version>.dll` into the game's
 `BepInEx\plugins\Zetori\`** folder automatically (see `Directory.Build.targets`). Paths
 to the game and BepInEx are in `Directory.Build.props` (`GamePath`).
 
+## Git
+
+Commit directly on `master`. Do not create a local branch for each feature and merge it back
+into `master`.
+
 ## Layout
 
 ```
