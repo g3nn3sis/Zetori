@@ -3,45 +3,39 @@
 // Unauthorized use, modification, or distribution is prohibited. See LICENSE.
 
 using Zetori.Base;
+using Zetori.GameCamera;
+using Zetori.Replay;
 using Zetori.UI;
 using DiscordRPC;
+using GorillaGameModes;
 using Photon.Pun;
 using Photon.Realtime;
+using UnityEngine;
 
 namespace Zetori.DiscordRichPresence
 {
     internal sealed class DiscordRPCStateManager : ObjectComponent
     {
-        private const string DefaultDetails = "Exploring Gorilla Tag";
+        private const float RefreshInterval = 1f;
+        private const float MinimumSendInterval = 4f;
+        private const string LargeImageKey = "large";
 
+        private static readonly string LargeImageText = $"{PluginInfo.Name} v{PluginInfo.Version}";
         private static readonly Button[] Links = { new Button { Label = $"Get {PluginInfo.Name}", Url = PluginInfo.Website } };
+        private static int republishPending = 1;
 
-        private ZoneData[] zones = Array.Empty<ZoneData>();
-        private string? lastDetails;
-        private string? lastState;
-        private string? lastPartyId;
-        private int lastPartySize;
-        private int lastPartyMax;
+        private string? sentDetails;
+        private string? sentState;
+        private string? sentPartyId;
+        private int sentPartySize;
+        private int sentPartyMax;
+        private float lastSent = float.NegativeInfinity;
+        private float nextRefresh;
         private bool cleared;
-        private string? detailsSceneName;
-        private string cachedDetails = DefaultDetails;
-        private bool detailsComputed;
+        private string? currentRoomName;
+        private string? currentPartyId;
 
-        internal static void SetLoadingPresence()
-        {
-            DiscordRPCManager.Client?.UpdatePresence(
-                details: $"Loading {PluginInfo.Name}",
-                state: $"v{PluginInfo.Version}",
-                largeImageKey: "large",
-                largeImageText: PluginInfo.Name,
-                buttons: Links);
-        }
-
-        private void OnEnable() => ZoneManagement.OnZoneChange += OnZoneChange;
-
-        private void OnDisable() => ZoneManagement.OnZoneChange -= OnZoneChange;
-
-        private void OnZoneChange(ZoneData[] changed) => zones = changed;
+        internal static void RequestRepublish() => Interlocked.Exchange(ref republishPending, 1);
 
         private void Update()
         {
@@ -53,7 +47,10 @@ namespace Zetori.DiscordRichPresence
                 return;
             }
             cleared = false;
-            PublishPresence(client);
+            float now = Time.unscaledTime;
+            if (now < nextRefresh && Volatile.Read(ref republishPending) == 0) return;
+            nextRefresh = now + RefreshInterval;
+            PublishPresence(client, now);
         }
 
         private void ClearPresence(DiscordRPCWrapper client)
@@ -61,51 +58,121 @@ namespace Zetori.DiscordRichPresence
             if (cleared || !client.IsConnected) return;
             client.ClearPresence();
             cleared = true;
-            lastDetails = null;
-            lastState = null;
-            lastPartyId = null;
+            sentDetails = null;
+            sentState = null;
+            sentPartyId = null;
         }
 
-        private void PublishPresence(DiscordRPCWrapper client)
+        private void PublishPresence(DiscordRPCWrapper client, float now)
         {
-            bool multiplayer = PhotonNetwork.InRoom;
-            Room? room = multiplayer ? PhotonNetwork.CurrentRoom : null;
-            string? partyId = room?.Name;
+            bool loading = GorillaTagger.Instance == null;
+            Room? room = !loading && PhotonNetwork.InRoom && !ReplaySession.IsReplaying ? PhotonNetwork.CurrentRoom : null;
+            string details = loading ? "Loading Gorilla Tag" : Details();
+            string state = loading ? LargeImageText : State(room);
+            string? partyId = PartyIdFor(room);
             int partySize = room?.PlayerCount ?? 0;
             int partyMax = room?.MaxPlayers ?? 0;
-            string details = DetailsFor(ActiveZone());
-            string state = multiplayer ? "Playing Multiplayer" : "Playing Singleplayer";
-            if (lastDetails == details && lastState == state && lastPartyId == partyId && lastPartySize == partySize && lastPartyMax == partyMax) return;
 
-            lastDetails = details;
-            lastState = state;
-            lastPartyId = partyId;
-            lastPartySize = partySize;
-            lastPartyMax = partyMax;
-            client.UpdatePresence(details: details, state: state, partyId: partyId, partySize: partySize, partyMax: partyMax, buttons: Links, clearParty: partyId == null);
+            bool changed = details != sentDetails || state != sentState || partyId != sentPartyId || partySize != sentPartySize || partyMax != sentPartyMax;
+            bool republish = Interlocked.Exchange(ref republishPending, 0) == 1;
+            if (!republish && (!changed || now - lastSent < MinimumSendInterval)) return;
+
+            sentDetails = details;
+            sentState = state;
+            sentPartyId = partyId;
+            sentPartySize = partySize;
+            sentPartyMax = partyMax;
+            lastSent = now;
+            client.UpdatePresence(presence =>
+            {
+                presence.Details = details;
+                presence.State = state;
+                presence.Assets ??= new Assets();
+                presence.Assets.LargeImageKey = LargeImageKey;
+                presence.Assets.LargeImageText = LargeImageText;
+                presence.Party = partyId != null ? new Party { ID = partyId, Size = partySize, Max = partyMax } : null!;
+                presence.Buttons = Links;
+            });
         }
 
-        private ZoneData? ActiveZone()
+        private string? PartyIdFor(Room? room)
         {
-            foreach (ZoneData zone in zones)
-                if (zone.active) return zone;
-            return null;
+            string? roomName = room?.Name;
+            if (roomName == currentRoomName) return currentPartyId;
+            currentRoomName = roomName;
+            currentPartyId = roomName != null ? Guid.NewGuid().ToString("N") : null;
+            return currentPartyId;
         }
 
-        private string DetailsFor(ZoneData? zone)
+        private static string Details()
         {
-            string? sceneName = zone?.sceneName;
-            if (detailsComputed && sceneName == detailsSceneName) return cachedDetails;
-            cachedDetails = zone != null ? $"Exploring {ZoneDisplayName(sceneName)}" : DefaultDetails;
-            detailsSceneName = sceneName;
-            detailsComputed = true;
-            return cachedDetails;
+            string? map = MapName();
+            string activity = map != null ? $"{ActivityName()} in {map}" : ActivityName();
+            return ReplaySession.IsRecording ? $"{activity} · Recording" : activity;
         }
 
-        private static string ZoneDisplayName(string? sceneName)
+        private static string ActivityName()
         {
-            string name = (sceneName ?? string.Empty).Split('_')[0].TrimEnd('0', '1', '2', '3', '4', '5', '6', '7', '8', '9');
-            return name.Length > 0 ? DisplayNames.Humanize(name) : "Gorilla Tag";
+            if (ReplaySession.IsReplaying) return "Watching a replay";
+            return CameraManager.mode switch
+            {
+                CameraMode.Spectator => "Spectating",
+                CameraMode.Freecam => "Flying the free camera",
+                CameraMode.Web => "Casting with a camera web",
+                CameraMode.Camera => "Filming with the VR camera",
+                _ => "Playing"
+            };
         }
+
+        private static string State(Room? room)
+        {
+            ReplayPlayer? replay = ReplaySession.Player;
+            if (replay != null) return $"{ReplayTimeline.Format(replay.Recording.Duration)} recording";
+            if (room == null) return "Not in a lobby";
+            string visibility = room.IsVisible ? "Public lobby" : "Private room";
+            string? mode = GameModeName();
+            return mode != null ? $"{mode} · {visibility}" : visibility;
+        }
+
+        private static string? MapName()
+        {
+            ZoneManagement? zones = ZoneManagement.instance;
+            if (zones == null || zones.activeZones.Count == 0) return null;
+            return ZoneName(zones.activeZones[0]);
+        }
+
+        private static string? ZoneName(GTZone zone) => zone switch
+        {
+            GTZone.none => null,
+            GTZone.canyon => "Canyons",
+            GTZone.mountain => "Mountains",
+            GTZone.skyJungle => "Clouds",
+            GTZone.cave => "Caves",
+            GTZone.cityWithSkyJungle or GTZone.cityNoBuildings => "City",
+            GTZone.forestWithCity => "Forest",
+            GTZone.customMaps => "Virtual Stump",
+            GTZone.monkeBlocks or GTZone.monkeBlocksShared => "Monke Blocks",
+            GTZone.hoverboard => "Hoverpark",
+            GTZone.ghostReactor or GTZone.ghostReactorTunnel or GTZone.ghostReactorDrill => "Ghost Reactor",
+            _ => DisplayNames.Humanize(zone.ToString())
+        };
+
+        private static string? GameModeName()
+        {
+            GorillaGameManager? manager = GorillaGameManager.instance;
+            return manager != null ? GameModeName(manager.GameType()) : null;
+        }
+
+        private static string? GameModeName(GameModeType mode) => mode switch
+        {
+            GameModeType.None or GameModeType.Count => null,
+            GameModeType.HuntDown => "Hunt",
+            GameModeType.FreezeTag => "Freeze Tag",
+            GameModeType.PropHunt => "Prop Hunt",
+            GameModeType.InfectionCompetitive => "Competitive Infection",
+            GameModeType.SuperInfect => "Super Infection",
+            GameModeType.SuperCasual => "Super Casual",
+            _ => DisplayNames.Humanize(mode.ToString())
+        };
     }
 }

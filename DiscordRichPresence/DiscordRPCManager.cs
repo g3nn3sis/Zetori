@@ -19,7 +19,7 @@ namespace Zetori.DiscordRichPresence
             {
                 Log.Forget("discord-error");
                 Log.Info("Connected to Discord.");
-                if (CasterConfig.DiscordPresence.Value) DiscordRPCStateManager.SetLoadingPresence();
+                DiscordRPCStateManager.RequestRepublish();
             };
             Client.OnError += message => Log.WarningOnce("discord-error", $"Discord Rich Presence: {message}");
             Client.Initialize(ApplicationId);

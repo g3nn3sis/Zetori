@@ -1,6 +1,6 @@
 # Zetori
 
-Zetori is a free, open-source spectating mod for Gorilla Tag, built for casters. It turns the desktop view into a broadcast camera with first-person and orbit spectating, a freecam, nametags, a minimap, a player leaderboard, a closest-lava readout, a two-team scoreboard with a match timer, and Discord Rich Presence with a Get Zetori button linking to [zetori.dev](https://zetori.dev). Every feature is configured from in-game panels and saved between sessions, and whole setups can be stored as named presets.
+Zetori is a free, open-source spectating mod for Gorilla Tag, built for casters. It turns the desktop view into a broadcast camera with first-person and orbit spectating, a freecam, nametags, a minimap, a player leaderboard, a closest-lava readout, a two-team scoreboard with a match timer, and Discord Rich Presence showing your map, camera mode, game mode, public or private lobby and player count (never the room code), with a Get Zetori button linking to [zetori.dev](https://zetori.dev). Every feature is configured from in-game panels and saved between sessions, and whole setups can be stored as named presets.
 
 Zetori is a fan-made mod. It is not affiliated with or endorsed by Another Axiom.
 
