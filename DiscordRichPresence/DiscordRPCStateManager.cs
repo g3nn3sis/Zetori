@@ -4,6 +4,7 @@
 
 using Zetori.Base;
 using Zetori.UI;
+using DiscordRPC;
 using Photon.Pun;
 using Photon.Realtime;
 
@@ -12,6 +13,8 @@ namespace Zetori.DiscordRichPresence
     internal sealed class DiscordRPCStateManager : ObjectComponent
     {
         private const string DefaultDetails = "Exploring Gorilla Tag";
+
+        private static readonly Button[] Links = { new Button { Label = $"Get {PluginInfo.Name}", Url = PluginInfo.Website } };
 
         private ZoneData[] zones = Array.Empty<ZoneData>();
         private string? lastDetails;
@@ -30,7 +33,8 @@ namespace Zetori.DiscordRichPresence
                 details: $"Loading {PluginInfo.Name}",
                 state: $"v{PluginInfo.Version}",
                 largeImageKey: "large",
-                largeImageText: PluginInfo.Name);
+                largeImageText: PluginInfo.Name,
+                buttons: Links);
         }
 
         private void OnEnable() => ZoneManagement.OnZoneChange += OnZoneChange;
@@ -78,7 +82,7 @@ namespace Zetori.DiscordRichPresence
             lastPartyId = partyId;
             lastPartySize = partySize;
             lastPartyMax = partyMax;
-            client.UpdatePresence(details: details, state: state, partyId: partyId, partySize: partySize, partyMax: partyMax, clearParty: partyId == null);
+            client.UpdatePresence(details: details, state: state, partyId: partyId, partySize: partySize, partyMax: partyMax, buttons: Links, clearParty: partyId == null);
         }
 
         private ZoneData? ActiveZone()

@@ -9,6 +9,7 @@ namespace Zetori.Base
         internal const string GUID = "com.gennesis.zetori";
         internal const string Name = "Zetori";
         internal const string Version = "2.0.4";
+        internal const string Website = "https://zetori.dev";
         internal const string GameProcess = "Gorilla Tag.exe";
     }
 }
