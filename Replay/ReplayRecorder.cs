@@ -6,6 +6,7 @@ using Zetori.Base;
 using Zetori.Game;
 using Zetori.GameCamera.Modes;
 using Zetori.Player;
+using Photon.Voice;
 using UnityEngine;
 
 namespace Zetori.Replay
@@ -25,6 +26,7 @@ namespace Zetori.Replay
             internal ReplayActor Actor = null!;
             internal CosmeticCapture Cosmetics = null!;
             internal VoiceTap? Tap;
+            internal LocalVoiceTap? LocalTap;
             internal bool Tagged;
         }
 
@@ -280,8 +282,34 @@ namespace Zetori.Replay
                     int count = binding.Tap.Drain(ref voiceBuffer);
                     binding.Actor.Voice.Append(audioNow, voiceBuffer, count, sampleRate);
                 }
+                if (binding.Rig.isOfflineVRRig) DrainLocalVoice(binding, audioNow);
                 DrainCosmeticSounds(binding, audioNow, sampleRate);
             }
+        }
+
+        private void DrainLocalVoice(Binding binding, float audioNow)
+        {
+            try
+            {
+                LocalVoice? current = LocalVoiceTap.CurrentVoice();
+                if (binding.LocalTap != null && !binding.LocalTap.IsAttachedTo(current))
+                {
+                    FlushLocalVoice(binding, audioNow);
+                    binding.LocalTap.Detach();
+                    binding.LocalTap = null;
+                    binding.Actor.Voice.Close();
+                }
+                binding.LocalTap ??= LocalVoiceTap.AttachTo(current);
+                FlushLocalVoice(binding, audioNow);
+            }
+            catch (Exception e) { Log.ExceptionOnce("replay-local-voice", e, "Recording the local microphone failed"); }
+        }
+
+        private void FlushLocalVoice(Binding binding, float audioNow)
+        {
+            if (binding.LocalTap == null) return;
+            int count = binding.LocalTap.Drain(ref voiceBuffer);
+            binding.Actor.Voice.Append(audioNow, voiceBuffer, count, binding.LocalTap.SampleRate);
         }
 
         private void DrainCosmeticSounds(Binding binding, float audioNow, int sampleRate)
@@ -296,6 +324,7 @@ namespace Zetori.Replay
             bindings.Remove(key);
             binding.Actor.Voice.Close();
             if (binding.Tap != null) UnityEngine.Object.Destroy(binding.Tap);
+            binding.LocalTap?.Detach();
             binding.Cosmetics.Dispose();
             if (announce) recording.Events.Add(new ReplayEvent(now, ReplayEventKind.Left, binding.Actor.Id));
         }

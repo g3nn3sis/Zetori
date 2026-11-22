@@ -50,6 +50,8 @@
 		<!-- Photon networking (Photon.Pun: PhotonNetwork, rooms, players) -->
 		<Reference Include="Photon3Unity3D" HintPath="$(GameAssemblyPath)\Photon3Unity3D.dll" />
 		<Reference Include="PhotonRealtime" HintPath="$(GameAssemblyPath)\PhotonRealtime.dll" />
+		<Reference Include="PhotonVoice" HintPath="$(GameAssemblyPath)\PhotonVoice.dll" />
+		<Reference Include="PhotonVoice.API" HintPath="$(GameAssemblyPath)\PhotonVoice.API.dll" />
 		<Reference Include="PhotonUnityNetworking" HintPath="$(GameAssemblyPath)\PhotonUnityNetworking.dll" />
 
 		<!-- Unity packages -->
