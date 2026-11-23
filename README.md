@@ -55,6 +55,25 @@ When a headset is active, the panels start closed (`Esc` still opens them) and Z
 | Touch the flip button under the screen (Handheld) | Switch between the rear view and the view from the screen side |
 | Touch `COSMETICS` right of the flip button (First Person) | Show or hide your own face and cosmetics in the first-person view; the button is lit while they are shown |
 
+## In-game panel
+
+With a headset active, double-press the left primary button (`X`) and a panel pops up in front of you that you work with your fingers. Its home page opens every desktop panel (room, camera, overlays, scoreboard, tag manager, player, settings, themes, presets, replays and the rest), plus three pages made for playing:
+
+- **Players**: everyone in the room with their FPS, platform and tag state. Tap a name to spectate them, or toggle **Mute** (the same mute as the game's scoreboard).
+- **VR Camera**: stream from the camera tablet, pick its shot, show your cosmetics in first person and set the field of view.
+- **Panel**: size, whether it follows you, haptics and whether it shows on stream (off by default, so only your headset sees it), plus **Bring Here** and **Close**.
+
+The footer shows the room, player count, ping, frame rate and time. Other players cannot see the panel.
+
+| VR input | Action |
+| --- | --- |
+| Double-press the left primary button (`X`) | Open the panel in front of you, or close it |
+| Touch a button | Press it; hold it to do its desktop right-click action, such as renaming a preset or replay |
+| Touch and slide along a slider | Set its value; the `-` and `+` beside it step in small increments |
+| Touch a text field | Type with the keyboard that appears under it; `Done` closes it |
+| Touch and slide the bar on the right | Scroll a page that does not fit |
+| Grip either side handle | Move the panel; let go and it stays there, travelling with you while **Follow Me** is on |
+
 ## Controls
 
 | Input | Action |

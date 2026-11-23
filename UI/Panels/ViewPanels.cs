@@ -14,7 +14,7 @@ namespace Zetori.UI.Panels
 {
     internal static class ViewPanels
     {
-        internal static void DrawCamera(Panel panel)
+        internal static void DrawCamera(IPanelSurface panel)
         {
             panel.Label($"Mode: {CameraManager.mode}");
             panel.HorizontalArea(() =>
@@ -34,7 +34,7 @@ namespace Zetori.UI.Panels
             DrawSmoothing(panel);
         }
 
-        private static void DrawLens(Panel panel)
+        private static void DrawLens(IPanelSurface panel)
         {
             CameraManager.fieldOfView = panel.Slider("Field Of View", CameraManager.fieldOfView, 10f, 130f, "F0", "°");
             panel.HorizontalArea(() =>
@@ -46,7 +46,7 @@ namespace Zetori.UI.Panels
             CameraManager.nearClipPlane = panel.Slider("Near Clip", CameraManager.nearClipPlane, 0.01f, 0.99f);
         }
 
-        private static void DrawFollow(Panel panel)
+        private static void DrawFollow(IPanelSurface panel)
         {
             CasterConfig.HeadDistance.Value = panel.Slider("Head Distance", CasterConfig.HeadDistance.Value, 0f, 0.99f);
             panel.HorizontalArea(() =>
@@ -56,20 +56,20 @@ namespace Zetori.UI.Panels
             });
         }
 
-        private static void DrawOrbit(Panel panel)
+        private static void DrawOrbit(IPanelSurface panel)
         {
             CasterConfig.OrbitSpeed.Value = panel.Slider("Orbit Speed", CasterConfig.OrbitSpeed.Value, 10f, 600f, "F0", "°/s");
             CasterConfig.OrbitAutoRotate.Value = panel.Toggle("Auto Orbit", CasterConfig.OrbitAutoRotate.Value);
             panel.Button("Reset Orbit", SpectatorCamera.ResetOrbit);
         }
 
-        private static void DrawSmoothing(Panel panel)
+        private static void DrawSmoothing(IPanelSurface panel)
         {
             CasterConfig.PositionSmoothing.Value = panel.Slider("Position Smoothing", CasterConfig.PositionSmoothing.Value, 0f, CasterConfig.MaximumPositionSmoothing);
             CasterConfig.RotationSmoothing.Value = panel.Slider("Rotation Smoothing", CasterConfig.RotationSmoothing.Value, 0f, CasterConfig.MaximumRotationSmoothing);
         }
 
-        internal static void DrawWasd(Panel panel)
+        internal static void DrawWasd(IPanelSurface panel)
         {
             if (CameraManager.mode == CameraMode.Freecam) panel.Label("WASD is off in Freecam mode");
             else GorillaController.wasd = panel.Toggle("WASD", GorillaController.wasd);
@@ -77,7 +77,7 @@ namespace Zetori.UI.Panels
             DrawFlightSpeeds(panel);
         }
 
-        internal static void DrawFreecam(Panel panel)
+        internal static void DrawFreecam(IPanelSurface panel)
         {
             if (CameraManager.ActiveMode != CameraMode.Freecam) panel.Label("Camera is not in Freecam mode");
             CasterConfig.FreecamMovementSpeed.Value = panel.Slider("Movement Speed", CasterConfig.FreecamMovementSpeed.Value, 1f, 50f, "F1", " m/s");
@@ -89,7 +89,7 @@ namespace Zetori.UI.Panels
 
         private static void TeleportToFreecam() => RigTeleport.HeadTo(FreecamCamera.Position, FreecamCamera.Rotation);
 
-        internal static void DrawMiniMap(Panel panel)
+        internal static void DrawMiniMap(IPanelSurface panel)
         {
             MiniMap.enabled = panel.Toggle("MiniMap", MiniMap.enabled);
             MiniMap.draggable = panel.Toggle("Draggable", MiniMap.draggable);
@@ -99,7 +99,7 @@ namespace Zetori.UI.Panels
             panel.Button("Reset Position", MiniMap.ResetPosition);
         }
 
-        private static void DrawFlightSpeeds(Panel panel)
+        private static void DrawFlightSpeeds(IPanelSurface panel)
         {
             GorillaController.MovementSpeed = panel.Slider("Movement Speed", GorillaController.MovementSpeed, 5f, 35f, "F1", " m/s");
             GorillaController.MouseSensitivity = panel.Slider("Mouse Sensitivity", GorillaController.MouseSensitivity, 0.05f, 2f);

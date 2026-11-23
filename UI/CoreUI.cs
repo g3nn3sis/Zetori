@@ -6,6 +6,7 @@ using Zetori.Base;
 using Zetori.GameCamera;
 using Zetori.GameCamera.Vr;
 using Zetori.Replay;
+using Zetori.UI.InGame;
 using UnityEngine;
 
 namespace Zetori.UI
@@ -15,6 +16,7 @@ namespace Zetori.UI
         internal const float FadeDuration = 0.18f;
 
         private PanelOrchestrator? panels;
+        private InGamePanel? inGamePanel;
         private ReplayTimeline? timeline;
         private float panelProgress;
         private float timelineProgress;
@@ -38,6 +40,14 @@ namespace Zetori.UI
             panelProgress = Mathf.MoveTowards(panelProgress, Visible ? 1f : 0f, step);
             timelineProgress = Mathf.MoveTowards(timelineProgress, TimelineVisible ? 1f : 0f, step);
             if (panelProgress > 0f) panels.Tick(Time.unscaledDeltaTime, Fade(timelineProgress));
+        }
+
+        internal void LateUpdate()
+        {
+            if (panels == null) return;
+            inGamePanel ??= new InGamePanel(panels);
+            try { inGamePanel.Tick(); }
+            catch (Exception e) { Log.ExceptionOnce("in-game-panel", e, "Updating the in-game panel failed"); }
         }
 
         private void ApplyDefaultPreset(PanelOrchestrator orchestrator)
@@ -107,6 +117,8 @@ namespace Zetori.UI
 
         protected override void OnDestroy()
         {
+            inGamePanel?.Dispose();
+            inGamePanel = null;
             panels?.Dispose();
             panels = null;
             timeline?.Dispose();

@@ -45,6 +45,7 @@ GameCamera/      Spectator/free camera: CameraManager, wrapper, smoothing, Modes
 Replay/          Replay recorder and playback: ReplaySession, recorder, puppets, voice capture
 UI/              IMGUI panel system: CoreUI, PanelOrchestrator, PanelLayout, PanelCatalog, Panel, theming, scaling
 UI/Panels/       What each panel draws, one class per column group (Main, View, Overlays, World, Setup, Replay)
+UI/InGame/       In-game VR panel: world-space surface, layout, finger input, keyboard, pages, model
 DiscordRichPresence/  Mod-side Discord integration
 Patches/         Harmony patches, including ObjectPatcher which creates the feature components
 External/        Vendored third-party source (DiscordRPC) — do not modify
@@ -92,6 +93,9 @@ newline at end of file. Keep related code grouped and ordered the same way acros
   inside panels. With `CasterConfig.SnapPanels` on (the default), panels sit in a column slot (`PanelLayout`, pure logic with no Unity types so
   it can be exercised outside the game) and never overlap; dragging one reorders the slots live. With it off, panels stay where they are dropped and may overlap. A new panel needs a `PanelId`, a title and default column in `PanelCatalog`, and a draw
   method wired in `PanelContent.For`. Never rename a `PanelId` member — it is the saved `Layout` key.
+- Panel content draws against `IPanelSurface`, implemented by the desktop `Panel` and the in-game VR
+  `InGameSurface`, so every desktop panel also appears on the in-game panel's home page. Draw methods
+  must only use the interface; anything desktop-specific breaks the in-game panel.
 - A canvas HUD overlay subclasses `HudOverlay` (`Active`, `Prefab`, `Bind`, `Refresh`); the base owns
   building, showing, hiding, font and teardown.
 - Features are auto-discovered by reflection — a new `ObjectComponent` subclass runs with no

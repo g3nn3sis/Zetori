@@ -18,7 +18,7 @@ namespace Zetori.UI.Panels
         private string? renaming;
         private string renameText = string.Empty;
 
-        internal void Draw(Panel panel)
+        internal void Draw(IPanelSurface panel)
         {
             if (ReplaySession.Player is ReplayPlayer replay)
             {
@@ -37,7 +37,7 @@ namespace Zetori.UI.Panels
             DrawSavedReplays(panel);
         }
 
-        private void DrawSavedReplays(Panel panel)
+        private void DrawSavedReplays(IPanelSurface panel)
         {
             string[] names = ReplaySession.SavedReplays;
             if (names.Length == 0)
@@ -55,7 +55,7 @@ namespace Zetori.UI.Panels
             });
         }
 
-        private void DrawReplayRow(Panel panel, string name)
+        private void DrawReplayRow(IPanelSurface panel, string name)
         {
             panel.HorizontalArea(() =>
             {
@@ -64,7 +64,7 @@ namespace Zetori.UI.Panels
             });
         }
 
-        private void DrawRenameRow(Panel panel, string name)
+        private void DrawRenameRow(IPanelSurface panel, string name)
         {
             panel.HorizontalArea(() =>
             {
@@ -85,7 +85,7 @@ namespace Zetori.UI.Panels
             if (ReplaySession.Rename(name, renameText.Trim())) renaming = null;
         }
 
-        private void DrawPlayback(Panel panel, ReplayPlayer replay)
+        private void DrawPlayback(IPanelSurface panel, ReplayPlayer replay)
         {
             panel.Label($"{ReplayTimeline.Format(replay.Cursor)} / {ReplayTimeline.Format(replay.Recording.Duration)}");
             panel.HorizontalArea(() =>

@@ -6,30 +6,30 @@ using System.IO;
 using System.Text;
 using UnityEngine;
 
-namespace Zetori.GameCamera.Vr
+namespace Zetori.Game
 {
-    internal static class VrCameraMeshFile
+    internal static class ModelFile
     {
         private const string Magic = "ZMDL";
         private const int SupportedVersion = 1;
 
-        internal static Dictionary<string, VrCameraMeshPart> Read(byte[] data)
+        internal static Dictionary<string, ModelPart> Read(byte[] data, string modelName)
         {
             using var reader = new BinaryReader(new MemoryStream(data), Encoding.ASCII);
-            if (new string(reader.ReadChars(Magic.Length)) != Magic) throw new InvalidDataException("The VR camera model has an unknown format.");
+            if (new string(reader.ReadChars(Magic.Length)) != Magic) throw new InvalidDataException($"The {modelName} model has an unknown format.");
             int version = reader.ReadInt32();
-            if (version != SupportedVersion) throw new InvalidDataException($"The VR camera model has unsupported version {version}.");
+            if (version != SupportedVersion) throw new InvalidDataException($"The {modelName} model has unsupported version {version}.");
             int partCount = reader.ReadInt32();
-            var parts = new Dictionary<string, VrCameraMeshPart>(partCount);
+            var parts = new Dictionary<string, ModelPart>(partCount);
             for (int i = 0; i < partCount; i++)
             {
                 string name = reader.ReadString();
-                parts[name] = ReadPart(reader, name);
+                parts[name] = ReadPart(reader, $"{modelName} {name}");
             }
             return parts;
         }
 
-        private static VrCameraMeshPart ReadPart(BinaryReader reader, string name)
+        private static ModelPart ReadPart(BinaryReader reader, string meshName)
         {
             Vector3 pivot = ReadVector3(reader);
             int vertexCount = reader.ReadInt32();
@@ -45,9 +45,9 @@ namespace Zetori.GameCamera.Vr
             }
             var indices = new int[indexCount];
             for (int i = 0; i < indexCount; i++) indices[i] = reader.ReadInt32();
-            var mesh = new Mesh { name = $"_Zetori VR Camera {name}", vertices = positions, normals = normals, uv = uvs, triangles = indices };
+            var mesh = new Mesh { name = $"_Zetori {meshName}", vertices = positions, normals = normals, uv = uvs, triangles = indices };
             mesh.RecalculateBounds();
-            return new VrCameraMeshPart(pivot, mesh);
+            return new ModelPart(pivot, mesh);
         }
 
         private static Vector3 ReadVector3(BinaryReader reader) =>

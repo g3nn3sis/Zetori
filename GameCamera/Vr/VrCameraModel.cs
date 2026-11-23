@@ -13,6 +13,7 @@ namespace Zetori.GameCamera.Vr
 {
     internal sealed class VrCameraModel : IDisposable
     {
+        private const string ModelName = "VR Camera";
         private const string MeshResource = "Zetori.Models.vr_camera.zmdl";
         private const string TextureResource = "Zetori.Models.vr_camera.png";
         private const string TextureKeyword = "_USE_TEXTURE";
@@ -235,8 +236,8 @@ namespace Zetori.GameCamera.Vr
         private void Build()
         {
             byte[] meshData = EmbeddedResources.Read(MeshResource) ?? throw new FileNotFoundException("The VR camera model is missing.", MeshResource);
-            Dictionary<string, VrCameraMeshPart> parts = VrCameraMeshFile.Read(meshData);
-            foreach (VrCameraMeshPart part in parts.Values) meshes.Add(part.Mesh);
+            Dictionary<string, ModelPart> parts = ModelFile.Read(meshData, ModelName);
+            foreach (ModelPart part in parts.Values) meshes.Add(part.Mesh);
             bodyTexture = AssetManager.LoadTexture(TextureResource, true) ?? throw new FileNotFoundException("The VR camera texture is missing.", TextureResource);
 
             bodyTint = new VrCameraBodyTint(bodyTexture);
@@ -273,7 +274,7 @@ namespace Zetori.GameCamera.Vr
             }
         }
 
-        private void BuildFlipButton(Dictionary<string, VrCameraMeshPart> parts)
+        private void BuildFlipButton(Dictionary<string, ModelPart> parts)
         {
             flipAvailable = CreateMaterial(Color.white, IconDrawOrder);
             flipUnavailable = CreateMaterial(FlipUnavailableColor, IconDrawOrder);
@@ -285,14 +286,14 @@ namespace Zetori.GameCamera.Vr
             FlipButton = new VrCameraButton(cap.transform, cap);
         }
 
-        private VrCameraButton Button(Dictionary<string, VrCameraMeshPart> parts, string partName, string label)
+        private VrCameraButton Button(Dictionary<string, ModelPart> parts, string partName, string label)
         {
             MeshRenderer renderer = Place(parts[partName], partName, idleButton, root.transform);
             Text("label", renderer.transform, LabelOffset, LabelSize, LabelFontSize, TextAlignmentOptions.Center).text = label;
             return new VrCameraButton(renderer.transform, renderer);
         }
 
-        private static MeshRenderer Place(VrCameraMeshPart part, string name, Material material, Transform parent)
+        private static MeshRenderer Place(ModelPart part, string name, Material material, Transform parent)
         {
             var partObject = new GameObject(name);
             partObject.transform.SetParent(parent, false);

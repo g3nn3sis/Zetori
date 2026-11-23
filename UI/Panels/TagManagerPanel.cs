@@ -16,7 +16,7 @@ namespace Zetori.UI.Panels
         private Vector2 scroll;
         private float nextRefresh;
 
-        internal void Draw(Panel panel)
+        internal void Draw(IPanelSurface panel)
         {
             panel.Label(TagManagerControl.Status);
             bool master = TagManagerControl.CanControl;
@@ -25,7 +25,7 @@ namespace Zetori.UI.Panels
             if (controlling) DrawControls(panel, master);
         }
 
-        private void DrawControls(Panel panel, bool master)
+        private void DrawControls(IPanelSurface panel, bool master)
         {
             bool localFirst = CasterConfig.TagManagerLocalFirst.Value;
             CasterConfig.TagManagerLocalFirst.Value = panel.Toggle("Me First Each Round", localFirst, interactable: master);
@@ -45,7 +45,7 @@ namespace Zetori.UI.Panels
             DrawPlayers(panel, readyToTag);
         }
 
-        private void DrawPlayers(Panel panel, bool interactable)
+        private void DrawPlayers(IPanelSurface panel, bool interactable)
         {
             RefreshRows();
             if (rows.Length == 0)

@@ -8,7 +8,7 @@ using UnityEngine.InputSystem;
 
 namespace Zetori.UI
 {
-    internal sealed class Panel : IDisposable
+    internal sealed class Panel : IPanelSurface, IDisposable
     {
         private const float Inset = 8f;
         internal const float HeaderHeight = 24f;
@@ -53,7 +53,7 @@ namespace Zetori.UI
         private float releasedFor;
         private float builtScale;
         private int cornerPixels;
-        private Action<Panel>? content;
+        private Action<IPanelSurface>? content;
         private Color layerColor = Color.white;
         private bool layerEnabled = true;
         private bool disposed;
@@ -106,7 +106,7 @@ namespace Zetori.UI
             return Mathf.Abs(next - target) < HeightSnap ? target : next;
         }
 
-        internal void Draw(Action<Panel> drawContent)
+        internal void Draw(Action<IPanelSurface> drawContent)
         {
             if (disposed) return;
             content = drawContent;
@@ -265,9 +265,9 @@ namespace Zetori.UI
             return new Rect(row.x + 1f, row.y + RowGap * 0.5f, Mathf.Max(1f, row.width - 2f), height);
         }
 
-        internal void Button(string text, Action? onClick, bool interactable = true) => DrawButton(text, onClick, null, interactable, buttonStyle!);
+        public void Button(string text, Action? onClick, bool interactable = true) => DrawButton(text, onClick, null, interactable, buttonStyle!);
 
-        internal void Button(string text, Action? onClick, Action onRightClick, bool interactable = true) => DrawButton(text, onClick, onRightClick, interactable, buttonStyle!);
+        public void Button(string text, Action? onClick, Action onRightClick, bool interactable = true) => DrawButton(text, onClick, onRightClick, interactable, buttonStyle!);
 
         private bool DrawButton(string text, Action? onClick, Action? onRightClick, bool interactable, GUIStyle style)
         {
@@ -287,10 +287,10 @@ namespace Zetori.UI
             return clicked;
         }
 
-        internal bool Toggle(string label, bool value, string on = "On", string off = "Off", bool interactable = true) =>
+        public bool Toggle(string label, bool value, string on = "On", string off = "Off", bool interactable = true) =>
             DrawButton($"{label}: {(value ? on : off)}", null, null, interactable, buttonStyle!) ? !value : value;
 
-        internal void Label(string text)
+        public void Label(string text)
         {
             GUI.Label(NextRect(Mathf.Max(LabelHeight, WrappedHeight(text, ContentWidth - 2f))), text, labelStyle);
         }
@@ -305,21 +305,21 @@ namespace Zetori.UI
             return height;
         }
 
-        internal float Slider(string label, float value, float min, float max, string format = "F2", string unit = "")
+        public float Slider(string label, float value, float min, float max, string format = "F2", string unit = "")
         {
             Label($"{label}: {value.ToString(format)}{unit}");
             Rect area = NextRect(SliderHeight);
             return GUI.HorizontalSlider(new Rect(area.x + 2f, area.y + 2f, area.width - 4f, area.height - 4f), value, min, max);
         }
 
-        internal string TextField(string text, int maxLength, Func<string, string>? normalize = null)
+        public string TextField(string text, int maxLength, Func<string, string>? normalize = null)
         {
             fieldStyle!.fontSize = ControlFontSize;
             string value = GUI.TextField(NextRect(ButtonHeight), text ?? string.Empty, maxLength, fieldStyle);
             return normalize != null ? normalize(value) : value;
         }
 
-        internal void ColorSwatch(Color color)
+        public void ColorSwatch(Color color)
         {
             Rect area = NextRect(ButtonHeight);
             Color previous = GUI.color;
@@ -330,14 +330,14 @@ namespace Zetori.UI
             GUI.color = previous;
         }
 
-        internal void HorizontalArea(Action draw)
+        public void HorizontalArea(Action draw)
         {
             GUILayout.BeginHorizontal(GUILayout.ExpandWidth(true));
             try { draw(); }
             finally { GUILayout.EndHorizontal(); }
         }
 
-        internal Vector2 ScrollArea(Vector2 scroll, float maximumHeight, int buttonRows, Action draw)
+        public Vector2 ScrollArea(Vector2 scroll, float maximumHeight, int buttonRows, Action draw)
         {
             float height = Mathf.Min(maximumHeight, buttonRows * (ButtonHeight + RowGap));
             scroll = GUILayout.BeginScrollView(scroll, false, false, GUIStyle.none, GUIStyle.none, GUILayout.Height(height));

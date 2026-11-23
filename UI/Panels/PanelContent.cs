@@ -20,7 +20,7 @@ namespace Zetori.UI.Panels
             setup = new SetupPanels(owner);
         }
 
-        internal Action<Panel> For(PanelId id) => id switch
+        internal Action<IPanelSurface> For(PanelId id) => id switch
         {
             PanelId.Main => main.Draw,
             PanelId.Replay => replay.Draw,
@@ -45,6 +45,6 @@ namespace Zetori.UI.Panels
             _ => DrawNothing
         };
 
-        private static void DrawNothing(Panel panel) { }
+        private static void DrawNothing(IPanelSurface panel) { }
     }
 }

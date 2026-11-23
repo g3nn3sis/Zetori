@@ -9,7 +9,7 @@ namespace Zetori.UI.Panels
 {
     internal static class FontPicker
     {
-        internal static int Draw(Panel panel, int fontIndex)
+        internal static int Draw(IPanelSurface panel, int fontIndex)
         {
             int result = fontIndex;
             panel.Label($"Font: {AssetManager.FontName(fontIndex)}");

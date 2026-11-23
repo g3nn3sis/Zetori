@@ -24,7 +24,7 @@ namespace Zetori.UI.Panels
             }
         }
 
-        internal void Draw(Panel panel)
+        internal void Draw(IPanelSurface panel)
         {
             KeyBind[] binds = KeyBinds.All;
             scroll = panel.ScrollArea(scroll, ListHeight, binds.Length, () =>

@@ -10,7 +10,7 @@ namespace Zetori.UI.Panels
     {
         private static readonly Action[] Cycle = BuildActions();
 
-        internal static void Draw(Panel panel, HudSlot slot) =>
+        internal static void Draw(IPanelSurface panel, HudSlot slot) =>
             panel.Button($"Position: {HudPositions.Name(HudLayout.PositionOf(slot))}", Cycle[(int)slot]);
 
         private static Action[] BuildActions()

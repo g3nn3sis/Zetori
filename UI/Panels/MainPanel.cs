@@ -15,7 +15,7 @@ namespace Zetori.UI.Panels
 
         internal MainPanel(PanelOrchestrator owner) => this.owner = owner;
 
-        internal void Draw(Panel panel)
+        internal void Draw(IPanelSurface panel)
         {
             panel.Label(RoomStatus());
             panel.Label("Room Code");

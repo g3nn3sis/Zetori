@@ -99,6 +99,11 @@
 		<EmbeddedResource Include="Resources\Models\vr_camera.png" LogicalName="Zetori.Models.vr_camera.png" />
 	</ItemGroup>
 
+	<!-- In-game VR panel body exported from Resources\Models\in_game_panel.blend (export script is stored in the .blend). -->
+	<ItemGroup>
+		<EmbeddedResource Include="Resources\Models\in_game_panel.zmdl" LogicalName="Zetori.Models.in_game_panel.zmdl" />
+	</ItemGroup>
+
 	<!-- HUD asset bundle (leaderboard + closest-lava canvases), authored in Unity 6000.2.9f1 to match
 	     Gorilla Tag and embedded in the DLL so it loads offline through HudAssets. -->
 	<ItemGroup>

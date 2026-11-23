@@ -21,7 +21,7 @@ namespace Zetori.UI.Panels
         private Action[] webDelete = Array.Empty<Action>();
         private bool websDirty = true;
 
-        internal void Draw(Panel panel)
+        internal void Draw(IPanelSurface panel)
         {
             CameraWeb.Sync();
             if (websDirty) RefreshWebs();
@@ -40,7 +40,7 @@ namespace Zetori.UI.Panels
             return $"{web}: node {Mathf.Min(WebCamera.ActiveNode, nodes - 1) + 1} of {nodes}";
         }
 
-        private static void DrawSelection(Panel panel, int nodes)
+        private static void DrawSelection(IPanelSurface panel, int nodes)
         {
             WebCamera.Dynamic = panel.Toggle("Selection", WebCamera.Dynamic, "Dynamic", "Manual");
             if (WebCamera.Dynamic) return;
@@ -51,7 +51,7 @@ namespace Zetori.UI.Panels
             });
         }
 
-        private static void DrawEditing(Panel panel, int nodes)
+        private static void DrawEditing(IPanelSurface panel, int nodes)
         {
             bool editing = WebCamera.Editing;
             panel.Button($"Edit Nodes: {(editing ? "On" : "Off")}", () => WebCamera.SetEditing(!editing));
@@ -62,7 +62,7 @@ namespace Zetori.UI.Panels
             panel.Button("Clear Nodes", CameraWeb.Clear, nodes > 0);
         }
 
-        private void DrawFiles(Panel panel, int nodes)
+        private void DrawFiles(IPanelSurface panel, int nodes)
         {
             webName = panel.TextField(webName, WebNameLength, Presets.Sanitize);
             panel.Button("Save Web", SaveWeb, webName.Trim().Length > 0 && nodes > 0);

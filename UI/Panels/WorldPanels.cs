@@ -28,7 +28,7 @@ namespace Zetori.UI.Panels
             }
         }
 
-        internal static void DrawTime(Panel panel)
+        internal static void DrawTime(IPanelSurface panel)
         {
             panel.HorizontalArea(() =>
             {
@@ -47,7 +47,7 @@ namespace Zetori.UI.Panels
             });
         }
 
-        internal void DrawMapLoader(Panel panel)
+        internal void DrawMapLoader(IPanelSurface panel)
         {
             mapScroll = panel.ScrollArea(mapScroll, Panel.ListHeight, zoneButtons.Length, () =>
             {

@@ -22,7 +22,7 @@ namespace Zetori.UI
 
         private readonly Panel[] panels = new Panel[PanelCount];
         private readonly ConfigEntry<string>[] positions = new ConfigEntry<string>[PanelCount];
-        private readonly Action<Panel>[] drawContent = new Action<Panel>[PanelCount];
+        private readonly Action<IPanelSurface>[] drawContent = new Action<IPanelSurface>[PanelCount];
         private readonly PanelLayout layout = new PanelLayout(PanelCount);
         private readonly int[] columnOf = new int[PanelCount];
         private readonly float[] rowOf = new float[PanelCount];

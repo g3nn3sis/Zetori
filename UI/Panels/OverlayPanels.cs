@@ -12,7 +12,7 @@ namespace Zetori.UI.Panels
     {
         private const int TeamNameLength = 16;
 
-        internal static void DrawNameTags(Panel panel)
+        internal static void DrawNameTags(IPanelSurface panel)
         {
             NameTag.enabled = panel.Toggle("NameTags", NameTag.enabled);
             NameTag.usePlayerColor = panel.Toggle("Player Color", NameTag.usePlayerColor);
@@ -22,7 +22,7 @@ namespace Zetori.UI.Panels
             NameTag.currentFontIndex = FontPicker.Draw(panel, NameTag.currentFontIndex);
         }
 
-        internal static void DrawLeaderboard(Panel panel)
+        internal static void DrawLeaderboard(IPanelSurface panel)
         {
             Leaderboard.enabled = panel.Toggle("Leaderboard", Leaderboard.enabled);
             CasterConfig.LeaderboardPlatformIcons.Value = panel.Toggle("Platform Icons", CasterConfig.LeaderboardPlatformIcons.Value);
@@ -32,7 +32,7 @@ namespace Zetori.UI.Panels
             DrawHudFont(panel);
         }
 
-        internal static void DrawScoreboard(Panel panel)
+        internal static void DrawScoreboard(IPanelSurface panel)
         {
             Scoreboard.enabled = panel.Toggle("Scoreboard", Scoreboard.enabled);
             PositionPicker.Draw(panel, HudSlot.Scoreboard);
@@ -50,14 +50,14 @@ namespace Zetori.UI.Panels
             DrawHudFont(panel);
         }
 
-        internal static void DrawClosestLava(Panel panel)
+        internal static void DrawClosestLava(IPanelSurface panel)
         {
             ClosestLava.enabled = panel.Toggle("Closest Lava", ClosestLava.enabled);
             DrawPlacement(panel, CasterConfig.ClosestLavaScale, CasterConfig.ClosestLavaOffsetX, CasterConfig.ClosestLavaOffsetY);
             DrawHudFont(panel);
         }
 
-        internal static void DrawKillFeed(Panel panel)
+        internal static void DrawKillFeed(IPanelSurface panel)
         {
             KillFeed.enabled = panel.Toggle("Kill Feed", KillFeed.enabled);
             PositionPicker.Draw(panel, HudSlot.KillFeed);
@@ -65,7 +65,7 @@ namespace Zetori.UI.Panels
             DrawHudFont(panel);
         }
 
-        private static void DrawTeam(Panel panel, Scoreboard.Team team, ConfigEntry<string> name, ConfigEntry<int> score)
+        private static void DrawTeam(IPanelSurface panel, Scoreboard.Team team, ConfigEntry<string> name, ConfigEntry<int> score)
         {
             name.Value = panel.TextField(name.Value, TeamNameLength);
             panel.HorizontalArea(() =>
@@ -75,13 +75,13 @@ namespace Zetori.UI.Panels
             });
         }
 
-        private static void DrawPlacement(Panel panel, ConfigEntry<float> scale, ConfigEntry<float> offsetX, ConfigEntry<float> offsetY)
+        private static void DrawPlacement(IPanelSurface panel, ConfigEntry<float> scale, ConfigEntry<float> offsetX, ConfigEntry<float> offsetY)
         {
             scale.Value = panel.Slider("Scale", scale.Value, 0.5f, 2f, "F2", "x");
             offsetX.Value = panel.Slider("Offset X", offsetX.Value, -800f, 800f, "F0", "px");
             offsetY.Value = panel.Slider("Offset Y", offsetY.Value, -500f, 500f, "F0", "px");
         }
 
-        private static void DrawHudFont(Panel panel) => CasterConfig.HudFont.Value = FontPicker.Draw(panel, CasterConfig.HudFont.Value);
+        private static void DrawHudFont(IPanelSurface panel) => CasterConfig.HudFont.Value = FontPicker.Draw(panel, CasterConfig.HudFont.Value);
     }
 }

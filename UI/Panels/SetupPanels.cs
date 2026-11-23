@@ -47,7 +47,7 @@ namespace Zetori.UI.Panels
             previousVrDefault = () => StepDefaultPreset(PresetPlatform.Vr, -1);
         }
 
-        internal static void DrawPlayer(Panel panel)
+        internal static void DrawPlayer(IPanelSurface panel)
         {
             string playerName = panel.TextField(CasterConfig.PlayerName.Value, LocalPlayerManager.MaxNameLength, LocalPlayerManager.NormalizeName);
             CasterConfig.PlayerName.Value = playerName;
@@ -61,7 +61,7 @@ namespace Zetori.UI.Panels
             panel.Button($"Apply Color{wait}", LocalPlayerManager.ChangeColor, cooldown <= 0f);
         }
 
-        internal static void DrawSettings(Panel panel)
+        internal static void DrawSettings(IPanelSurface panel)
         {
             LocalPlayerManager.microphoneStatus = panel.Toggle("Microphone", LocalPlayerManager.microphoneStatus, "All Chat", "Push To Talk");
             CameraManager.audioListener = panel.Toggle("Audio Listener", CameraManager.audioListener);
@@ -74,7 +74,7 @@ namespace Zetori.UI.Panels
             DrawRigExaggeration(panel);
         }
 
-        private static void DrawRigExaggeration(Panel panel)
+        private static void DrawRigExaggeration(IPanelSurface panel)
         {
             ArmExaggeration.Enabled = panel.Toggle("Rig Exaggeration", ArmExaggeration.Enabled);
             if (!ArmExaggeration.Enabled) return;
@@ -82,14 +82,14 @@ namespace Zetori.UI.Panels
             if (ReplaySession.IsRecording) panel.Label("Paused while recording");
         }
 
-        internal void DrawUiControl(Panel panel)
+        internal void DrawUiControl(IPanelSurface panel)
         {
             DrawUiScale(panel);
             CasterConfig.SnapPanels.Value = panel.Toggle("Panel Snapping", CasterConfig.SnapPanels.Value);
             DrawThemes(panel);
         }
 
-        private static void DrawUiScale(Panel panel)
+        private static void DrawUiScale(IPanelSurface panel)
         {
             panel.Label($"UI Scale: {UiScale.Multiplier:F2}x");
             panel.HorizontalArea(() =>
@@ -99,7 +99,7 @@ namespace Zetori.UI.Panels
             });
         }
 
-        private void DrawThemes(Panel panel)
+        private void DrawThemes(IPanelSurface panel)
         {
             panel.Label($"Current: {ColorSpace.Current.Name}");
             themeScroll = panel.ScrollArea(themeScroll, Panel.ListHeight, ColorSpace.Themes.Length, () =>
@@ -109,7 +109,7 @@ namespace Zetori.UI.Panels
             });
         }
 
-        internal void DrawPresets(Panel panel)
+        internal void DrawPresets(IPanelSurface panel)
         {
             if (presetsDirty) RefreshPresets();
 
@@ -161,7 +161,7 @@ namespace Zetori.UI.Panels
             PresetDefaults.Set(platform, next < 0 ? null : presetNames[next]);
         }
 
-        private void DrawRenameRow(Panel panel, string name)
+        private void DrawRenameRow(IPanelSurface panel, string name)
         {
             panel.HorizontalArea(() =>
             {

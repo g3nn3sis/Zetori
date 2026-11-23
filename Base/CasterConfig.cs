@@ -150,6 +150,14 @@ namespace Zetori.Base
         internal static ConfigEntry<Key> MenuKey = null!;
         internal static ConfigEntry<bool> AutoSave = null!;
 
+        internal const float MinimumInGamePanelSize = 0.75f;
+        internal const float MaximumInGamePanelSize = 1.5f;
+
+        internal static ConfigEntry<float> InGamePanelSize = null!;
+        internal static ConfigEntry<bool> InGamePanelFollow = null!;
+        internal static ConfigEntry<bool> InGamePanelHaptics = null!;
+        internal static ConfigEntry<bool> InGamePanelOnStream = null!;
+
         internal static void Bind(ConfigFile config)
         {
             file = config;
@@ -279,6 +287,11 @@ namespace Zetori.Base
             SnapPanels = config.Bind("Interface", "Snap Panels", true, "Stack panels into columns from the top of the screen. When off, panels stay where they are dropped.");
             MenuKey = config.Bind("Interface", "Menu Key", Key.Escape, "Key that shows and hides the panels.");
             AutoSave = config.Bind("Interface", "Autosave", true, "Save setting changes automatically. When off, save with the Presets panel's Save Settings button or by saving a preset.");
+
+            InGamePanelSize = Range(config, "In-Game Panel", "Size", 1f, MinimumInGamePanelSize, MaximumInGamePanelSize, "Size multiplier on the in-game panel opened by double pressing left primary in VR.");
+            InGamePanelFollow = config.Bind("In-Game Panel", "Follow", true, "Carry the in-game panel with you as you move. When off, it stays where it was opened.");
+            InGamePanelHaptics = config.Bind("In-Game Panel", "Haptics", true, "Vibrate the controller when a finger presses the in-game panel.");
+            InGamePanelOnStream = config.Bind("In-Game Panel", "Show On Stream", false, "Let the spectator camera see the in-game panel. When off, only your headset shows it.");
 
             try { Write(config); }
             catch (Exception e) { Log.Exception(e, "Saving the config failed"); }

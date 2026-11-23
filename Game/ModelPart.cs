@@ -4,14 +4,14 @@
 
 using UnityEngine;
 
-namespace Zetori.GameCamera.Vr
+namespace Zetori.Game
 {
-    internal sealed class VrCameraMeshPart
+    internal sealed class ModelPart
     {
         internal Vector3 Pivot { get; }
         internal Mesh Mesh { get; }
 
-        internal VrCameraMeshPart(Vector3 pivot, Mesh mesh)
+        internal ModelPart(Vector3 pivot, Mesh mesh)
         {
             Pivot = pivot;
             Mesh = mesh;

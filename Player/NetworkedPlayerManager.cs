@@ -150,6 +150,14 @@ namespace Zetori.Player
             }
         }
 
+        internal static void Spectate(VRRig rig)
+        {
+            VRRig[]? rigs = activeRigs;
+            if (rigs == null) return;
+            int index = Array.IndexOf(rigs, rig);
+            if (index >= 0) SwitchPlayerIndex(index);
+        }
+
         private static void SwitchPlayerIndex(int index)
         {
             VRRig[]? rigs = activeRigs;
