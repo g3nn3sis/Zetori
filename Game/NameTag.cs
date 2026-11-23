@@ -19,14 +19,18 @@ namespace Zetori.Game
         internal static bool usePlayerColor { get => CasterConfig.NameTagPlayerColor.Value; set => CasterConfig.NameTagPlayerColor.Value = value; }
         internal static bool hzDisplay { get => CasterConfig.NameTagFps.Value; set => CasterConfig.NameTagFps.Value = value; }
         internal static bool platformIndicator { get => CasterConfig.NameTagPlatform.Value; set => CasterConfig.NameTagPlatform.Value = value; }
+        internal static bool zetoriIndicator { get => CasterConfig.NameTagZetori.Value; set => CasterConfig.NameTagZetori.Value = value; }
         internal static int currentFontIndex { get => CasterConfig.NameTagFont.Value; set => CasterConfig.NameTagFont.Value = value; }
 
         private const float NameHeight = 0.4f;
         private const float FpsHeight = 0.55f;
         private const float NameFontSize = 2.5f;
         private const float FpsFontSize = 0.7f;
-        private const float PlatformIconSize = 0.25f;
-        private const float PlatformIconGap = 0.05f;
+        private const float IconSize = 0.25f;
+        private const float IconGap = 0.05f;
+        private const float IconLift = 0.003f;
+        private const float LeftSide = -1f;
+        private const float RightSide = 1f;
         private const int FpsGoodThreshold = 60;
         private const int FpsWarnThreshold = 55;
         private static readonly Color LavaColor = new Color32(255, 20, 0, 255);
@@ -38,14 +42,16 @@ namespace Zetori.Game
             internal readonly Color Color;
             internal readonly int Fps;
             internal readonly int Platform;
+            internal readonly bool ZetoriUser;
 
-            internal TagInfo(bool visible, string name, Color color, int fps, int platform)
+            internal TagInfo(bool visible, string name, Color color, int fps, int platform, bool zetoriUser)
             {
                 Visible = visible;
                 Name = name;
                 Color = color;
                 Fps = fps;
                 Platform = platform;
+                ZetoriUser = zetoriUser;
             }
         }
 
@@ -54,12 +60,13 @@ namespace Zetori.Game
             internal readonly GameObject Root;
             internal readonly TextMeshPro Name;
             internal readonly TextMeshPro Fps;
-            internal readonly SpriteRenderer Icon;
+            internal readonly SpriteRenderer PlatformIcon;
+            internal readonly SpriteRenderer ZetoriIcon;
             internal string NameText = string.Empty;
             internal int FpsValue = -1;
             internal TMP_FontAsset? Font;
-            internal Sprite? IconSprite;
-            internal float NameHalfWidth;
+            internal Sprite? PlatformSprite;
+            internal Sprite? ZetoriSprite;
             internal bool Seen;
 
             internal Tag(Transform anchor)
@@ -68,11 +75,8 @@ namespace Zetori.Game
                 Root.transform.SetParent(anchor, false);
                 Name = CreateText(Root.transform, "name", NameHeight, NameFontSize);
                 Fps = CreateText(Root.transform, "fps", FpsHeight, FpsFontSize);
-                var iconObject = new GameObject("platform");
-                iconObject.transform.SetParent(Name.transform, false);
-                iconObject.transform.localScale = Vector3.one * PlatformIconSize;
-                Icon = iconObject.AddComponent<SpriteRenderer>();
-                Icon.enabled = false;
+                PlatformIcon = CreateIcon(Name.transform, "platform");
+                ZetoriIcon = CreateIcon(Name.transform, "zetori");
             }
 
             private static TextMeshPro CreateText(Transform parent, string name, float height, float fontSize)
@@ -85,6 +89,16 @@ namespace Zetori.Game
                 text.alignment = TextAlignmentOptions.Center;
                 text.richText = true;
                 return text;
+            }
+
+            private static SpriteRenderer CreateIcon(Transform parent, string name)
+            {
+                var go = new GameObject(name);
+                go.transform.SetParent(parent, false);
+                go.transform.localScale = Vector3.one * IconSize;
+                var icon = go.AddComponent<SpriteRenderer>();
+                icon.enabled = false;
+                return icon;
             }
         }
 
@@ -160,7 +174,8 @@ namespace Zetori.Game
                 rig.Creator.NickName ?? string.Empty,
                 NameColor(RigTagState.Of(rig), rig.playerColor),
                 hzDisplay ? Mathf.RoundToInt(NetworkedPlayerManager.GetFPS(rig)) : 0,
-                platformIndicator ? NetworkedPlayerManager.GetPlatform(rig) : 0);
+                platformIndicator ? NetworkedPlayerManager.GetPlatform(rig) : 0,
+                zetoriIndicator && ZetoriUsers.IsUser(rig));
         }
 
         private static TagInfo ReplayInfo(ReplayPlayer replay, ReplayPuppet puppet)
@@ -173,7 +188,8 @@ namespace Zetori.Game
                 puppet.Actor.Name,
                 NameColor(frame.Tag, puppet.Actor.Color),
                 frame.Fps,
-                platformIndicator ? puppet.Actor.Platform : 0);
+                platformIndicator ? puppet.Actor.Platform : 0,
+                false);
         }
 
         private static void UpdateTag(Tag tag, TagInfo info, Quaternion facing, TMP_FontAsset? font)
@@ -206,20 +222,33 @@ namespace Zetori.Game
                 tag.Fps.text = $"<color={FpsColor(info.Fps)}>{info.Fps}</color> FPS";
             }
 
-            Sprite? icon = info.Platform == 1 ? AssetManager.smallMetaSprite : info.Platform == 2 ? AssetManager.smallSteamSprite : null;
-            if (tag.IconSprite != icon)
-            {
-                tag.IconSprite = icon;
-                tag.Icon.sprite = icon;
-                tag.Icon.enabled = icon != null;
-                layoutChanged = true;
-            }
-            if (layoutChanged && icon != null)
-            {
-                tag.NameHalfWidth = tag.Name.GetPreferredValues(tag.NameText).x / 2f;
-                float iconHalfWidth = icon.bounds.extents.x * PlatformIconSize;
-                tag.Icon.transform.localPosition = new Vector3(-tag.NameHalfWidth - PlatformIconGap - iconHalfWidth, 0.003f, 0f);
-            }
+            Sprite? platformIcon = info.Platform == 1 ? AssetManager.smallMetaSprite : info.Platform == 2 ? AssetManager.smallSteamSprite : null;
+            Sprite? zetoriIcon = info.ZetoriUser ? AssetManager.smallZetoriSprite : null;
+            layoutChanged |= SetIcon(tag.PlatformIcon, ref tag.PlatformSprite, platformIcon);
+            layoutChanged |= SetIcon(tag.ZetoriIcon, ref tag.ZetoriSprite, zetoriIcon);
+            if (layoutChanged && (platformIcon != null || zetoriIcon != null)) PlaceIcons(tag, platformIcon, zetoriIcon);
+        }
+
+        private static bool SetIcon(SpriteRenderer renderer, ref Sprite? current, Sprite? icon)
+        {
+            if (current == icon) return false;
+            current = icon;
+            renderer.sprite = icon;
+            renderer.enabled = icon != null;
+            return true;
+        }
+
+        private static void PlaceIcons(Tag tag, Sprite? platformIcon, Sprite? zetoriIcon)
+        {
+            float nameHalfWidth = tag.Name.GetPreferredValues(tag.NameText).x / 2f;
+            if (platformIcon != null) tag.PlatformIcon.transform.localPosition = BesideName(nameHalfWidth, platformIcon, LeftSide);
+            if (zetoriIcon != null) tag.ZetoriIcon.transform.localPosition = BesideName(nameHalfWidth, zetoriIcon, RightSide);
+        }
+
+        private static Vector3 BesideName(float nameHalfWidth, Sprite icon, float side)
+        {
+            float iconHalfWidth = icon.bounds.extents.x * IconSize;
+            return new Vector3(side * (nameHalfWidth + IconGap + iconHalfWidth), IconLift, 0f);
         }
 
         private static string FpsColor(int fps)

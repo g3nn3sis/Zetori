@@ -14,6 +14,7 @@ namespace Zetori.Game
         internal static TMP_FontAsset[] discoveredFonts = Array.Empty<TMP_FontAsset>();
         internal static Sprite? smallMetaSprite;
         internal static Sprite? smallSteamSprite;
+        internal static Sprite? smallZetoriSprite;
 
         private static readonly MethodInfo? LoadImageBytes = typeof(ImageConversion).GetMethod(
             "LoadImage", new[] { typeof(Texture2D), typeof(byte[]), typeof(bool) });
@@ -27,6 +28,7 @@ namespace Zetori.Game
             catch (Exception e) { Log.Exception(e, "Loading bundled fonts failed"); }
             smallSteamSprite = LoadIconSprite("Zetori.Icons.steam.png");
             smallMetaSprite = LoadIconSprite("Zetori.Icons.meta.png");
+            smallZetoriSprite = LoadIconSprite("Zetori.Icons.zetori.png");
         }
 
         internal static string FontName(int index)

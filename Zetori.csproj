@@ -82,10 +82,11 @@
 		<Reference Include="UnityEngine.TextRenderingModule" HintPath="$(GameAssemblyPath)\UnityEngine.TextRenderingModule.dll" />
 	</ItemGroup>
 
-	<!-- Nametag platform icons, embedded in the DLL and loaded locally by AssetManager. -->
+	<!-- Nametag platform and Zetori-user icons, embedded in the DLL and loaded locally by AssetManager. -->
 	<ItemGroup>
 		<EmbeddedResource Include="Resources\Icons\meta.png" LogicalName="Zetori.Icons.meta.png" />
 		<EmbeddedResource Include="Resources\Icons\steam.png" LogicalName="Zetori.Icons.steam.png" />
+		<EmbeddedResource Include="Resources\Icons\zetori.png" LogicalName="Zetori.Icons.zetori.png" />
 	</ItemGroup>
 
 	<ItemGroup>

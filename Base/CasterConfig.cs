@@ -76,6 +76,7 @@ namespace Zetori.Base
         internal static ConfigEntry<bool> NameTagPlayerColor = null!;
         internal static ConfigEntry<bool> NameTagFps = null!;
         internal static ConfigEntry<bool> NameTagPlatform = null!;
+        internal static ConfigEntry<bool> NameTagZetori = null!;
         internal static ConfigEntry<int> NameTagFont = null!;
         internal static ConfigEntry<bool> MiniMapEnabled = null!;
         internal static ConfigEntry<bool> MiniMapDraggable = null!;
@@ -208,6 +209,7 @@ namespace Zetori.Base
             NameTagPlayerColor = config.Bind("Nametags", "Player Color", false);
             NameTagFps = config.Bind("Nametags", "Player FPS", false);
             NameTagPlatform = config.Bind("Nametags", "Platform Indicator", false);
+            NameTagZetori = config.Bind("Nametags", "Zetori Users", false);
             NameTagFont = config.Bind("Nametags", "Font Index", 0, new ConfigDescription("Index into the fonts found in the game.", new AcceptableValueRange<int>(0, 255)));
 
             MiniMapEnabled = config.Bind("MiniMap", "Enabled", false);

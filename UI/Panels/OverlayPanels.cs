@@ -18,6 +18,7 @@ namespace Zetori.UI.Panels
             NameTag.usePlayerColor = panel.Toggle("Player Color", NameTag.usePlayerColor);
             NameTag.hzDisplay = panel.Toggle("Player FPS", NameTag.hzDisplay);
             NameTag.platformIndicator = panel.Toggle("Platform Indicator", NameTag.platformIndicator);
+            NameTag.zetoriIndicator = panel.Toggle("Zetori Users", NameTag.zetoriIndicator);
             NameTag.currentFontIndex = FontPicker.Draw(panel, NameTag.currentFontIndex);
         }
 
