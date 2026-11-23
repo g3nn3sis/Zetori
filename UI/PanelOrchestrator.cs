@@ -45,7 +45,7 @@ namespace Zetori.UI
             for (int i = 0; i < PanelCount; i++)
             {
                 var id = (PanelId)i;
-                panels[i] = new Panel(PanelWidth, PanelCatalog.Title(id), accent);
+                panels[i] = new Panel(PanelWidth, PanelCatalog.Title(id), PanelCatalog.Icon(id), accent);
                 drawContent[i] = content.For(id);
                 positions[i] = CasterConfig.BindPanelPosition(PanelCatalog.PositionKey(id));
             }

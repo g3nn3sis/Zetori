@@ -3,6 +3,7 @@
 // Unauthorized use, modification, or distribution is prohibited. See LICENSE.
 
 using UnityEngine;
+using Zetori.UI.Icons;
 
 namespace Zetori.UI.InGame
 {
@@ -135,6 +136,8 @@ namespace Zetori.UI.InGame
 
         public void Button(string text, Action? onClick, Action onRightClick, bool interactable = true) => Press(text, onClick, onRightClick, interactable);
 
+        internal void Button(string text, IconGlyph icon, Action? onClick) => Press(text, onClick, null, true).Icon = icon;
+
         public bool Toggle(string label, bool value, string on = "On", string off = "Off", bool interactable = true)
         {
             InGameElement element = Add(InGameElementKind.Toggle, $"{label}: {(value ? on : off)}", InGameMetrics.ButtonHeight, interactable);
@@ -194,13 +197,14 @@ namespace Zetori.UI.InGame
             return scroll;
         }
 
-        private void Press(string text, Action? onClick, Action? onHold, bool interactable)
+        private InGameElement Press(string text, Action? onClick, Action? onHold, bool interactable)
         {
             InGameElement element = Add(InGameElementKind.Button, text, InGameMetrics.ButtonHeight, interactable);
             element.HasAlternate = onHold != null;
-            if (!interactable) return;
+            if (!interactable) return element;
             if (onHold != null && Take(InteractionType.Hold, element, out _)) onHold();
             else if (Take(InteractionType.Click, element, out _)) onClick?.Invoke();
+            return element;
         }
 
         private bool Stepped(string text)

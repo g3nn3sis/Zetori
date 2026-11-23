@@ -3,6 +3,7 @@
 // Unauthorized use, modification, or distribution is prohibited. See LICENSE.
 
 using UnityEngine;
+using Zetori.UI.Icons;
 
 namespace Zetori.UI.InGame
 {
@@ -20,6 +21,7 @@ namespace Zetori.UI.InGame
         internal bool HasAlternate { get; set; }
         internal float Fraction { get; set; }
         internal Color Color { get; set; }
+        internal IconGlyph? Icon { get; set; }
         internal Vector2 Center { get; set; }
         internal Vector2 Size { get; set; }
         internal bool Visible { get; set; }
@@ -40,6 +42,7 @@ namespace Zetori.UI.InGame
             HasAlternate = false;
             Fraction = 0f;
             Color = Color.white;
+            Icon = null;
             Visible = false;
         }
 

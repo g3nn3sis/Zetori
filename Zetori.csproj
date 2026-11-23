@@ -89,6 +89,11 @@
 		<EmbeddedResource Include="Resources\Icons\zetori.png" LogicalName="Zetori.Icons.zetori.png" />
 	</ItemGroup>
 
+	<!-- Panel title icons as SVG, rasterized for the desktop panels and tessellated for the in-game panel by UI\Icons. -->
+	<ItemGroup>
+		<EmbeddedResource Include="Resources\Icons\Panels\*.svg" LogicalName="Zetori.Icons.Panels.%(Filename)%(Extension)" />
+	</ItemGroup>
+
 	<ItemGroup>
 		<EmbeddedResource Include="Resources\Fonts\*.ttf;Resources\Fonts\OFL.txt" LogicalName="Zetori.Fonts.%(Filename)%(Extension)" />
 	</ItemGroup>

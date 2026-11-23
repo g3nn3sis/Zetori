@@ -5,6 +5,7 @@
 using Zetori.Base;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using Zetori.UI.Icons;
 
 namespace Zetori.UI
 {
@@ -15,6 +16,9 @@ namespace Zetori.UI
         private const float ArrowAreaWidth = 26f;
         private const float ArrowWidth = 8f;
         private const float ArrowHeight = 5f;
+        private const float IconSize = 14f;
+        private const float IconGap = 5f;
+        private const float TitleIndent = 3f;
         private const float RowGap = 2f;
         internal const float ButtonHeight = 20f;
         internal const float LabelHeight = 16f;
@@ -43,6 +47,7 @@ namespace Zetori.UI
         private readonly float[] sliceY = new float[4];
         private readonly float[] sliceU = new float[4];
         private readonly float[] sliceV = new float[4];
+        private readonly IconGlyph glyph;
         private Rect rect;
         private float contentHeight = HeaderHeight;
         private float shownHeight = HeaderHeight;
@@ -62,7 +67,7 @@ namespace Zetori.UI
         private static readonly Color32 BackgroundColor = new Color32(10, 10, 10, 160);
         private static readonly Color32 ButtonColor = new Color32(20, 5, 8, 190);
         private static readonly Color32 FieldColor = new Color32(20, 20, 20, 230);
-        private Texture2D? background, button, field, arrowDown, arrowUp;
+        private Texture2D? background, button, field, arrowDown, arrowUp, icon;
         private GUIStyle? buttonStyle, fieldStyle, titleStyle, labelStyle;
 
         internal string Title { get; }
@@ -73,9 +78,10 @@ namespace Zetori.UI
         private bool ShowsContent => Expanded || shownHeight > HeaderHeight;
         private float Openness => contentHeight > HeaderHeight ? Mathf.Clamp01((shownHeight - HeaderHeight) / (contentHeight - HeaderHeight)) : 0f;
 
-        internal Panel(float width, string title, Color32 accentColor)
+        internal Panel(float width, string title, IconGlyph glyph, Color32 accentColor)
         {
             Title = title;
+            this.glyph = glyph;
             accent = accentColor;
             rect = new Rect(0f, 0f, width, shownHeight);
         }
@@ -138,7 +144,13 @@ namespace Zetori.UI
             bool showsContent = ShowsContent;
             DrawNineSlice(background!, new Rect(0f, 0f, rect.width, rect.height));
             float arrowX = rect.width - ArrowAreaWidth;
-            GUI.Label(new Rect(Inset + 3f, 0f, arrowX - Inset - 3f, HeaderHeight), Title, titleStyle);
+            float titleX = Inset + TitleIndent;
+            if (icon != null)
+            {
+                DrawIcon(new Rect(titleX, (HeaderHeight - IconSize) * 0.5f, IconSize, IconSize));
+                titleX += IconSize + IconGap;
+            }
+            GUI.Label(new Rect(titleX, 0f, arrowX - titleX, HeaderHeight), Title, titleStyle);
             var arrowArea = new Rect(arrowX, 0f, ArrowAreaWidth, HeaderHeight);
             if (GUI.Button(arrowArea, GUIContent.none, GUIStyle.none)) Expanded = !Expanded;
             DrawArrow(arrowArea);
@@ -148,6 +160,15 @@ namespace Zetori.UI
             Event current = Event.current;
             if (GUI.enabled && current.type == EventType.MouseDown && current.button == 0 && grip.Contains(current.mousePosition)) BeginPress();
             GUI.DragWindow(grip);
+        }
+
+        private void DrawIcon(Rect area)
+        {
+            if (Event.current.type != EventType.Repaint) return;
+            Color previous = GUI.color;
+            GUI.color = previous * (Color)accent;
+            GUI.DrawTexture(area, icon);
+            GUI.color = previous;
         }
 
         private void DrawArrow(Rect area)
@@ -376,7 +397,11 @@ namespace Zetori.UI
         private void EnsureTextures()
         {
             float scale = UiScale.Factor;
-            if (!Mathf.Approximately(scale, builtScale)) DestroyBackground();
+            if (!Mathf.Approximately(scale, builtScale))
+            {
+                DestroyBackground();
+                DestroyIcon();
+            }
             builtScale = scale;
             int Px(float units) => Mathf.Max(1, Mathf.RoundToInt(units * scale));
             if (background == null)
@@ -385,6 +410,7 @@ namespace Zetori.UI
                 int size = cornerPixels * 2 + 2;
                 background = Textures.CreateTexture(size, size, BackgroundColor, accent, Px(BorderThickness), cornerPixels);
             }
+            if (icon == null) icon = IconLibrary.CreateTexture(glyph, Px(IconSize));
             if (button != null) return;
             button = Textures.CreateTexture(64, (int)ButtonHeight, ButtonColor, accent, 1, 4);
             field = Textures.CreateTexture(64, (int)ButtonHeight, FieldColor, accent, 1, 4);
@@ -430,6 +456,12 @@ namespace Zetori.UI
             background = null;
         }
 
+        private void DestroyIcon()
+        {
+            if (icon != null) UnityEngine.Object.Destroy(icon);
+            icon = null;
+        }
+
         private void DestroyTextures()
         {
             DestroyBackground();
@@ -444,6 +476,7 @@ namespace Zetori.UI
             disposed = true;
             Expanded = false;
             DestroyTextures();
+            DestroyIcon();
             content = null;
         }
     }

@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: LicenseRef-Zetori-Source-Available
 // Unauthorized use, modification, or distribution is prohibited. See LICENSE.
 
+using Zetori.UI.Icons;
+
 namespace Zetori.UI
 {
     internal static class PanelCatalog
@@ -38,6 +40,31 @@ namespace Zetori.UI
             PanelId.Presets => "Presets",
             PanelId.Keybinds => "Keybinds",
             _ => id.ToString()
+        };
+
+        internal static IconGlyph Icon(PanelId id) => id switch
+        {
+            PanelId.Main => IconGlyph.Zetori,
+            PanelId.Wasd => IconGlyph.Keycap,
+            PanelId.FreecamCamera => IconGlyph.Move,
+            PanelId.Replay => IconGlyph.Replay,
+            PanelId.Camera => IconGlyph.Camera,
+            PanelId.Web => IconGlyph.Web,
+            PanelId.MiniMap => IconGlyph.Map,
+            PanelId.Nametag => IconGlyph.Badge,
+            PanelId.Leaderboard => IconGlyph.Trophy,
+            PanelId.Scoreboard => IconGlyph.Scoreboard,
+            PanelId.ClosestLava => IconGlyph.Flame,
+            PanelId.KillFeed => IconGlyph.Crosshair,
+            PanelId.Time => IconGlyph.Clock,
+            PanelId.MapLoader => IconGlyph.Mountains,
+            PanelId.TagManager => IconGlyph.Flag,
+            PanelId.Player => IconGlyph.Person,
+            PanelId.PlayerSettings => IconGlyph.Gear,
+            PanelId.Theme => IconGlyph.Sliders,
+            PanelId.Presets => IconGlyph.Layers,
+            PanelId.Keybinds => IconGlyph.Keyboard,
+            _ => IconGlyph.Zetori
         };
 
         internal static string PositionKey(PanelId id) => id == PanelId.Wasd ? "Freecam" : id.ToString();

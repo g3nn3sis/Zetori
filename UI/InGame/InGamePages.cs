@@ -6,6 +6,7 @@ using Photon.Pun;
 using UnityEngine;
 using Zetori.Base;
 using Zetori.Replay;
+using Zetori.UI.Icons;
 using Zetori.UI.Panels;
 
 namespace Zetori.UI.InGame
@@ -23,11 +24,13 @@ namespace Zetori.UI.InGame
         private readonly struct Section
         {
             internal readonly string Title;
+            internal readonly IconGlyph Icon;
             internal readonly Action<IPanelSurface> Draw;
 
-            internal Section(string title, Action<IPanelSurface> draw)
+            internal Section(string title, IconGlyph icon, Action<IPanelSurface> draw)
             {
                 Title = title;
+                Icon = icon;
                 Draw = draw;
             }
         }
@@ -106,14 +109,14 @@ namespace Zetori.UI.InGame
         {
             var list = new List<Section>
             {
-                new Section(RoomTitle, content.For(PanelId.Main)),
-                new Section("Players", new PlayersPanel().Draw),
-                new Section("VR Camera", VrCameraPanel.Draw)
+                new Section(RoomTitle, PanelCatalog.Icon(PanelId.Main), content.For(PanelId.Main)),
+                new Section("Players", IconGlyph.People, new PlayersPanel().Draw),
+                new Section("VR Camera", IconGlyph.Camcorder, VrCameraPanel.Draw)
             };
             foreach (PanelId[] column in PanelCatalog.Columns)
                 foreach (PanelId id in column)
-                    if (id != PanelId.Main) list.Add(new Section(PanelCatalog.Title(id), content.For(id)));
-            list.Add(new Section("Panel", new InGameSettingsPanel(recenter, close).Draw));
+                    if (id != PanelId.Main) list.Add(new Section(PanelCatalog.Title(id), PanelCatalog.Icon(id), content.For(id)));
+            list.Add(new Section("Panel", IconGlyph.Panel, new InGameSettingsPanel(recenter, close).Draw));
             return list.ToArray();
         }
 
@@ -135,7 +138,7 @@ namespace Zetori.UI.InGame
         {
             for (int i = first; i < first + GridColumns; i++)
             {
-                if (i < sections.Length) surface.Button(sections[i].Title, openSection[i]);
+                if (i < sections.Length) surface.Button(sections[i].Title, sections[i].Icon, openSection[i]);
                 else surface.Spacer();
             }
         }

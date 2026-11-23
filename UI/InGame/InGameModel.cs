@@ -72,6 +72,8 @@ namespace Zetori.UI.InGame
             return material;
         }
 
+        internal void Adopt(Mesh mesh) => meshes.Add(mesh);
+
         internal void Register(Renderer renderer)
         {
             renderer.shadowCastingMode = ShadowCastingMode.Off;

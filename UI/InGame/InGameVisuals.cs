@@ -5,6 +5,7 @@
 using TMPro;
 using UnityEngine;
 using Zetori.Game;
+using Zetori.UI.Icons;
 
 namespace Zetori.UI.InGame
 {
@@ -19,6 +20,9 @@ namespace Zetori.UI.InGame
         private const float PressedShade = 0.35f;
         private const float FocusedTint = 0.35f;
         private const float DisabledActiveTint = 0.3f;
+        private const float IconSize = 0.014f;
+        private const float IconInset = 0.006f;
+        private const float IconHeightLimit = 0.7f;
 
         private static readonly Color IdleColor = new Color(0.17f, 0.18f, 0.21f);
         private static readonly Color HoverColor = new Color(0.26f, 0.27f, 0.32f);
@@ -35,8 +39,11 @@ namespace Zetori.UI.InGame
 
         private readonly InGameModel model;
         private readonly List<InGameVisual> pool = new List<InGameVisual>();
+        private readonly List<InGameIcon> icons = new List<InGameIcon>();
+        private readonly Dictionary<IconGlyph, Mesh?> iconMeshes = new Dictionary<IconGlyph, Mesh?>();
         private TMP_FontAsset? font;
         private int used;
+        private int iconsUsed;
         private Color accent;
         private Color accentText;
 
@@ -48,6 +55,7 @@ namespace Zetori.UI.InGame
             accent = accentColor;
             accentText = Luminance(accent) > LightAccentLuminance ? DarkTextColor : TextColor;
             used = 0;
+            iconsUsed = 0;
             for (int i = 0; i < surface.Count; i++)
             {
                 InGameElement element = surface[i];
@@ -59,6 +67,8 @@ namespace Zetori.UI.InGame
             if (layout.Scrollable) DrawScrollbar(layout, left.Scrolling || right.Scrolling);
             for (int i = 0; i < used; i++) pool[i].EndFrame();
             for (int i = used; i < pool.Count; i++) pool[i].Hide();
+            for (int i = 0; i < iconsUsed; i++) icons[i].EndFrame();
+            for (int i = iconsUsed; i < icons.Count; i++) icons[i].Hide();
         }
 
         private void Draw(InGameElement element, bool pressed, bool hovered)
@@ -97,7 +107,27 @@ namespace Zetori.UI.InGame
             Color text = !element.Interactable ? DisabledTextColor : onAccent ? accentText : TextColor;
             InGameVisual visual = Next();
             visual.ShowQuad(element.Center, element.Size, InGameMetrics.QuadDepth, background);
-            visual.ShowText(element.Text, element.Center, element.Size, InGameTextStyle.Control, text);
+            Mesh? icon = element.Icon is IconGlyph glyph ? IconMesh(glyph) : null;
+            if (icon == null)
+            {
+                visual.ShowText(element.Text, element.Center, element.Size, InGameTextStyle.Control, text);
+                return;
+            }
+            float size = Mathf.Min(IconSize, element.Size.y * IconHeightLimit);
+            float left = element.Center.x - element.Size.x * 0.5f;
+            float right = element.Center.x + element.Size.x * 0.5f;
+            float textLeft = left + IconInset + size;
+            NextIcon().Show(icon, new Vector2(left + IconInset + size * 0.5f, element.Center.y), size, text);
+            visual.ShowText(element.Text, new Vector2((textLeft + right) * 0.5f, element.Center.y), new Vector2(right - textLeft, element.Size.y), InGameTextStyle.Control, text);
+        }
+
+        private Mesh? IconMesh(IconGlyph glyph)
+        {
+            if (iconMeshes.TryGetValue(glyph, out Mesh? cached)) return cached;
+            Mesh? mesh = IconLibrary.CreateMesh(glyph);
+            if (mesh != null) model.Adopt(mesh);
+            iconMeshes[glyph] = mesh;
+            return mesh;
         }
 
         private Color Background(InGameElement element, bool pressed, bool hovered)
@@ -147,6 +177,19 @@ namespace Zetori.UI.InGame
                 pool.Add(visual);
             }
             InGameVisual next = pool[used++];
+            next.BeginFrame();
+            return next;
+        }
+
+        private InGameIcon NextIcon()
+        {
+            if (iconsUsed == icons.Count)
+            {
+                var icon = new InGameIcon(model.Content, model.CreateMaterial(TextColor));
+                model.Register(icon.Renderer);
+                icons.Add(icon);
+            }
+            InGameIcon next = icons[iconsUsed++];
             next.BeginFrame();
             return next;
         }
