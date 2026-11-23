@@ -5,6 +5,7 @@
 using Photon.Pun;
 using UnityEngine;
 using Zetori.Base;
+using Zetori.Replay;
 using Zetori.UI.Panels;
 
 namespace Zetori.UI.InGame
@@ -39,6 +40,7 @@ namespace Zetori.UI.InGame
         private readonly Action headerRow;
         private readonly Action goHome;
         private readonly Action close;
+        private readonly Action exitReplay = ReplaySession.ExitReplay;
         private int page = Home;
         private int? requestedPage;
         private string status = string.Empty;
@@ -120,6 +122,7 @@ namespace Zetori.UI.InGame
             surface.Button("Home", goHome, page != Home);
             surface.Weighted(TitleWeight);
             surface.Title(Title);
+            if (ReplaySession.IsReplaying) surface.Button("Exit Replay", exitReplay);
             surface.Button("Close", close);
         }
 

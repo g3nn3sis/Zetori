@@ -61,9 +61,11 @@ With a headset active, double-press the left primary button (`X`) and a panel po
 
 - **Players**: everyone in the room with their FPS, platform and tag state. Tap a name to spectate them, or toggle **Mute** (the same mute as the game's scoreboard).
 - **VR Camera**: stream from the camera tablet, pick its shot, show your cosmetics in first person and set the field of view.
-- **Panel**: size, whether it follows you, haptics and whether it shows on stream (off by default, so only your headset sees it), plus **Bring Here** and **Close**.
+- **Panel**: size, haptics and whether it shows on stream (off by default, so only your headset sees it), plus **Bring Here** and **Close**.
 
-The footer shows the room, player count, ping, frame rate and time. Other players cannot see the panel.
+The panel stays where you open or leave it; double-press again or use **Bring Here** to bring it back in front of you. The footer shows the room, player count, ping, frame rate and time. Other players cannot see the panel.
+
+While a replay plays, your own body is hidden so it does not overlap the recorded one. In VR your hands show as glowing markers (palm, fingertip and the line between them) in the theme colour so you can still aim at the panel, and the panel header gets an **Exit Replay** button. Only your headset sees the markers.
 
 | VR input | Action |
 | --- | --- |
@@ -72,7 +74,7 @@ The footer shows the room, player count, ping, frame rate and time. Other player
 | Touch and slide along a slider | Set its value; the `-` and `+` beside it step in small increments |
 | Touch a text field | Type with the keyboard that appears under it; `Done` closes it |
 | Touch and slide the bar on the right | Scroll a page that does not fit |
-| Grip either side handle | Move the panel; let go and it stays there, travelling with you while **Follow Me** is on |
+| Grip either side handle | Move the panel; let go and it stays there |
 
 ## Controls
 

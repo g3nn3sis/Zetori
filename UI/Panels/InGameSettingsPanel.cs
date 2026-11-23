@@ -23,13 +23,12 @@ namespace Zetori.UI.Panels
         internal void Draw(IPanelSurface panel)
         {
             CasterConfig.InGamePanelSize.Value = panel.Slider("Panel Size", CasterConfig.InGamePanelSize.Value, CasterConfig.MinimumInGamePanelSize, CasterConfig.MaximumInGamePanelSize, "F2", "x");
-            CasterConfig.InGamePanelFollow.Value = panel.Toggle("Follow Me", CasterConfig.InGamePanelFollow.Value);
             CasterConfig.InGamePanelHaptics.Value = panel.Toggle("Haptics", CasterConfig.InGamePanelHaptics.Value);
             CasterConfig.InGamePanelOnStream.Value = panel.Toggle("Show On Stream", CasterConfig.InGamePanelOnStream.Value);
             drawing = panel;
             try { panel.HorizontalArea(placementRow); }
             finally { drawing = null; }
-            panel.Label("Double press left primary to open or close this panel. Grip a side handle to move it. Hold a button to do what right-clicking it does on desktop.");
+            panel.Label("Double press left primary to open or close this panel. Grip a side handle to move it; it stays where you leave it. Hold a button to do what right-clicking it does on desktop.");
         }
 
         private void DrawPlacementRow()

@@ -8,6 +8,7 @@ using UnityEngine.Rendering;
 using Zetori.Base;
 using Zetori.GameCamera.Modes;
 using Zetori.GameCamera.Vr;
+using Zetori.Replay;
 
 namespace Zetori.UI.InGame
 {
@@ -36,12 +37,10 @@ namespace Zetori.UI.InGame
         private readonly InGamePages pages;
         private InGameModel? model;
         private InGameVisuals? visuals;
+        private InGameHands? hands;
         private VrCameraHand? holder;
         private Vector3 holdPosition;
         private Quaternion holdRotation = Quaternion.identity;
-        private Transform? anchor;
-        private Vector3 placedPosition;
-        private Quaternion placedRotation = Quaternion.identity;
         private bool open;
         private float openness;
 
@@ -60,6 +59,7 @@ namespace Zetori.UI.InGame
             if (!VrCameraRig.HeadsetActive)
             {
                 HideNow();
+                hands?.Hide();
                 return;
             }
             GorillaTagger? tagger = GorillaTagger.Instance;
@@ -68,6 +68,9 @@ namespace Zetori.UI.InGame
             if (tagger == null || player == null || input == null || tagger.offlineVRRig == null) return;
 
             float now = Time.unscaledTime;
+            leftHand.Sync(tagger.leftHandTransform, tagger.leftHandTriggerCollider.transform, input.leftGrab);
+            rightHand.Sync(tagger.rightHandTransform, tagger.rightHandTriggerCollider.transform, input.rightGrab);
+            UpdateHands(player, now);
             if (summonPress.Update(input.leftControllerPrimaryButton, now)) Toggle(tagger, player);
             if (model == null || visuals == null) return;
 
@@ -78,16 +81,23 @@ namespace Zetori.UI.InGame
                 return;
             }
             model.Show();
-            leftHand.Sync(tagger.leftHandTransform, tagger.leftHandTriggerCollider.transform, input.leftGrab);
-            rightHand.Sync(tagger.rightHandTransform, tagger.rightHandTriggerCollider.transform, input.rightGrab);
             if (Interactive) UpdateGrab(tagger, model);
             else holder = null;
-            FollowAnchorSetting(player, model);
-            ApplyPlacement(model);
             model.SetScale(player.scale * Size * Pop(openness));
             Color32 accent = ColorSpace.Current.Color;
             model.SetAccent(accent);
             UpdateContent(tagger, model, visuals, accent, now);
+        }
+
+        private void UpdateHands(GTPlayer player, float now)
+        {
+            if (!ReplaySession.IsReplaying)
+            {
+                hands?.Hide();
+                return;
+            }
+            hands ??= new InGameHands();
+            hands.Show(leftHand, rightHand, player.scale, ColorSpace.Current.Color, now);
         }
 
         private void UpdateContent(GorillaTagger tagger, InGameModel panel, InGameVisuals drawn, Color32 accent, float now)
@@ -146,7 +156,7 @@ namespace Zetori.UI.InGame
             Vector3 position = head.position
                 + VrCameraShots.FlatForward(head.rotation) * (SummonDistance * scale)
                 + Vector3.down * (SummonDrop * scale);
-            Place(player, position, VrCameraShots.LookAt(head.position, position, head.rotation));
+            model.Root.SetPositionAndRotation(position, VrCameraShots.LookAt(head.position, position, head.rotation));
             if (!open) openness = 0f;
             open = true;
             holder = null;
@@ -175,27 +185,6 @@ namespace Zetori.UI.InGame
             model?.Hide();
         }
 
-        private void Place(GTPlayer player, Vector3 position, Quaternion rotation)
-        {
-            anchor = CasterConfig.InGamePanelFollow.Value && player.turnParent != null ? player.turnParent.transform : null;
-            placedPosition = anchor != null ? anchor.InverseTransformPoint(position) : position;
-            placedRotation = anchor != null ? Quaternion.Inverse(anchor.rotation) * rotation : rotation;
-        }
-
-        private void FollowAnchorSetting(GTPlayer player, InGameModel panel)
-        {
-            bool follows = anchor != null;
-            if (follows == CasterConfig.InGamePanelFollow.Value || holder != null) return;
-            Place(player, panel.Root.position, panel.Root.rotation);
-        }
-
-        private void ApplyPlacement(InGameModel panel)
-        {
-            if (holder != null) return;
-            if (anchor != null) panel.Root.SetPositionAndRotation(anchor.TransformPoint(placedPosition), anchor.rotation * placedRotation);
-            else panel.Root.SetPositionAndRotation(placedPosition, placedRotation);
-        }
-
         private void UpdateGrab(GorillaTagger tagger, InGameModel panel)
         {
             if (holder != null && !holder.Gripping) Release(tagger, panel);
@@ -210,8 +199,6 @@ namespace Zetori.UI.InGame
         {
             VrCameraHand otherHand = holder == leftHand ? rightHand : leftHand;
             holder = null;
-            GTPlayer? player = GTPlayer.Instance;
-            if (player != null) Place(player, panel.Root.position, panel.Root.rotation);
             if (otherHand.Gripping) TryHold(tagger, panel, otherHand);
         }
 
@@ -235,11 +222,10 @@ namespace Zetori.UI.InGame
 
         private void OnBeginCameraRendering(ScriptableRenderContext context, Camera camera)
         {
-            if (model == null || !model.Shown) return;
             GTPlayer? player = GTPlayer.Instance;
             bool headset = player != null && camera == player.mainCamera;
-            if (headset) ApplyPlacement(model);
-            model.SetHiddenFromView(!headset && !CasterConfig.InGamePanelOnStream.Value);
+            if (model != null && model.Shown) model.SetHiddenFromView(!headset && !CasterConfig.InGamePanelOnStream.Value);
+            if (hands != null && hands.Shown) hands.SetHiddenFromView(!headset);
         }
 
         public void Dispose()
@@ -248,6 +234,8 @@ namespace Zetori.UI.InGame
             model?.Dispose();
             model = null;
             visuals = null;
+            hands?.Dispose();
+            hands = null;
         }
     }
 }
