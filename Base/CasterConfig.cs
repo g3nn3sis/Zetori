@@ -289,7 +289,7 @@ namespace Zetori.Base
 
             InGamePanelSize = Range(config, "In-Game Panel", "Size", 1f, MinimumInGamePanelSize, MaximumInGamePanelSize, "Size multiplier on the in-game panel opened by double pressing left primary in VR.");
             InGamePanelHaptics = config.Bind("In-Game Panel", "Haptics", true, "Vibrate the controller when a finger presses the in-game panel.");
-            InGamePanelOnStream = config.Bind("In-Game Panel", "Show On Stream", false, "Let the spectator camera see the in-game panel. When off, only your headset shows it.");
+            InGamePanelOnStream = config.Bind("In-Game Panel", "Show On Stream", false, "Let the Spectator, Freecam and Web views see the in-game panel. The VR camera view always shows it.");
 
             try { Write(config); }
             catch (Exception e) { Log.Exception(e, "Saving the config failed"); }

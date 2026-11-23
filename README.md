@@ -61,7 +61,7 @@ With a headset active, double-press the left primary button (`X`) and a panel po
 
 - **Players**: everyone in the room with their FPS, platform and tag state. Tap a name to spectate them, or toggle **Mute** (the same mute as the game's scoreboard).
 - **VR Camera**: stream from the camera tablet, pick its shot, show your cosmetics in first person and set the field of view.
-- **Panel**: size, haptics and whether it shows on stream (off by default, so only your headset sees it), plus **Bring Here** and **Close**.
+- **Panel**: size, haptics and **Show On Stream**, plus **Bring Here** and **Close**. The VR camera's view always shows the panel; **Show On Stream** also shows it in Spectator, Freecam and Web (off by default).
 
 The panel stays where you open or leave it; double-press again or use **Bring Here** to bring it back in front of you. The footer shows the room, player count, ping, frame rate and time. Other players cannot see the panel.
 

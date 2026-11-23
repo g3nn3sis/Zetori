@@ -6,6 +6,7 @@ using GorillaLocomotion;
 using UnityEngine;
 using UnityEngine.Rendering;
 using Zetori.Base;
+using Zetori.GameCamera;
 using Zetori.GameCamera.Modes;
 using Zetori.GameCamera.Vr;
 using Zetori.Replay;
@@ -53,6 +54,8 @@ namespace Zetori.UI.InGame
         private static float Size => CasterConfig.InGamePanelSize.Value;
 
         private bool Interactive => open && openness >= 1f;
+
+        private static bool ShownOffHeadset => CasterConfig.InGamePanelOnStream.Value || CameraManager.ActiveMode == CameraMode.Camera;
 
         internal void Tick()
         {
@@ -224,7 +227,7 @@ namespace Zetori.UI.InGame
         {
             GTPlayer? player = GTPlayer.Instance;
             bool headset = player != null && camera == player.mainCamera;
-            if (model != null && model.Shown) model.SetHiddenFromView(!headset && !CasterConfig.InGamePanelOnStream.Value);
+            if (model != null && model.Shown) model.SetHiddenFromView(!headset && !ShownOffHeadset);
             if (hands != null && hands.Shown) hands.SetHiddenFromView(!headset);
         }
 
