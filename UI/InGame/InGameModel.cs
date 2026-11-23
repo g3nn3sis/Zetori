@@ -130,6 +130,7 @@ namespace Zetori.UI.InGame
             Place(parts["body"], "body", body);
             Place(parts["face"], "face", CreateMaterial(FaceColor));
             Place(parts["rim"], "rim", rimMaterial);
+            Place(parts["logo"], "logo", rimMaterial);
             Place(parts["handle_left"], "handle_left", handle);
             Place(parts["handle_right"], "handle_right", handle);
         }

@@ -40,9 +40,9 @@ namespace Zetori.UI.InGame
             quadObject.SetActive(false);
 
             var textObject = new GameObject("text");
-            textTransform = textObject.transform;
-            textTransform.SetParent(parent, false);
+            textObject.transform.SetParent(parent, false);
             text = textObject.AddComponent<TextMeshPro>();
+            textTransform = text.rectTransform;
             text.overflowMode = TextOverflowModes.Ellipsis;
             text.enableAutoSizing = true;
             text.fontSizeMin = InGameMetrics.MinimumFontSize;
