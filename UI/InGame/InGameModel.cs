@@ -21,7 +21,7 @@ namespace Zetori.UI.InGame
 
         private static readonly int BaseColorProperty = Shader.PropertyToID("_BaseColor");
         private static readonly Color BodyColor = new Color(0.12f, 0.12f, 0.14f);
-        private static readonly Color FaceColor = new Color(0.03f, 0.03f, 0.04f);
+        internal static readonly Color FaceColor = new Color(0.03f, 0.03f, 0.04f);
         private static readonly Color HandleColor = new Color(0.2f, 0.22f, 0.26f);
 
         private readonly GameObject root;

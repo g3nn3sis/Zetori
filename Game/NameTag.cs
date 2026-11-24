@@ -58,6 +58,7 @@ namespace Zetori.Game
         private sealed class Tag
         {
             internal readonly GameObject Root;
+            private readonly Transform rootTransform;
             internal readonly TextMeshPro Name;
             internal readonly TextMeshPro Fps;
             internal readonly SpriteRenderer PlatformIcon;
@@ -72,11 +73,19 @@ namespace Zetori.Game
             internal Tag(Transform anchor)
             {
                 Root = new GameObject($"_nametag {anchor.GetInstanceID()}");
-                Root.transform.SetParent(anchor, false);
-                Name = CreateText(Root.transform, "name", NameHeight, NameFontSize);
-                Fps = CreateText(Root.transform, "fps", FpsHeight, FpsFontSize);
+                rootTransform = Root.transform;
+                rootTransform.SetParent(anchor, false);
+                tagRoots.Add(rootTransform);
+                Name = CreateText(rootTransform, "name", NameHeight, NameFontSize);
+                Fps = CreateText(rootTransform, "fps", FpsHeight, FpsFontSize);
                 PlatformIcon = CreateIcon(Name.transform, "platform");
                 ZetoriIcon = CreateIcon(Name.transform, "zetori");
+            }
+
+            internal void Destroy()
+            {
+                tagRoots.Remove(rootTransform);
+                if (Root != null) UnityEngine.Object.Destroy(Root);
             }
 
             private static TextMeshPro CreateText(Transform parent, string name, float height, float fontSize)
@@ -102,6 +111,8 @@ namespace Zetori.Game
             }
         }
 
+        private static readonly HashSet<Transform> tagRoots = new HashSet<Transform>();
+
         private readonly Dictionary<UnityEngine.Object, Tag> tags = new Dictionary<UnityEngine.Object, Tag>();
         private readonly List<UnityEngine.Object> removed = new List<UnityEngine.Object>();
 
@@ -113,6 +124,13 @@ namespace Zetori.Game
                 if (fonts.Length == 0) return null;
                 return fonts[Mathf.Clamp(currentFontIndex, 0, fonts.Length - 1)];
             }
+        }
+
+        internal static bool IsTagPart(Transform part)
+        {
+            for (Transform current = part; current != null; current = current.parent)
+                if (tagRoots.Contains(current)) return true;
+            return false;
         }
 
         internal void LateUpdate()
@@ -271,7 +289,7 @@ namespace Zetori.Game
                 if (!pair.Value.Seen || pair.Key == null) removed.Add(pair.Key!);
             foreach (UnityEngine.Object key in removed)
             {
-                if (tags[key].Root != null) Destroy(tags[key].Root);
+                tags[key].Destroy();
                 tags.Remove(key);
             }
             removed.Clear();
@@ -280,8 +298,7 @@ namespace Zetori.Game
         private void Clear()
         {
             if (tags.Count == 0) return;
-            foreach (Tag tag in tags.Values)
-                if (tag.Root != null) Destroy(tag.Root);
+            foreach (Tag tag in tags.Values) tag.Destroy();
             tags.Clear();
         }
 

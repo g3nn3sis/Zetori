@@ -22,11 +22,13 @@ namespace Zetori.UI.InGame
         internal float Fraction { get; set; }
         internal Color Color { get; set; }
         internal IconGlyph? Icon { get; set; }
+        internal Texture? Texture { get; set; }
         internal Vector2 Center { get; set; }
         internal Vector2 Size { get; set; }
         internal bool Visible { get; set; }
 
-        internal bool Pressable => Interactable && Visible && Kind != InGameElementKind.Label && Kind != InGameElementKind.Title && Kind != InGameElementKind.Swatch && Kind != InGameElementKind.Spacer;
+        internal bool Pressable =>
+            Interactable && Visible && Kind is InGameElementKind.Button or InGameElementKind.Toggle or InGameElementKind.Field or InGameElementKind.Slider;
 
         internal void Reset(int index, InGameElementKind kind, InGameRegion region, int group, float weight, float height, string text, bool interactable)
         {
@@ -43,6 +45,7 @@ namespace Zetori.UI.InGame
             Fraction = 0f;
             Color = Color.white;
             Icon = null;
+            Texture = null;
             Visible = false;
         }
 

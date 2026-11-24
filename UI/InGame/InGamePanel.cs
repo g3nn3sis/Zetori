@@ -186,6 +186,7 @@ namespace Zetori.UI.InGame
             openness = 0f;
             holder = null;
             model?.Hide();
+            pages.Conceal();
         }
 
         private void UpdateGrab(GorillaTagger tagger, InGameModel panel)
@@ -234,6 +235,7 @@ namespace Zetori.UI.InGame
         public void Dispose()
         {
             RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;
+            pages.Dispose();
             model?.Dispose();
             model = null;
             visuals = null;

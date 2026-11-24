@@ -11,27 +11,30 @@ namespace Zetori.UI.Panels
     internal sealed class PlayersPanel
     {
         private const float RefreshInterval = 0.5f;
-        private const string MuteLabel = "Mute";
 
         private sealed class Row
         {
             internal VRRig Rig { get; }
             internal GorillaPlayerScoreboardLine? Line { get; }
-            internal Action Spectate { get; }
+            internal Action Open { get; }
             internal Action Draw { get; }
 
-            internal Row(VRRig rig, GorillaPlayerScoreboardLine? line, Action spectate, Action draw)
+            internal Row(VRRig rig, GorillaPlayerScoreboardLine? line, Action open, Action draw)
             {
                 Rig = rig;
                 Line = line;
-                Spectate = spectate;
+                Open = open;
                 Draw = draw;
             }
         }
 
+        private readonly Action<VRRig> openPlayer;
+        private readonly ReportMenu report = new ReportMenu();
         private Row[] rows = Array.Empty<Row>();
         private IPanelSurface? drawing;
         private float nextRefresh;
+
+        internal PlayersPanel(Action<VRRig> openPlayer) => this.openPlayer = openPlayer;
 
         internal void Draw(IPanelSurface panel)
         {
@@ -41,11 +44,15 @@ namespace Zetori.UI.Panels
                 panel.Label("No players.");
                 return;
             }
-            panel.Label("Tap a name to spectate. Mute only affects what you hear.");
+            panel.Label("Tap a name to view the player. Mute only affects what you hear.");
             drawing = panel;
             try
             {
-                foreach (Row row in rows) panel.HorizontalArea(row.Draw);
+                foreach (Row row in rows)
+                {
+                    panel.HorizontalArea(row.Draw);
+                    report.DrawOptions(panel, row.Line);
+                }
             }
             finally { drawing = null; }
         }
@@ -55,30 +62,17 @@ namespace Zetori.UI.Panels
             IPanelSurface panel = drawing!;
             VRRig rig = row.Rig;
             if (rig == null) return;
-            panel.Button(Describe(rig), row.Spectate, NetworkedPlayerManager.selectedPlayer != rig);
-            GorillaPlayerScoreboardLine? line = row.Line;
-            if (line == null)
-            {
-                panel.Toggle(MuteLabel, false, interactable: false);
-                return;
-            }
-            bool muted = PlayerMute.IsMuted(line);
-            if (panel.Toggle(MuteLabel, muted) != muted) PlayerMute.Set(line, !muted);
+            panel.Button(Describe(rig), row.Open);
+            MuteToggle.Draw(panel, row.Line);
+            report.DrawButton(panel, row.Line);
         }
 
         private static string Describe(VRRig rig)
         {
             string name = TagManagerControl.NameOf(rig.Creator);
             string tagged = TagManagerControl.IsTagged(rig) ? "  [tagged]" : string.Empty;
-            return $"{name}  {Mathf.RoundToInt(NetworkedPlayerManager.GetFPS(rig))} FPS  {PlatformName(rig)}{tagged}";
+            return $"{name}  {Mathf.RoundToInt(NetworkedPlayerManager.GetFPS(rig))} FPS  {Platform.Name(NetworkedPlayerManager.GetPlatform(rig))}{tagged}";
         }
-
-        private static string PlatformName(VRRig rig) => NetworkedPlayerManager.GetPlatform(rig) switch
-        {
-            Platform.Steam => "Steam",
-            Platform.Meta => "Meta",
-            _ => string.Empty
-        };
 
         private void Refresh()
         {
@@ -95,7 +89,7 @@ namespace Zetori.UI.Panels
         private Row CreateRow(VRRig rig)
         {
             Row? row = null;
-            row = new Row(rig, PlayerMute.FindLine(rig.Creator), () => NetworkedPlayerManager.Spectate(rig), () => DrawRow(row!));
+            row = new Row(rig, PlayerMute.FindLine(rig.Creator), () => openPlayer(rig), () => DrawRow(row!));
             return row;
         }
     }

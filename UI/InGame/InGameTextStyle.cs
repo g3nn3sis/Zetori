@@ -8,6 +8,7 @@ namespace Zetori.UI.InGame
     {
         Control,
         Label,
-        Title
+        Title,
+        Block
     }
 }

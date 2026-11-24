@@ -96,7 +96,13 @@ namespace Zetori.UI.InGame
 
         internal void Spacer() => Add(InGameElementKind.Spacer, string.Empty, 0f, false);
 
-        internal void Title(string text) => Add(InGameElementKind.Title, text, InGameMetrics.TitleHeight, false);
+        internal void Title(string text) => Title(text, Color.white);
+
+        internal void Title(string text, Color color) => Add(InGameElementKind.Title, text, InGameMetrics.TitleHeight, false).Color = color;
+
+        internal void Image(Texture texture, float height) => Add(InGameElementKind.Image, string.Empty, height, false).Texture = texture;
+
+        internal void Block(string text, float height) => Add(InGameElementKind.Block, text, height, false);
 
         internal void ResetInteraction()
         {

@@ -125,6 +125,13 @@ namespace Zetori.UI.InGame
                     text.fontStyle = FontStyles.Normal;
                     text.margin = LabelMargin;
                     break;
+                case InGameTextStyle.Block:
+                    text.alignment = TextAlignmentOptions.TopLeft;
+                    text.textWrappingMode = TextWrappingModes.NoWrap;
+                    text.fontSizeMax = InGameMetrics.LabelFontSize;
+                    text.fontStyle = FontStyles.Normal;
+                    text.margin = LabelMargin;
+                    break;
                 case InGameTextStyle.Title:
                     text.alignment = TextAlignmentOptions.Center;
                     text.textWrappingMode = TextWrappingModes.NoWrap;

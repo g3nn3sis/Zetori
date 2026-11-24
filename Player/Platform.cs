@@ -12,6 +12,13 @@ namespace Zetori.Player
 
         internal const string SteamCosmetic = "S. FIRST LOGIN";
 
+        internal static string Name(int platform) => platform switch
+        {
+            Steam => "Steam",
+            Meta => "Meta",
+            _ => string.Empty
+        };
+
         internal static int FromProperty(string? value)
         {
             switch ((value ?? string.Empty).ToLowerInvariant())

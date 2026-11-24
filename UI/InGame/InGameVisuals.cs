@@ -40,10 +40,12 @@ namespace Zetori.UI.InGame
         private readonly InGameModel model;
         private readonly List<InGameVisual> pool = new List<InGameVisual>();
         private readonly List<InGameIcon> icons = new List<InGameIcon>();
+        private readonly List<InGameImage> images = new List<InGameImage>();
         private readonly Dictionary<IconGlyph, Mesh?> iconMeshes = new Dictionary<IconGlyph, Mesh?>();
         private TMP_FontAsset? font;
         private int used;
         private int iconsUsed;
+        private int imagesUsed;
         private Color accent;
         private Color accentText;
 
@@ -56,6 +58,7 @@ namespace Zetori.UI.InGame
             accentText = Luminance(accent) > LightAccentLuminance ? DarkTextColor : TextColor;
             used = 0;
             iconsUsed = 0;
+            imagesUsed = 0;
             for (int i = 0; i < surface.Count; i++)
             {
                 InGameElement element = surface[i];
@@ -69,6 +72,8 @@ namespace Zetori.UI.InGame
             for (int i = used; i < pool.Count; i++) pool[i].Hide();
             for (int i = 0; i < iconsUsed; i++) icons[i].EndFrame();
             for (int i = iconsUsed; i < icons.Count; i++) icons[i].Hide();
+            for (int i = 0; i < imagesUsed; i++) images[i].EndFrame();
+            for (int i = imagesUsed; i < images.Count; i++) images[i].Hide();
         }
 
         private void Draw(InGameElement element, bool pressed, bool hovered)
@@ -79,7 +84,13 @@ namespace Zetori.UI.InGame
                     DrawText(element, InGameTextStyle.Label, LabelColor);
                     break;
                 case InGameElementKind.Title:
-                    DrawText(element, InGameTextStyle.Title, TextColor);
+                    DrawText(element, InGameTextStyle.Title, element.Color);
+                    break;
+                case InGameElementKind.Block:
+                    DrawText(element, InGameTextStyle.Block, LabelColor);
+                    break;
+                case InGameElementKind.Image:
+                    DrawImage(element);
                     break;
                 case InGameElementKind.Slider:
                     DrawSlider(element, pressed || hovered);
@@ -98,6 +109,12 @@ namespace Zetori.UI.InGame
         private void DrawText(InGameElement element, InGameTextStyle style, Color color)
         {
             Next().ShowText(element.Text, element.Center, element.Size, style, color);
+        }
+
+        private void DrawImage(InGameElement element)
+        {
+            Texture? texture = element.Texture;
+            if (texture != null) NextImage().Show(texture, element.Center, element.Size);
         }
 
         private void DrawControl(InGameElement element, bool pressed, bool hovered)
@@ -190,6 +207,19 @@ namespace Zetori.UI.InGame
                 icons.Add(icon);
             }
             InGameIcon next = icons[iconsUsed++];
+            next.BeginFrame();
+            return next;
+        }
+
+        private InGameImage NextImage()
+        {
+            if (imagesUsed == images.Count)
+            {
+                var image = new InGameImage(model.Content, model.Quad, model.CreateMaterial(Color.white));
+                model.Register(image.Renderer);
+                images.Add(image);
+            }
+            InGameImage next = images[imagesUsed++];
             next.BeginFrame();
             return next;
         }

@@ -13,6 +13,8 @@ namespace Zetori.UI.InGame
         Toggle,
         Field,
         Slider,
-        Swatch
+        Swatch,
+        Image,
+        Block
     }
 }

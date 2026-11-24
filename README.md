@@ -59,7 +59,7 @@ When a headset is active, the panels start closed (`Esc` still opens them) and Z
 
 With a headset active, double-press the left primary button (`X`) and a panel pops up in front of you that you work with your fingers. Its home page opens every desktop panel (room, camera, overlays, scoreboard, tag manager, player, settings, themes, presets, replays and the rest), plus three pages made for playing:
 
-- **Players**: everyone in the room with their FPS, platform and tag state. Tap a name to spectate them, or toggle **Mute** (the same mute as the game's scoreboard).
+- **Players**: everyone in the room with their FPS, platform and tag state. Toggle **Mute** or press **Report** for the game's Hate Speech, Cheating and Toxicity reports (the same mute and report as the game's scoreboard). Tap a name to open the player: a live view of their rig with its colour and cosmetics on the left, and their name, platform, FPS, ping, colour code, tag state, speed, distance, voice, time in room, Zetori and host status on the right, with Spectate, Mute and Report below.
 - **VR Camera**: stream from the camera tablet, pick its shot, show your cosmetics in first person and set the field of view.
 - **Panel**: size, haptics and **Show On Stream**, plus **Bring Here** and **Close**. The VR camera's view always shows the panel; **Show On Stream** also shows it in Spectator, Freecam and Web (off by default).
 

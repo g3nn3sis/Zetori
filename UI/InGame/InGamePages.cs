@@ -11,12 +11,16 @@ using Zetori.UI.Panels;
 
 namespace Zetori.UI.InGame
 {
-    internal sealed class InGamePages
+    internal sealed class InGamePages : IDisposable
     {
         private const int Home = -1;
+        private const int PlayerPage = -2;
         private const int GridColumns = 3;
         private const string HomeTitle = "Zetori";
         private const string RoomTitle = "Room";
+        private const string PlayersTitle = "Players";
+        private const string HomeLabel = "Home";
+        private const string BackLabel = "Back";
         private const float TitleWeight = 3f;
         private const float StatusInterval = 0.5f;
         private const float FrameRateSmoothing = 0.1f;
@@ -37,11 +41,14 @@ namespace Zetori.UI.InGame
 
         private readonly InGameSurface surface;
         private readonly InGameKeyboard keyboard;
+        private readonly InGamePlayerPage playerPage;
         private readonly Section[] sections;
+        private readonly int playersSection;
         private readonly Action[] openSection;
         private readonly Action[] gridRows;
         private readonly Action headerRow;
         private readonly Action goHome;
+        private readonly Action backToPlayers;
         private readonly Action close;
         private readonly Action exitReplay = ReplaySession.ExitReplay;
         private int page = Home;
@@ -55,7 +62,9 @@ namespace Zetori.UI.InGame
             this.surface = surface;
             this.close = close;
             keyboard = new InGameKeyboard(surface);
-            sections = BuildSections(new PanelContent(owner), recenter, close);
+            playerPage = new InGamePlayerPage(surface);
+            sections = BuildSections(new PanelContent(owner), new PlayersPanel(OpenPlayer), recenter, close);
+            playersSection = Array.FindIndex(sections, section => section.Title == PlayersTitle);
             openSection = new Action[sections.Length];
             for (int i = 0; i < sections.Length; i++)
             {
@@ -69,6 +78,7 @@ namespace Zetori.UI.InGame
                 gridRows[row] = () => DrawGridRow(first);
             }
             goHome = () => requestedPage = Home;
+            backToPlayers = () => requestedPage = playersSection;
             headerRow = DrawHeaderRow;
         }
 
@@ -89,7 +99,9 @@ namespace Zetori.UI.InGame
             surface.HorizontalArea(headerRow);
             surface.EnterRegion(InGameRegion.Body);
             if (page == Home) DrawHome();
+            else if (page == PlayerPage) DrawPlayer();
             else DrawSection(sections[page]);
+            if (page != PlayerPage) playerPage.Conceal();
             if (surface.Editing)
             {
                 surface.EnterRegion(InGameRegion.Keyboard);
@@ -99,18 +111,32 @@ namespace Zetori.UI.InGame
             surface.Label(Status());
         }
 
+        internal void Conceal() => playerPage.Conceal();
+
+        private void OpenPlayer(VRRig rig)
+        {
+            playerPage.Open(rig);
+            requestedPage = PlayerPage;
+        }
+
+        private void DrawPlayer()
+        {
+            try { playerPage.Draw(); }
+            catch (Exception e) { Log.ExceptionOnce("in-game-panel-player", e, "Drawing the in-game player page failed"); }
+        }
+
         private void DrawSection(Section section)
         {
             try { section.Draw(surface); }
             catch (Exception e) { Log.ExceptionOnce($"in-game-panel-{section.Title}", e, $"Drawing the in-game {section.Title} page failed"); }
         }
 
-        private static Section[] BuildSections(PanelContent content, Action recenter, Action close)
+        private static Section[] BuildSections(PanelContent content, PlayersPanel players, Action recenter, Action close)
         {
             var list = new List<Section>
             {
                 new Section(RoomTitle, PanelCatalog.Icon(PanelId.Main), content.For(PanelId.Main)),
-                new Section("Players", IconGlyph.People, new PlayersPanel().Draw),
+                new Section(PlayersTitle, IconGlyph.People, players.Draw),
                 new Section("VR Camera", IconGlyph.Camcorder, VrCameraPanel.Draw)
             };
             foreach (PanelId[] column in PanelCatalog.Columns)
@@ -122,9 +148,11 @@ namespace Zetori.UI.InGame
 
         private void DrawHeaderRow()
         {
-            surface.Button("Home", goHome, page != Home);
+            if (page == PlayerPage) surface.Button(BackLabel, backToPlayers);
+            else surface.Button(HomeLabel, goHome, page != Home);
             surface.Weighted(TitleWeight);
-            surface.Title(Title);
+            if (page == PlayerPage) surface.Title(playerPage.Title, playerPage.TitleColor);
+            else surface.Title(Title);
             if (ReplaySession.IsReplaying) surface.Button("Exit Replay", exitReplay);
             surface.Button("Close", close);
         }
@@ -154,6 +182,8 @@ namespace Zetori.UI.InGame
             status = $"{RoomStatus()}   {frameRate} FPS   {DateTime.Now:HH:mm}";
             return status;
         }
+
+        public void Dispose() => playerPage.Dispose();
 
         private static string RoomStatus()
         {
