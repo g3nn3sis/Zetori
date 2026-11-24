@@ -31,8 +31,13 @@ namespace Zetori.UI.InGame
         private readonly DoublePressDetector summonPress = new DoublePressDetector(SummonWindow);
         private readonly VrCameraHand leftHand = new VrCameraHand(true);
         private readonly VrCameraHand rightHand = new VrCameraHand(false);
-        private readonly InGamePointer leftPointer = new InGamePointer(true);
-        private readonly InGamePointer rightPointer = new InGamePointer(false);
+        private readonly InGamePointer[] pointers =
+        {
+            new InGamePointer(true, InGamePlane.Panel),
+            new InGamePointer(false, InGamePlane.Panel),
+            new InGamePointer(true, InGamePlane.Keyboard),
+            new InGamePointer(false, InGamePlane.Keyboard)
+        };
         private readonly InGameSurface surface = new InGameSurface();
         private readonly InGameLayout layout = new InGameLayout();
         private readonly InGamePages pages;
@@ -110,22 +115,19 @@ namespace Zetori.UI.InGame
             pages.Draw();
             surface.End();
             layout.Arrange(surface);
-            if (Interactive)
+            foreach (InGamePointer pointer in pointers)
             {
-                Point(tagger, panel, leftPointer, leftHand, now);
-                Point(tagger, panel, rightPointer, rightHand, now);
+                if (Interactive) Point(tagger, panel, pointer, now);
+                else pointer.Reset();
             }
-            else
-            {
-                leftPointer.Reset();
-                rightPointer.Reset();
-            }
-            drawn.Render(surface, layout, leftPointer, rightPointer, accent);
+            drawn.Render(surface, layout, pointers, accent);
         }
 
-        private void Point(GorillaTagger tagger, InGameModel panel, InGamePointer pointer, VrCameraHand hand, float now)
+        private void Point(GorillaTagger tagger, InGameModel panel, InGamePointer pointer, float now)
         {
-            Vector3 local = panel.Root.InverseTransformPoint(hand.Finger.position);
+            VrCameraHand hand = pointer.IsLeft ? leftHand : rightHand;
+            Transform plane = pointer.Plane == InGamePlane.Keyboard ? panel.Keyboard : panel.Root;
+            Vector3 local = plane.InverseTransformPoint(hand.Finger.position);
             InGamePress press = pointer.Update(local, hand == holder, surface, layout, now);
             if (press == InGamePress.None || !CasterConfig.InGamePanelHaptics.Value) return;
             if (press == InGamePress.Hold) tagger.StartVibration(hand.IsLeft, HoldStrength, HoldSeconds);
@@ -136,8 +138,7 @@ namespace Zetori.UI.InGame
         {
             surface.ResetInteraction();
             layout.ResetScroll();
-            leftPointer.Reset();
-            rightPointer.Reset();
+            foreach (InGamePointer pointer in pointers) pointer.Reset();
         }
 
         private void Toggle(GorillaTagger tagger, GTPlayer player)

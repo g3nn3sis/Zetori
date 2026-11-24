@@ -18,6 +18,9 @@ namespace Zetori.UI.InGame
         private const float HandleHalfLength = 0.105f;
         private const float HandleReach = 0.075f;
         private const float MinimumScale = 0.001f;
+        private const float KeyboardHingeHeight = -0.185f;
+        private const float KeyboardHingeDepth = -0.03f;
+        private const float KeyboardTilt = 40f;
 
         private static readonly int BaseColorProperty = Shader.PropertyToID("_BaseColor");
         private static readonly Color BodyColor = new Color(0.12f, 0.12f, 0.14f);
@@ -34,6 +37,7 @@ namespace Zetori.UI.InGame
 
         internal Transform Root => root.transform;
         internal Transform Content { get; }
+        internal Transform Keyboard { get; }
         internal Mesh Quad { get; }
         internal bool Shown => root.activeSelf;
 
@@ -45,6 +49,7 @@ namespace Zetori.UI.InGame
             var content = new GameObject("content");
             content.transform.SetParent(root.transform, false);
             Content = content.transform;
+            Keyboard = CreateKeyboardPlane(root.transform);
             Quad = CreateQuad();
             meshes.Add(Quad);
         }
@@ -146,6 +151,15 @@ namespace Zetori.UI.InGame
             var renderer = partObject.AddComponent<MeshRenderer>();
             renderer.sharedMaterial = material;
             Register(renderer);
+        }
+
+        private static Transform CreateKeyboardPlane(Transform parent)
+        {
+            Transform plane = new GameObject("keyboard").transform;
+            plane.SetParent(parent, false);
+            plane.localPosition = new Vector3(0f, KeyboardHingeHeight, KeyboardHingeDepth);
+            plane.localRotation = Quaternion.Euler(KeyboardTilt, 0f, 0f);
+            return plane;
         }
 
         private static Mesh CreateQuad()

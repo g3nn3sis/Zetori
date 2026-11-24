@@ -24,21 +24,23 @@ namespace Zetori.UI.InGame
         private float pressedAt;
 
         internal bool IsLeft { get; }
+        internal InGamePlane Plane { get; }
         internal int Target { get; private set; } = Nothing;
         internal int Hovered { get; private set; } = Nothing;
         internal bool Scrolling => scrolling;
 
-        internal InGamePointer(bool isLeft) => IsLeft = isLeft;
+        internal InGamePointer(bool isLeft, InGamePlane plane)
+        {
+            IsLeft = isLeft;
+            Plane = plane;
+        }
 
         internal InGamePress Update(Vector3 local, bool blocked, InGameSurface surface, InGameLayout layout, float now)
         {
             var point = new Vector2(local.x, local.y);
             float distance = InGameMetrics.FaceDepth - local.z;
-            bool inside = !blocked
-                && Mathf.Abs(point.x) <= InGameMetrics.FaceHalfWidth + EdgeTolerance
-                && Mathf.Abs(point.y) <= InGameMetrics.FaceHalfHeight + EdgeTolerance
-                && distance > -BehindLimit;
-            if (Target != Nothing && (Target >= surface.Count || surface[Target].Kind != targetKind)) Cancel();
+            bool inside = !blocked && layout.Covers(Plane, point, EdgeTolerance) && distance > -BehindLimit;
+            if (Target != Nothing && !StillTargeted(surface)) Cancel();
             Hovered = !inside || distance > HoverDistance ? Nothing : Target != Nothing ? Target : Hit(surface, layout, point);
             if (!inside || distance > ReleaseDistance)
             {
@@ -63,9 +65,12 @@ namespace Zetori.UI.InGame
             Hovered = Nothing;
         }
 
+        private bool StillTargeted(InGameSurface surface) =>
+            Target < surface.Count && surface[Target].Kind == targetKind && surface[Target].Plane == Plane;
+
         private InGamePress Begin(InGameSurface surface, InGameLayout layout, Vector2 point, float now)
         {
-            if (layout.OnScrollbar(point))
+            if (Plane == InGamePlane.Panel && layout.OnScrollbar(point))
             {
                 scrolling = true;
                 layout.ScrollTo(point.y);
@@ -127,13 +132,13 @@ namespace Zetori.UI.InGame
             clickOnRelease = false;
         }
 
-        private static int Hit(InGameSurface surface, InGameLayout layout, Vector2 point)
+        private int Hit(InGameSurface surface, InGameLayout layout, Vector2 point)
         {
-            bool inMenu = layout.MenuContains(point);
+            bool inMenu = Plane == InGamePlane.Panel && layout.MenuContains(point);
             for (int i = 0; i < surface.Count; i++)
             {
                 InGameElement element = surface[i];
-                if ((element.Region == InGameRegion.Menu) == inMenu && element.Pressable && element.Contains(point)) return i;
+                if (element.Plane == Plane && (element.Region == InGameRegion.Menu) == inMenu && element.Pressable && element.Contains(point)) return i;
             }
             return Nothing;
         }

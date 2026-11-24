@@ -65,6 +65,7 @@ namespace Zetori.UI.InGame
         private readonly List<InGameImage> images = new List<InGameImage>();
         private readonly Dictionary<IconGlyph, Mesh?> iconMeshes = new Dictionary<IconGlyph, Mesh?>();
         private TMP_FontAsset? font;
+        private Transform canvas;
         private int used;
         private int iconsUsed;
         private int imagesUsed;
@@ -75,9 +76,13 @@ namespace Zetori.UI.InGame
         private string brandDetail = string.Empty;
         private string brandMarkup = string.Empty;
 
-        internal InGameVisuals(InGameModel model) => this.model = model;
+        internal InGameVisuals(InGameModel model)
+        {
+            this.model = model;
+            canvas = model.Content;
+        }
 
-        internal void Render(InGameSurface surface, InGameLayout layout, InGamePointer left, InGamePointer right, Color32 accentColor)
+        internal void Render(InGameSurface surface, InGameLayout layout, InGamePointer[] pointers, Color32 accentColor)
         {
             SyncFont();
             accent = accentColor;
@@ -86,13 +91,20 @@ namespace Zetori.UI.InGame
             used = 0;
             iconsUsed = 0;
             imagesUsed = 0;
+            canvas = model.Content;
             DrawRules(layout);
-            DrawElements(surface, left, right, false, 0f);
-            if (layout.Scrollable) DrawScrollbar(layout, left.Scrolling || right.Scrolling);
+            DrawElements(surface, pointers, InGamePlane.Panel, false, 0f);
+            if (layout.Scrollable) DrawScrollbar(layout, AnyScrolling(pointers));
             if (layout.HasMenu)
             {
                 DrawMenuBackdrop(layout);
-                DrawElements(surface, left, right, true, InGameMetrics.MenuLift);
+                DrawElements(surface, pointers, InGamePlane.Panel, true, InGameMetrics.MenuLift);
+            }
+            if (layout.HasKeyboard)
+            {
+                canvas = model.Keyboard;
+                DrawKeyboardBackdrop(layout);
+                DrawElements(surface, pointers, InGamePlane.Keyboard, false, 0f);
             }
             for (int i = 0; i < used; i++) pool[i].EndFrame();
             for (int i = used; i < pool.Count; i++) pool[i].Hide();
@@ -102,16 +114,35 @@ namespace Zetori.UI.InGame
             for (int i = imagesUsed; i < images.Count; i++) images[i].Hide();
         }
 
-        private void DrawElements(InGameSurface surface, InGamePointer left, InGamePointer right, bool menu, float lift)
+        private void DrawElements(InGameSurface surface, InGamePointer[] pointers, InGamePlane plane, bool menu, float lift)
         {
             for (int i = 0; i < surface.Count; i++)
             {
                 InGameElement element = surface[i];
-                if (!element.Visible || (element.Region == InGameRegion.Menu) != menu) continue;
-                bool pressed = left.Target == i || right.Target == i;
-                bool hovered = left.Hovered == i || right.Hovered == i;
-                Draw(element, pressed, hovered, lift);
+                if (!element.Visible || element.Plane != plane || (element.Region == InGameRegion.Menu) != menu) continue;
+                Draw(element, AnyTargets(pointers, i), AnyHovers(pointers, i), lift);
             }
+        }
+
+        private static bool AnyTargets(InGamePointer[] pointers, int index)
+        {
+            foreach (InGamePointer pointer in pointers)
+                if (pointer.Target == index) return true;
+            return false;
+        }
+
+        private static bool AnyHovers(InGamePointer[] pointers, int index)
+        {
+            foreach (InGamePointer pointer in pointers)
+                if (pointer.Hovered == index) return true;
+            return false;
+        }
+
+        private static bool AnyScrolling(InGamePointer[] pointers)
+        {
+            foreach (InGamePointer pointer in pointers)
+                if (pointer.Scrolling) return true;
+            return false;
         }
 
         private void Draw(InGameElement element, bool pressed, bool hovered, float lift)
@@ -263,6 +294,14 @@ namespace Zetori.UI.InGame
             Next().ShowQuad(layout.MenuCenter, inner, InGameMetrics.MenuDepth, MenuColor);
         }
 
+        private void DrawKeyboardBackdrop(InGameLayout layout)
+        {
+            var center = new Vector2(0f, -layout.KeyboardHeight * 0.5f);
+            var size = new Vector2(InGameMetrics.FaceHalfWidth * 2f, layout.KeyboardHeight);
+            Next().ShowQuad(center, size + Vector2.one * (InGameMetrics.KeyboardBorder * 2f), InGameMetrics.KeyboardRimDepth, accent);
+            Next().ShowQuad(center, size, InGameMetrics.FaceDepth, InGameModel.FaceColor);
+        }
+
         private Mesh? IconMesh(IconGlyph glyph)
         {
             if (iconMeshes.TryGetValue(glyph, out Mesh? cached)) return cached;
@@ -319,7 +358,7 @@ namespace Zetori.UI.InGame
                 pool.Add(visual);
             }
             InGameVisual next = pool[used++];
-            next.BeginFrame();
+            next.BeginFrame(canvas);
             return next;
         }
 
@@ -332,7 +371,7 @@ namespace Zetori.UI.InGame
                 icons.Add(icon);
             }
             InGameIcon next = icons[iconsUsed++];
-            next.BeginFrame();
+            next.BeginFrame(canvas);
             return next;
         }
 
@@ -345,7 +384,7 @@ namespace Zetori.UI.InGame
                 images.Add(image);
             }
             InGameImage next = images[imagesUsed++];
-            next.BeginFrame();
+            next.BeginFrame(canvas);
             return next;
         }
 

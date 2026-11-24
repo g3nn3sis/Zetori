@@ -34,7 +34,11 @@ namespace Zetori.UI.InGame
             imageObject.SetActive(false);
         }
 
-        internal void BeginFrame() => used = false;
+        internal void BeginFrame(Transform parent)
+        {
+            used = false;
+            if (imageTransform.parent != parent) imageTransform.SetParent(parent, false);
+        }
 
         internal void EndFrame()
         {

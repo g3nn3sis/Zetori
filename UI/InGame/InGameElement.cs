@@ -28,6 +28,8 @@ namespace Zetori.UI.InGame
         internal Vector2 Size { get; set; }
         internal bool Visible { get; set; }
 
+        internal InGamePlane Plane => Region == InGameRegion.Keyboard ? InGamePlane.Keyboard : InGamePlane.Panel;
+
         internal bool Pressable =>
             Interactable && Visible && Kind is InGameElementKind.Button or InGameElementKind.Toggle or InGameElementKind.Field or InGameElementKind.Slider
                 or InGameElementKind.Card or InGameElementKind.Tile;

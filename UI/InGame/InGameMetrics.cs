@@ -43,6 +43,10 @@ namespace Zetori.UI.InGame
         internal const float MenuBorder = 0.0012f;
         internal const float MenuMinimumWidth = 0.12f;
 
+        internal const float KeyboardInset = FaceHalfWidth - Right;
+        internal const float KeyboardBorder = 0.0018f;
+        internal const float KeyboardRimDepth = -0.0096f;
+
         internal const float ControlFontSize = 0.12f;
         internal const float LabelFontSize = 0.1f;
         internal const float TitleFontSize = 0.13f;

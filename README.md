@@ -72,7 +72,7 @@ While a replay plays, your own body is hidden so it does not overlap the recorde
 | Double-press the left primary button (`X`) | Open the panel in front of you, or close it |
 | Touch a button | Press it; hold it to do its desktop right-click action, such as renaming a preset or replay |
 | Touch and slide along a slider | Set its value; the `-` and `+` beside it step in small increments |
-| Touch a text field | Type with the keyboard that appears under it; `Done` closes it |
+| Touch a text field | Type on the keyboard that appears below the panel, in front of it and tilted up toward you; `Done` closes it |
 | Touch and slide the bar on the right | Scroll a page that does not fit |
 | Grip either side handle | Move the panel; let go and it stays there |
 

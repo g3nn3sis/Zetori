@@ -57,10 +57,13 @@ namespace Zetori.UI.InGame
             if (text.font != font) text.font = font;
         }
 
-        internal void BeginFrame()
+        internal void BeginFrame(Transform parent)
         {
             quadUsed = false;
             textUsed = false;
+            if (quadTransform.parent == parent) return;
+            quadTransform.SetParent(parent, false);
+            textTransform.SetParent(parent, false);
         }
 
         internal void EndFrame()

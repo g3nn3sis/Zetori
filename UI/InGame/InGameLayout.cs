@@ -18,6 +18,8 @@ namespace Zetori.UI.InGame
         internal bool HasMenu { get; private set; }
         internal Vector2 MenuCenter { get; private set; }
         internal Vector2 MenuSize { get; private set; }
+        internal bool HasKeyboard { get; private set; }
+        internal float KeyboardHeight { get; private set; }
 
         internal float ViewportHeight => BodyTop - BodyBottom;
         internal bool Scrollable => ContentHeight > ViewportHeight + CullTolerance;
@@ -34,6 +36,13 @@ namespace Zetori.UI.InGame
             Scrollable
             && Mathf.Abs(point.x - TrackX) <= InGameMetrics.ScrollbarWidth * 0.5f + ScrollbarReach
             && point.y <= BodyTop && point.y >= BodyBottom;
+
+        internal bool Covers(InGamePlane plane, Vector2 point, float tolerance)
+        {
+            if (Mathf.Abs(point.x) > InGameMetrics.FaceHalfWidth + tolerance) return false;
+            if (plane == InGamePlane.Panel) return Mathf.Abs(point.y) <= InGameMetrics.FaceHalfHeight + tolerance;
+            return HasKeyboard && point.y <= tolerance && point.y >= -KeyboardHeight - tolerance;
+        }
 
         internal bool MenuContains(Vector2 point) =>
             HasMenu && Mathf.Abs(point.x - MenuCenter.x) <= MenuSize.x * 0.5f && Mathf.Abs(point.y - MenuCenter.y) <= MenuSize.y * 0.5f;
@@ -52,12 +61,7 @@ namespace Zetori.UI.InGame
             float footerHeight = Place(surface, InGameRegion.Footer, InGameMetrics.Right, 0f);
             float lowerEdge = InGameMetrics.Bottom + footerHeight;
             Place(surface, InGameRegion.Footer, InGameMetrics.Right, lowerEdge);
-            if (surface.Editing)
-            {
-                float keyboardHeight = Place(surface, InGameRegion.Keyboard, InGameMetrics.Right, 0f);
-                lowerEdge += InGameMetrics.RegionGap + keyboardHeight;
-                Place(surface, InGameRegion.Keyboard, InGameMetrics.Right, lowerEdge);
-            }
+            ArrangeKeyboard(surface);
             BodyTop = InGameMetrics.Top - headerHeight - InGameMetrics.RegionGap;
             BodyBottom = lowerEdge + InGameMetrics.RegionGap;
             ContentHeight = Place(surface, InGameRegion.Body, InGameMetrics.Right, 0f);
@@ -67,6 +71,13 @@ namespace Zetori.UI.InGame
             if (KeepEditedFieldInView(surface)) Place(surface, InGameRegion.Body, bodyRight, BodyTop + Scroll);
             CullBody(surface);
             PlaceMenu(surface, bodyRight);
+        }
+
+        private void ArrangeKeyboard(InGameSurface surface)
+        {
+            float keys = Place(surface, InGameRegion.Keyboard, InGameMetrics.Right, -InGameMetrics.KeyboardInset);
+            HasKeyboard = keys > 0f;
+            KeyboardHeight = HasKeyboard ? keys + InGameMetrics.KeyboardInset * 2f : 0f;
         }
 
         private void PlaceMenu(InGameSurface surface, float right)
