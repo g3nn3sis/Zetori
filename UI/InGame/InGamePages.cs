@@ -63,7 +63,8 @@ namespace Zetori.UI.InGame
             this.close = close;
             keyboard = new InGameKeyboard(surface);
             playerPage = new InGamePlayerPage(surface);
-            sections = BuildSections(new PanelContent(owner), new PlayersPanel(OpenPlayer), recenter, close);
+            var players = new InGamePlayersPage(surface, OpenPlayer);
+            sections = BuildSections(new PanelContent(owner), _ => players.Draw(), recenter, close);
             playersSection = Array.FindIndex(sections, section => section.Title == PlayersTitle);
             openSection = new Action[sections.Length];
             for (int i = 0; i < sections.Length; i++)
@@ -131,12 +132,12 @@ namespace Zetori.UI.InGame
             catch (Exception e) { Log.ExceptionOnce($"in-game-panel-{section.Title}", e, $"Drawing the in-game {section.Title} page failed"); }
         }
 
-        private static Section[] BuildSections(PanelContent content, PlayersPanel players, Action recenter, Action close)
+        private static Section[] BuildSections(PanelContent content, Action<IPanelSurface> drawPlayers, Action recenter, Action close)
         {
             var list = new List<Section>
             {
                 new Section(RoomTitle, PanelCatalog.Icon(PanelId.Main), content.For(PanelId.Main)),
-                new Section(PlayersTitle, IconGlyph.People, players.Draw),
+                new Section(PlayersTitle, IconGlyph.People, drawPlayers),
                 new Section("VR Camera", IconGlyph.Camcorder, VrCameraPanel.Draw)
             };
             foreach (PanelId[] column in PanelCatalog.Columns)

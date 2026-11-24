@@ -41,7 +41,7 @@ namespace Zetori.UI.InGame
             if (!used) Hide();
         }
 
-        internal void Show(Texture texture, Vector2 center, Vector2 bounds)
+        internal void Show(Texture texture, Vector2 center, Vector2 bounds, float depth)
         {
             used = true;
             if (!imageObject.activeSelf) imageObject.SetActive(true);
@@ -50,7 +50,7 @@ namespace Zetori.UI.InGame
                 shownTexture = texture;
                 material.SetTexture(BaseMapProperty, texture);
             }
-            var position = new Vector3(center.x, center.y, InGameMetrics.QuadDepth);
+            var position = new Vector3(center.x, center.y, depth);
             if (imageTransform.localPosition != position) imageTransform.localPosition = position;
             Vector2 size = Fit(texture, bounds);
             var scale = new Vector3(size.x, size.y, 1f);

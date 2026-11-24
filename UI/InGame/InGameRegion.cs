@@ -9,6 +9,7 @@ namespace Zetori.UI.InGame
         Header,
         Body,
         Keyboard,
-        Footer
+        Footer,
+        Menu
     }
 }

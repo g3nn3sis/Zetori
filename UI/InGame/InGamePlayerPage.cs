@@ -33,7 +33,7 @@ namespace Zetori.UI.InGame
 
         private readonly InGameSurface surface;
         private readonly InGameMirror mirror = new InGameMirror();
-        private readonly ReportMenu report = new ReportMenu();
+        private readonly InGameReportMenu report;
         private readonly StringBuilder builder = new StringBuilder();
         private readonly Action viewRow;
         private readonly Action actionRow;
@@ -50,6 +50,7 @@ namespace Zetori.UI.InGame
         internal InGamePlayerPage(InGameSurface surface)
         {
             this.surface = surface;
+            report = new InGameReportMenu(surface);
             viewRow = DrawViewRow;
             actionRow = DrawActionRow;
             spectate = Spectate;
@@ -94,7 +95,6 @@ namespace Zetori.UI.InGame
             view = mirror.Follow(current);
             surface.HorizontalArea(viewRow);
             surface.HorizontalArea(actionRow);
-            report.DrawOptions(surface, line);
         }
 
         internal void Conceal() => mirror.Conceal();
@@ -110,7 +110,7 @@ namespace Zetori.UI.InGame
             bool spectating = NetworkedPlayerManager.selectedPlayer == rig;
             surface.Button(spectating ? SpectatingLabel : SpectateLabel, spectate, !spectating);
             MuteToggle.Draw(surface, line);
-            report.DrawButton(surface, line);
+            report.Draw(line);
         }
 
         private void Spectate()

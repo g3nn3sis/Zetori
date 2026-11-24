@@ -18,6 +18,7 @@ namespace Zetori.UI.InGame
         private const float TrackWeight = 5f;
         private const float DefaultWeight = 1f;
         private const int NotEditing = -1;
+        private const int NoMenu = -1;
 
         private enum InteractionType
         {
@@ -57,12 +58,18 @@ namespace Zetori.UI.InGame
         private int rowGroup;
         private float nextWeight = DefaultWeight;
         private bool editedThisFrame;
+        private bool dismissMenu;
+        private bool menuChosen;
         private string editText = string.Empty;
         private int editMaxLength;
 
         internal int Count { get; private set; }
         internal int EditingIndex { get; private set; } = NotEditing;
         internal bool Editing => EditingIndex != NotEditing;
+        internal int MenuAnchor { get; private set; } = NoMenu;
+        internal int MenuFirst { get; private set; }
+        internal int MenuEnd { get; private set; }
+        internal bool HasMenu => MenuAnchor != NoMenu;
 
         internal InGameElement this[int index] => elements[index];
 
@@ -79,6 +86,10 @@ namespace Zetori.UI.InGame
             pending.Clear();
             pending.AddRange(queued);
             queued.Clear();
+            dismissMenu = HasMenu && PendingOutsideMenu();
+            MenuAnchor = NoMenu;
+            MenuFirst = 0;
+            MenuEnd = 0;
         }
 
         internal void End()
@@ -143,6 +154,17 @@ namespace Zetori.UI.InGame
         public void Button(string text, Action? onClick, Action onRightClick, bool interactable = true) => Press(text, onClick, onRightClick, interactable);
 
         internal void Button(string text, IconGlyph icon, Action? onClick) => Press(text, onClick, null, true).Icon = icon;
+
+        internal bool Dropdown(string text, bool open, Action drawOptions, bool interactable = true)
+        {
+            InGameElement anchor = Add(InGameElementKind.Button, text, InGameMetrics.ButtonHeight, interactable);
+            if (!interactable) return false;
+            if (Take(InteractionType.Click, anchor, out _)) open = !open;
+            else if (dismissMenu) open = false;
+            if (!open || HasMenu) return false;
+            anchor.Active = true;
+            return DrawMenu(anchor.Index, drawOptions);
+        }
 
         public bool Toggle(string label, bool value, string on = "On", string off = "Off", bool interactable = true)
         {
@@ -213,6 +235,35 @@ namespace Zetori.UI.InGame
             return element;
         }
 
+        private bool DrawMenu(int anchor, Action drawOptions)
+        {
+            InGameRegion outerRegion = region;
+            int outerDepth = rowDepth;
+            int outerGroup = rowGroup;
+            region = InGameRegion.Menu;
+            rowDepth = 0;
+            menuChosen = false;
+            MenuAnchor = anchor;
+            MenuFirst = Count;
+            try { drawOptions(); }
+            finally
+            {
+                MenuEnd = Count;
+                if (menuChosen) MenuAnchor = NoMenu;
+                region = outerRegion;
+                rowDepth = outerDepth;
+                rowGroup = outerGroup;
+            }
+            return !menuChosen;
+        }
+
+        private bool PendingOutsideMenu()
+        {
+            foreach (Interaction interaction in pending)
+                if (interaction.Index != MenuAnchor && (interaction.Index < MenuFirst || interaction.Index >= MenuEnd)) return true;
+            return false;
+        }
+
         private bool Stepped(string text)
         {
             nextWeight = StepWeight;
@@ -241,6 +292,7 @@ namespace Zetori.UI.InGame
                 if (!interaction.Targets(type, element)) continue;
                 fraction = interaction.Fraction;
                 pending.RemoveAt(i);
+                if (element.Region == InGameRegion.Menu) menuChosen = true;
                 return true;
             }
             fraction = 0f;

@@ -15,6 +15,9 @@ namespace Zetori.UI.InGame
         internal float BodyBottom { get; private set; }
         internal float Scroll { get; private set; }
         internal float ContentHeight { get; private set; }
+        internal bool HasMenu { get; private set; }
+        internal Vector2 MenuCenter { get; private set; }
+        internal Vector2 MenuSize { get; private set; }
 
         internal float ViewportHeight => BodyTop - BodyBottom;
         internal bool Scrollable => ContentHeight > ViewportHeight + CullTolerance;
@@ -31,6 +34,9 @@ namespace Zetori.UI.InGame
             Scrollable
             && Mathf.Abs(point.x - TrackX) <= InGameMetrics.ScrollbarWidth * 0.5f + ScrollbarReach
             && point.y <= BodyTop && point.y >= BodyBottom;
+
+        internal bool MenuContains(Vector2 point) =>
+            HasMenu && Mathf.Abs(point.x - MenuCenter.x) <= MenuSize.x * 0.5f && Mathf.Abs(point.y - MenuCenter.y) <= MenuSize.y * 0.5f;
 
         internal void ScrollTo(float pointerY)
         {
@@ -60,6 +66,41 @@ namespace Zetori.UI.InGame
             Place(surface, InGameRegion.Body, bodyRight, BodyTop + Scroll);
             if (KeepEditedFieldInView(surface)) Place(surface, InGameRegion.Body, bodyRight, BodyTop + Scroll);
             CullBody(surface);
+            PlaceMenu(surface, bodyRight);
+        }
+
+        private void PlaceMenu(InGameSurface surface, float right)
+        {
+            HasMenu = false;
+            if (!surface.HasMenu) return;
+            InGameElement anchor = surface[surface.MenuAnchor];
+            if (!anchor.Visible || surface.MenuEnd <= surface.MenuFirst) return;
+            float width = Mathf.Max(anchor.Size.x, InGameMetrics.MenuMinimumWidth);
+            float left = Mathf.Clamp(anchor.Center.x - anchor.Size.x * 0.5f, InGameMetrics.Left, right - width);
+            float height = MenuHeight(surface);
+            float anchorHalf = anchor.Size.y * 0.5f;
+            float top = anchor.Center.y - anchorHalf - InGameMetrics.MenuGap;
+            if (top - height < InGameMetrics.Bottom) top = Mathf.Min(InGameMetrics.Top, anchor.Center.y + anchorHalf + InGameMetrics.MenuGap + height);
+            MenuCenter = new Vector2(left + width * 0.5f, top - height * 0.5f);
+            MenuSize = new Vector2(width, height);
+            HasMenu = true;
+            float itemWidth = width - InGameMetrics.MenuPadding * 2f;
+            float y = top - InGameMetrics.MenuPadding;
+            for (int i = surface.MenuFirst; i < surface.MenuEnd; i++)
+            {
+                InGameElement item = surface[i];
+                item.Center = new Vector2(MenuCenter.x, y - item.Height * 0.5f);
+                item.Size = new Vector2(itemWidth, item.Height);
+                item.Visible = item.Kind != InGameElementKind.Spacer;
+                y -= item.Height + InGameMetrics.RowGap;
+            }
+        }
+
+        private static float MenuHeight(InGameSurface surface)
+        {
+            float height = InGameMetrics.MenuPadding * 2f - InGameMetrics.RowGap;
+            for (int i = surface.MenuFirst; i < surface.MenuEnd; i++) height += surface[i].Height + InGameMetrics.RowGap;
+            return height;
         }
 
         private bool KeepEditedFieldInView(InGameSurface surface)
@@ -99,38 +140,47 @@ namespace Zetori.UI.InGame
                     start++;
                     continue;
                 }
-                int end = RowEnd(surface, start, out float totalWeight, out float rowHeight);
+                int end = RowEnd(surface, start, out int members, out float totalWeight, out float rowHeight);
                 if (placedRow) y -= InGameMetrics.RowGap;
                 placedRow = true;
-                PlaceRow(surface, start, end, right, y - rowHeight * 0.5f, totalWeight);
+                PlaceRow(surface, start, end, members, right, y - rowHeight * 0.5f, totalWeight);
                 y -= rowHeight;
                 start = end;
             }
             return top - y;
         }
 
-        private static int RowEnd(InGameSurface surface, int start, out float totalWeight, out float rowHeight)
+        private static int RowEnd(InGameSurface surface, int start, out int members, out float totalWeight, out float rowHeight)
         {
             InGameElement first = surface[start];
+            members = 1;
             totalWeight = first.Weight;
             rowHeight = first.Height;
             int end = start + 1;
-            while (end < surface.Count && surface[end].Region == first.Region && surface[end].Group == first.Group)
+            while (end < surface.Count)
             {
-                totalWeight += surface[end].Weight;
-                rowHeight = Mathf.Max(rowHeight, surface[end].Height);
+                InGameElement next = surface[end];
+                if (next.Region != InGameRegion.Menu)
+                {
+                    if (next.Region != first.Region || next.Group != first.Group) break;
+                    members++;
+                    totalWeight += next.Weight;
+                    rowHeight = Mathf.Max(rowHeight, next.Height);
+                }
                 end++;
             }
             return end;
         }
 
-        private static void PlaceRow(InGameSurface surface, int start, int end, float right, float centerY, float totalWeight)
+        private static void PlaceRow(InGameSurface surface, int start, int end, int members, float right, float centerY, float totalWeight)
         {
-            float available = right - InGameMetrics.Left - InGameMetrics.ColumnGap * (end - start - 1);
+            InGameRegion region = surface[start].Region;
+            float available = right - InGameMetrics.Left - InGameMetrics.ColumnGap * (members - 1);
             float x = InGameMetrics.Left;
             for (int i = start; i < end; i++)
             {
                 InGameElement element = surface[i];
+                if (element.Region != region) continue;
                 float width = totalWeight > 0f ? available * element.Weight / totalWeight : 0f;
                 element.Center = new Vector2(x + width * 0.5f, centerY);
                 element.Size = new Vector2(width, element.Height);

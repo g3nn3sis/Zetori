@@ -36,6 +36,7 @@ namespace Zetori.UI.InGame
         private static readonly Color DarkTextColor = new Color(0.06f, 0.06f, 0.08f);
         private static readonly Color LabelColor = new Color(0.82f, 0.83f, 0.88f);
         private static readonly Color DisabledTextColor = new Color(0.42f, 0.43f, 0.48f);
+        private static readonly Color MenuColor = new Color(0.11f, 0.12f, 0.14f);
 
         private readonly InGameModel model;
         private readonly List<InGameVisual> pool = new List<InGameVisual>();
@@ -59,15 +60,13 @@ namespace Zetori.UI.InGame
             used = 0;
             iconsUsed = 0;
             imagesUsed = 0;
-            for (int i = 0; i < surface.Count; i++)
-            {
-                InGameElement element = surface[i];
-                if (!element.Visible) continue;
-                bool pressed = left.Target == i || right.Target == i;
-                bool hovered = left.Hovered == i || right.Hovered == i;
-                Draw(element, pressed, hovered);
-            }
+            DrawElements(surface, left, right, false, 0f);
             if (layout.Scrollable) DrawScrollbar(layout, left.Scrolling || right.Scrolling);
+            if (layout.HasMenu)
+            {
+                DrawMenuBackdrop(layout);
+                DrawElements(surface, left, right, true, InGameMetrics.MenuLift);
+            }
             for (int i = 0; i < used; i++) pool[i].EndFrame();
             for (int i = used; i < pool.Count; i++) pool[i].Hide();
             for (int i = 0; i < iconsUsed; i++) icons[i].EndFrame();
@@ -76,66 +75,86 @@ namespace Zetori.UI.InGame
             for (int i = imagesUsed; i < images.Count; i++) images[i].Hide();
         }
 
-        private void Draw(InGameElement element, bool pressed, bool hovered)
+        private void DrawElements(InGameSurface surface, InGamePointer left, InGamePointer right, bool menu, float lift)
+        {
+            for (int i = 0; i < surface.Count; i++)
+            {
+                InGameElement element = surface[i];
+                if (!element.Visible || (element.Region == InGameRegion.Menu) != menu) continue;
+                bool pressed = left.Target == i || right.Target == i;
+                bool hovered = left.Hovered == i || right.Hovered == i;
+                Draw(element, pressed, hovered, lift);
+            }
+        }
+
+        private void Draw(InGameElement element, bool pressed, bool hovered, float lift)
         {
             switch (element.Kind)
             {
                 case InGameElementKind.Label:
-                    DrawText(element, InGameTextStyle.Label, LabelColor);
+                    DrawText(element, InGameTextStyle.Label, LabelColor, lift);
                     break;
                 case InGameElementKind.Title:
-                    DrawText(element, InGameTextStyle.Title, element.Color);
+                    DrawText(element, InGameTextStyle.Title, element.Color, lift);
                     break;
                 case InGameElementKind.Block:
-                    DrawText(element, InGameTextStyle.Block, LabelColor);
+                    DrawText(element, InGameTextStyle.Block, LabelColor, lift);
                     break;
                 case InGameElementKind.Image:
-                    DrawImage(element);
+                    DrawImage(element, lift);
                     break;
                 case InGameElementKind.Slider:
-                    DrawSlider(element, pressed || hovered);
+                    DrawSlider(element, pressed || hovered, lift);
                     break;
                 case InGameElementKind.Swatch:
-                    DrawSwatch(element);
+                    DrawSwatch(element, lift);
                     break;
                 case InGameElementKind.Spacer:
                     break;
                 default:
-                    DrawControl(element, pressed, hovered);
+                    DrawControl(element, pressed, hovered, lift);
                     break;
             }
         }
 
-        private void DrawText(InGameElement element, InGameTextStyle style, Color color)
+        private void DrawText(InGameElement element, InGameTextStyle style, Color color, float lift)
         {
-            Next().ShowText(element.Text, element.Center, element.Size, style, color);
+            Next().ShowText(element.Text, element.Center, element.Size, InGameMetrics.TextDepth - lift, style, color);
         }
 
-        private void DrawImage(InGameElement element)
+        private void DrawImage(InGameElement element, float lift)
         {
             Texture? texture = element.Texture;
-            if (texture != null) NextImage().Show(texture, element.Center, element.Size);
+            if (texture != null) NextImage().Show(texture, element.Center, element.Size, InGameMetrics.QuadDepth - lift);
         }
 
-        private void DrawControl(InGameElement element, bool pressed, bool hovered)
+        private void DrawControl(InGameElement element, bool pressed, bool hovered, float lift)
         {
             Color background = Background(element, pressed, hovered);
             bool onAccent = element.Active && !pressed && element.Kind != InGameElementKind.Field;
             Color text = !element.Interactable ? DisabledTextColor : onAccent ? accentText : TextColor;
+            float textDepth = InGameMetrics.TextDepth - lift;
             InGameVisual visual = Next();
-            visual.ShowQuad(element.Center, element.Size, InGameMetrics.QuadDepth, background);
+            visual.ShowQuad(element.Center, element.Size, InGameMetrics.QuadDepth - lift, background);
             Mesh? icon = element.Icon is IconGlyph glyph ? IconMesh(glyph) : null;
             if (icon == null)
             {
-                visual.ShowText(element.Text, element.Center, element.Size, InGameTextStyle.Control, text);
+                visual.ShowText(element.Text, element.Center, element.Size, textDepth, InGameTextStyle.Control, text);
                 return;
             }
             float size = Mathf.Min(IconSize, element.Size.y * IconHeightLimit);
             float left = element.Center.x - element.Size.x * 0.5f;
             float right = element.Center.x + element.Size.x * 0.5f;
             float textLeft = left + IconInset + size;
-            NextIcon().Show(icon, new Vector2(left + IconInset + size * 0.5f, element.Center.y), size, text);
-            visual.ShowText(element.Text, new Vector2((textLeft + right) * 0.5f, element.Center.y), new Vector2(right - textLeft, element.Size.y), InGameTextStyle.Control, text);
+            NextIcon().Show(icon, new Vector2(left + IconInset + size * 0.5f, element.Center.y), size, textDepth, text);
+            visual.ShowText(element.Text, new Vector2((textLeft + right) * 0.5f, element.Center.y), new Vector2(right - textLeft, element.Size.y), textDepth, InGameTextStyle.Control, text);
+        }
+
+        private void DrawMenuBackdrop(InGameLayout layout)
+        {
+            Next().ShowQuad(layout.MenuCenter, layout.MenuSize, InGameMetrics.MenuBorderDepth, accent);
+            Vector2 inner = layout.MenuSize - Vector2.one * (InGameMetrics.MenuBorder * 2f);
+            Next().ShowQuad(layout.MenuCenter, inner, InGameMetrics.MenuDepth, MenuColor);
         }
 
         private Mesh? IconMesh(IconGlyph glyph)
@@ -156,24 +175,24 @@ namespace Zetori.UI.InGame
             return hovered ? HoverColor : IdleColor;
         }
 
-        private void DrawSlider(InGameElement element, bool engaged)
+        private void DrawSlider(InGameElement element, bool engaged, float lift)
         {
             Vector2 center = element.Center;
             float width = element.Size.x;
             float left = center.x - width * 0.5f;
             float fill = width * element.Fraction;
-            Next().ShowQuad(center, new Vector2(width, TrackThickness), InGameMetrics.QuadDepth, TrackColor);
-            if (fill > 0f) Next().ShowQuad(new Vector2(left + fill * 0.5f, center.y), new Vector2(fill, TrackThickness), InGameMetrics.FillDepth, accent);
+            Next().ShowQuad(center, new Vector2(width, TrackThickness), InGameMetrics.QuadDepth - lift, TrackColor);
+            if (fill > 0f) Next().ShowQuad(new Vector2(left + fill * 0.5f, center.y), new Vector2(fill, TrackThickness), InGameMetrics.FillDepth - lift, accent);
             float knobX = Mathf.Clamp(left + fill, left + KnobWidth * 0.5f, left + width - KnobWidth * 0.5f);
             Color knob = engaged ? Color.Lerp(KnobColor, accent, HoverLift) : KnobColor;
-            Next().ShowQuad(new Vector2(knobX, center.y), new Vector2(KnobWidth, element.Size.y * KnobHeightRatio), InGameMetrics.KnobDepth, knob);
+            Next().ShowQuad(new Vector2(knobX, center.y), new Vector2(KnobWidth, element.Size.y * KnobHeightRatio), InGameMetrics.KnobDepth - lift, knob);
         }
 
-        private void DrawSwatch(InGameElement element)
+        private void DrawSwatch(InGameElement element, float lift)
         {
-            Next().ShowQuad(element.Center, element.Size, InGameMetrics.QuadDepth, accent);
+            Next().ShowQuad(element.Center, element.Size, InGameMetrics.QuadDepth - lift, accent);
             Vector2 inner = element.Size - Vector2.one * (SwatchBorder * 2f);
-            Next().ShowQuad(element.Center, inner, InGameMetrics.FillDepth, element.Color);
+            Next().ShowQuad(element.Center, inner, InGameMetrics.FillDepth - lift, element.Color);
         }
 
         private void DrawScrollbar(InGameLayout layout, bool dragging)

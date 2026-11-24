@@ -5,10 +5,11 @@
 using UnityEngine;
 using Zetori.Game;
 using Zetori.Player;
+using Zetori.UI.Panels;
 
-namespace Zetori.UI.Panels
+namespace Zetori.UI.InGame
 {
-    internal sealed class PlayersPanel
+    internal sealed class InGamePlayersPage
     {
         private const float RefreshInterval = 0.5f;
 
@@ -28,43 +29,38 @@ namespace Zetori.UI.Panels
             }
         }
 
+        private readonly InGameSurface surface;
         private readonly Action<VRRig> openPlayer;
-        private readonly ReportMenu report = new ReportMenu();
+        private readonly InGameReportMenu report;
         private Row[] rows = Array.Empty<Row>();
-        private IPanelSurface? drawing;
         private float nextRefresh;
 
-        internal PlayersPanel(Action<VRRig> openPlayer) => this.openPlayer = openPlayer;
+        internal InGamePlayersPage(InGameSurface surface, Action<VRRig> openPlayer)
+        {
+            this.surface = surface;
+            this.openPlayer = openPlayer;
+            report = new InGameReportMenu(surface);
+        }
 
-        internal void Draw(IPanelSurface panel)
+        internal void Draw()
         {
             Refresh();
             if (rows.Length == 0)
             {
-                panel.Label("No players.");
+                surface.Label("No players.");
                 return;
             }
-            panel.Label("Tap a name to view the player. Mute only affects what you hear.");
-            drawing = panel;
-            try
-            {
-                foreach (Row row in rows)
-                {
-                    panel.HorizontalArea(row.Draw);
-                    report.DrawOptions(panel, row.Line);
-                }
-            }
-            finally { drawing = null; }
+            surface.Label("Tap a name to view the player. Mute only affects what you hear.");
+            foreach (Row row in rows) surface.HorizontalArea(row.Draw);
         }
 
         private void DrawRow(Row row)
         {
-            IPanelSurface panel = drawing!;
             VRRig rig = row.Rig;
             if (rig == null) return;
-            panel.Button(Describe(rig), row.Open);
-            MuteToggle.Draw(panel, row.Line);
-            report.DrawButton(panel, row.Line);
+            surface.Button(Describe(rig), row.Open);
+            MuteToggle.Draw(surface, row.Line);
+            report.Draw(row.Line);
         }
 
         private static string Describe(VRRig rig)

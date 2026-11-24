@@ -40,12 +40,12 @@ namespace Zetori.UI.InGame
             if (!used) Hide();
         }
 
-        internal void Show(Mesh mesh, Vector2 center, float size, Color color)
+        internal void Show(Mesh mesh, Vector2 center, float size, float depth, Color color)
         {
             used = true;
             if (!iconObject.activeSelf) iconObject.SetActive(true);
             if (filter.sharedMesh != mesh) filter.sharedMesh = mesh;
-            var position = new Vector3(center.x, center.y, InGameMetrics.TextDepth);
+            var position = new Vector3(center.x, center.y, depth);
             if (iconTransform.localPosition != position) iconTransform.localPosition = position;
             var scale = new Vector3(size, size, 1f);
             if (iconTransform.localScale != scale) iconTransform.localScale = scale;

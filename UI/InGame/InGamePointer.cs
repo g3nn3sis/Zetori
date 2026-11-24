@@ -39,7 +39,7 @@ namespace Zetori.UI.InGame
                 && Mathf.Abs(point.y) <= InGameMetrics.FaceHalfHeight + EdgeTolerance
                 && distance > -BehindLimit;
             if (Target != Nothing && (Target >= surface.Count || surface[Target].Kind != targetKind)) Cancel();
-            Hovered = !inside || distance > HoverDistance ? Nothing : Target != Nothing ? Target : Hit(surface, point);
+            Hovered = !inside || distance > HoverDistance ? Nothing : Target != Nothing ? Target : Hit(surface, layout, point);
             if (!inside || distance > ReleaseDistance)
             {
                 InGamePress released = Release(surface);
@@ -71,7 +71,7 @@ namespace Zetori.UI.InGame
                 layout.ScrollTo(point.y);
                 return InGamePress.Tap;
             }
-            int hit = Hit(surface, point);
+            int hit = Hit(surface, layout, point);
             if (hit == Nothing) return InGamePress.None;
             InGameElement element = surface[hit];
             Target = hit;
@@ -127,12 +127,13 @@ namespace Zetori.UI.InGame
             clickOnRelease = false;
         }
 
-        private static int Hit(InGameSurface surface, Vector2 point)
+        private static int Hit(InGameSurface surface, InGameLayout layout, Vector2 point)
         {
+            bool inMenu = layout.MenuContains(point);
             for (int i = 0; i < surface.Count; i++)
             {
                 InGameElement element = surface[i];
-                if (element.Pressable && element.Contains(point)) return i;
+                if ((element.Region == InGameRegion.Menu) == inMenu && element.Pressable && element.Contains(point)) return i;
             }
             return Nothing;
         }

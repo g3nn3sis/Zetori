@@ -31,6 +31,14 @@ namespace Zetori.UI.InGame
         internal const float FillDepth = -0.0117f;
         internal const float KnobDepth = -0.0122f;
         internal const float TextDepth = -0.0128f;
+        internal const float MenuBorderDepth = -0.0134f;
+        internal const float MenuDepth = -0.0137f;
+        internal const float MenuLift = 0.0035f;
+
+        internal const float MenuGap = 0.002f;
+        internal const float MenuPadding = 0.003f;
+        internal const float MenuBorder = 0.0012f;
+        internal const float MenuMinimumWidth = 0.12f;
 
         internal const float ControlFontSize = 0.12f;
         internal const float LabelFontSize = 0.1f;

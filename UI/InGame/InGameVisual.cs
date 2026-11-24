@@ -87,13 +87,13 @@ namespace Zetori.UI.InGame
             if (quadObject.activeSelf) quadObject.SetActive(false);
         }
 
-        internal void ShowText(string value, Vector2 center, Vector2 size, InGameTextStyle style, Color color)
+        internal void ShowText(string value, Vector2 center, Vector2 size, float depth, InGameTextStyle style, Color color)
         {
             textUsed = true;
             GameObject textObject = text.gameObject;
             if (!textObject.activeSelf) textObject.SetActive(true);
             ApplyStyle(style);
-            var position = new Vector3(center.x, center.y, InGameMetrics.TextDepth);
+            var position = new Vector3(center.x, center.y, depth);
             if (textTransform.localPosition != position) textTransform.localPosition = position;
             if (text.rectTransform.sizeDelta != size) text.rectTransform.sizeDelta = size;
             if (!string.Equals(text.text, value, StringComparison.Ordinal)) text.text = value;
