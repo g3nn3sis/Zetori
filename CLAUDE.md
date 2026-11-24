@@ -77,7 +77,9 @@ newline at end of file. Keep related code grouped and ordered the same way acros
 - Nullable reference types are **on**; honour the annotations.
 - Log through `Log`; per-frame failures use `Log.*Once`. Never an empty `catch`.
 - Every user-facing setting goes in `CasterConfig`. **Never rename an existing config
-  section/key** — it is a saved-data contract. Config is for settings the user changes in the
+  section/key** — it is a saved-data contract. Every entry is bound in `CasterConfig.Bind`;
+  at startup any key no longer bound is deleted from `Default.cfg` and every preset, so removing
+  a binding removes its saved value everywhere. Config is for settings the user changes in the
   UI and presets snapshot; internal tuning values (animation timing, lerp/damping factors,
   layout spacing, thresholds) stay as `private const` in the class that uses them, never in
   config.

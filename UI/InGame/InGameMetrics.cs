@@ -20,6 +20,9 @@ namespace Zetori.UI.InGame
         internal const float TitleHeight = 0.025f;
         internal const float SliderHeight = 0.022f;
         internal const float SwatchHeight = 0.02f;
+        internal const float BrandHeight = 0.034f;
+        internal const float CardHeight = 0.058f;
+        internal const float TileHeight = 0.043f;
         internal const float RowGap = 0.0028f;
         internal const float ColumnGap = 0.0035f;
         internal const float RegionGap = 0.006f;
@@ -43,6 +46,8 @@ namespace Zetori.UI.InGame
         internal const float ControlFontSize = 0.12f;
         internal const float LabelFontSize = 0.1f;
         internal const float TitleFontSize = 0.13f;
+        internal const float BrandFontSize = 0.22f;
+        internal const float CaptionFontSize = 0.085f;
         internal const float MinimumFontSize = 0.055f;
 
         private const float LabelLineHeight = 0.0145f;

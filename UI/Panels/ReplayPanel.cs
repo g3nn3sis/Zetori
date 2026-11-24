@@ -4,6 +4,7 @@
 
 using Zetori.Base;
 using Zetori.GameCamera;
+using Zetori.GameCamera.Vr;
 using Zetori.Replay;
 using UnityEngine;
 
@@ -96,7 +97,7 @@ namespace Zetori.UI.Panels
             panel.HorizontalArea(() =>
             {
                 panel.Button("Spectate", () => replay.Camera = CameraMode.Spectator, replay.Camera != CameraMode.Spectator);
-                panel.Button("FreeCam", () => replay.Camera = CameraMode.Freecam, replay.Camera != CameraMode.Freecam);
+                panel.Button("FreeCam", () => replay.Camera = CameraMode.Freecam, replay.Camera != CameraMode.Freecam && !VrCameraRig.HeadsetActive);
                 panel.Button("Web", () => replay.Camera = CameraMode.Web, replay.Camera != CameraMode.Web);
             });
             panel.HorizontalArea(() =>

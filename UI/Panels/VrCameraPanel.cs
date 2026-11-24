@@ -33,6 +33,12 @@ namespace Zetori.UI.Panels
             panel.Label("Double press right primary to bring out the camera tablet.");
         }
 
+        internal static string Summary()
+        {
+            string shot = DisplayNames.Humanize(CasterConfig.VrMode.Value.ToString());
+            return CameraManager.mode == CameraMode.Camera ? $"Live: {shot}" : shot;
+        }
+
         private static void ShotButton(IPanelSurface panel, string label, VrCameraMode mode) =>
             panel.Button(label, () => CasterConfig.VrMode.Value = mode, CasterConfig.VrMode.Value != mode);
     }

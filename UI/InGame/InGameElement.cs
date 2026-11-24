@@ -16,6 +16,7 @@ namespace Zetori.UI.InGame
         internal float Weight { get; private set; }
         internal float Height { get; private set; }
         internal string Text { get; set; } = string.Empty;
+        internal string Detail { get; set; } = string.Empty;
         internal bool Interactable { get; private set; }
         internal bool Active { get; set; }
         internal bool HasAlternate { get; set; }
@@ -28,7 +29,8 @@ namespace Zetori.UI.InGame
         internal bool Visible { get; set; }
 
         internal bool Pressable =>
-            Interactable && Visible && Kind is InGameElementKind.Button or InGameElementKind.Toggle or InGameElementKind.Field or InGameElementKind.Slider;
+            Interactable && Visible && Kind is InGameElementKind.Button or InGameElementKind.Toggle or InGameElementKind.Field or InGameElementKind.Slider
+                or InGameElementKind.Card or InGameElementKind.Tile;
 
         internal void Reset(int index, InGameElementKind kind, InGameRegion region, int group, float weight, float height, string text, bool interactable)
         {
@@ -39,6 +41,7 @@ namespace Zetori.UI.InGame
             Weight = weight;
             Height = height;
             Text = text;
+            Detail = string.Empty;
             Interactable = interactable;
             Active = false;
             HasAlternate = false;

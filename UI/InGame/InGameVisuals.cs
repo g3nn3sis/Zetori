@@ -20,9 +20,30 @@ namespace Zetori.UI.InGame
         private const float PressedShade = 0.35f;
         private const float FocusedTint = 0.35f;
         private const float DisabledActiveTint = 0.3f;
-        private const float IconSize = 0.014f;
-        private const float IconInset = 0.006f;
-        private const float IconHeightLimit = 0.7f;
+        private const float MinimumIconLuminance = 0.25f;
+        private const float DimIconLift = 0.5f;
+        private const float RuleThickness = 0.0008f;
+        private const float RuleTint = 0.45f;
+        private const float BrandIconRatio = 0.86f;
+        private const float BrandGap = 0.005f;
+        private const string BrandSpacing = "0.08em";
+        private const string BrandDetailSize = "45%";
+        private const string BrandDetailColor = "8C8F9E";
+        private const float CardTint = 0.1f;
+        private const float CardBarWidth = 0.0025f;
+        private const float CardInset = 0.007f;
+        private const float CardIconRatio = 0.48f;
+        private const float CardGap = 0.005f;
+        private const float CardTitleRise = 0.15f;
+        private const float CardTitleRatio = 0.4f;
+        private const float CardDetailDrop = 0.19f;
+        private const float CardDetailRatio = 0.3f;
+        private const float TileIconRatio = 0.42f;
+        private const float TileIconRise = 0.15f;
+        private const float TileLabelDrop = 0.26f;
+        private const float TileLabelRatio = 0.32f;
+        private const float TileStripHeight = 0.0016f;
+        private const float TileStripTint = 0.35f;
 
         private static readonly Color IdleColor = new Color(0.17f, 0.18f, 0.21f);
         private static readonly Color HoverColor = new Color(0.26f, 0.27f, 0.32f);
@@ -49,6 +70,10 @@ namespace Zetori.UI.InGame
         private int imagesUsed;
         private Color accent;
         private Color accentText;
+        private Color iconTint;
+        private string brandName = string.Empty;
+        private string brandDetail = string.Empty;
+        private string brandMarkup = string.Empty;
 
         internal InGameVisuals(InGameModel model) => this.model = model;
 
@@ -57,9 +82,11 @@ namespace Zetori.UI.InGame
             SyncFont();
             accent = accentColor;
             accentText = Luminance(accent) > LightAccentLuminance ? DarkTextColor : TextColor;
+            iconTint = Luminance(accent) < MinimumIconLuminance ? Color.Lerp(accent, Color.white, DimIconLift) : accent;
             used = 0;
             iconsUsed = 0;
             imagesUsed = 0;
+            DrawRules(layout);
             DrawElements(surface, left, right, false, 0f);
             if (layout.Scrollable) DrawScrollbar(layout, left.Scrolling || right.Scrolling);
             if (layout.HasMenu)
@@ -109,6 +136,15 @@ namespace Zetori.UI.InGame
                 case InGameElementKind.Swatch:
                     DrawSwatch(element, lift);
                     break;
+                case InGameElementKind.Brand:
+                    DrawBrand(element, lift);
+                    break;
+                case InGameElementKind.Card:
+                    DrawCard(element, pressed, hovered, lift);
+                    break;
+                case InGameElementKind.Tile:
+                    DrawTile(element, pressed, hovered, lift);
+                    break;
                 case InGameElementKind.Spacer:
                     break;
                 default:
@@ -133,22 +169,92 @@ namespace Zetori.UI.InGame
             Color background = Background(element, pressed, hovered);
             bool onAccent = element.Active && !pressed && element.Kind != InGameElementKind.Field;
             Color text = !element.Interactable ? DisabledTextColor : onAccent ? accentText : TextColor;
-            float textDepth = InGameMetrics.TextDepth - lift;
             InGameVisual visual = Next();
             visual.ShowQuad(element.Center, element.Size, InGameMetrics.QuadDepth - lift, background);
-            Mesh? icon = element.Icon is IconGlyph glyph ? IconMesh(glyph) : null;
-            if (icon == null)
-            {
-                visual.ShowText(element.Text, element.Center, element.Size, textDepth, InGameTextStyle.Control, text);
-                return;
-            }
-            float size = Mathf.Min(IconSize, element.Size.y * IconHeightLimit);
-            float left = element.Center.x - element.Size.x * 0.5f;
-            float right = element.Center.x + element.Size.x * 0.5f;
-            float textLeft = left + IconInset + size;
-            NextIcon().Show(icon, new Vector2(left + IconInset + size * 0.5f, element.Center.y), size, textDepth, text);
-            visual.ShowText(element.Text, new Vector2((textLeft + right) * 0.5f, element.Center.y), new Vector2(right - textLeft, element.Size.y), textDepth, InGameTextStyle.Control, text);
+            visual.ShowText(element.Text, element.Center, element.Size, InGameMetrics.TextDepth - lift, InGameTextStyle.Control, text);
         }
+
+        private void DrawBrand(InGameElement element, float lift)
+        {
+            Vector2 center = element.Center;
+            Vector2 size = element.Size;
+            float left = center.x - size.x * 0.5f;
+            float right = center.x + size.x * 0.5f;
+            float depth = InGameMetrics.TextDepth - lift;
+            float textLeft = left;
+            if (Glyph(element) is Mesh icon)
+            {
+                float iconSize = size.y * BrandIconRatio;
+                NextIcon().Show(icon, new Vector2(left + iconSize * 0.5f, center.y), iconSize, depth, iconTint);
+                textLeft += iconSize + BrandGap;
+            }
+            var textCenter = new Vector2((textLeft + right) * 0.5f, center.y);
+            Next().ShowText(BrandMarkup(element), textCenter, new Vector2(right - textLeft, size.y), depth, InGameTextStyle.Brand, TextColor);
+        }
+
+        private void DrawCard(InGameElement element, bool pressed, bool hovered, float lift)
+        {
+            Vector2 center = element.Center;
+            Vector2 size = element.Size;
+            float left = center.x - size.x * 0.5f;
+            float right = center.x + size.x * 0.5f;
+            float depth = InGameMetrics.TextDepth - lift;
+            float textLeft = left + CardBarWidth + CardInset;
+            if (Glyph(element) is Mesh icon)
+            {
+                float iconSize = size.y * CardIconRatio;
+                NextIcon().Show(icon, new Vector2(textLeft + iconSize * 0.5f, center.y), iconSize, depth, pressed ? TextColor : iconTint);
+                textLeft += iconSize + CardGap;
+            }
+            float textX = (textLeft + right) * 0.5f;
+            float textWidth = right - textLeft;
+            InGameVisual body = Next();
+            body.ShowQuad(center, size, InGameMetrics.QuadDepth - lift, CardBackground(pressed, hovered));
+            body.ShowText(element.Text, new Vector2(textX, center.y + size.y * CardTitleRise), new Vector2(textWidth, size.y * CardTitleRatio), depth, InGameTextStyle.Heading, TextColor);
+            InGameVisual bar = Next();
+            bar.ShowQuad(new Vector2(left + CardBarWidth * 0.5f, center.y), new Vector2(CardBarWidth, size.y), InGameMetrics.FillDepth - lift, accent);
+            bar.ShowText(element.Detail, new Vector2(textX, center.y - size.y * CardDetailDrop), new Vector2(textWidth, size.y * CardDetailRatio), depth, InGameTextStyle.Caption, LabelColor);
+        }
+
+        private void DrawTile(InGameElement element, bool pressed, bool hovered, float lift)
+        {
+            Vector2 center = element.Center;
+            Vector2 size = element.Size;
+            float depth = InGameMetrics.TextDepth - lift;
+            Color background = Background(element, pressed, hovered);
+            Color strip = pressed || hovered ? accent : Color.Lerp(background, accent, TileStripTint);
+            InGameVisual body = Next();
+            body.ShowQuad(center, size, InGameMetrics.QuadDepth - lift, background);
+            body.ShowText(element.Text, new Vector2(center.x, center.y - size.y * TileLabelDrop), new Vector2(size.x, size.y * TileLabelRatio), depth, InGameTextStyle.Control, TextColor);
+            Next().ShowQuad(new Vector2(center.x, center.y - (size.y - TileStripHeight) * 0.5f), new Vector2(size.x, TileStripHeight), InGameMetrics.FillDepth - lift, strip);
+            if (Glyph(element) is Mesh icon) NextIcon().Show(icon, new Vector2(center.x, center.y + size.y * TileIconRise), size.y * TileIconRatio, depth, pressed ? TextColor : iconTint);
+        }
+
+        private void DrawRules(InGameLayout layout)
+        {
+            Color rule = Color.Lerp(InGameModel.FaceColor, accent, RuleTint);
+            float x = (InGameMetrics.Left + InGameMetrics.Right) * 0.5f;
+            var size = new Vector2(InGameMetrics.Right - InGameMetrics.Left, RuleThickness);
+            Next().ShowQuad(new Vector2(x, layout.BodyTop + InGameMetrics.RegionGap * 0.5f), size, InGameMetrics.QuadDepth, rule);
+            Next().ShowQuad(new Vector2(x, layout.BodyBottom - InGameMetrics.RegionGap * 0.5f), size, InGameMetrics.QuadDepth, rule);
+        }
+
+        private string BrandMarkup(InGameElement element)
+        {
+            if (string.Equals(element.Text, brandName, StringComparison.Ordinal) && string.Equals(element.Detail, brandDetail, StringComparison.Ordinal)) return brandMarkup;
+            brandName = element.Text;
+            brandDetail = element.Detail;
+            brandMarkup = $"<cspace={BrandSpacing}>{brandName}</cspace> <size={BrandDetailSize}><color=#{BrandDetailColor}>{brandDetail}</color></size>";
+            return brandMarkup;
+        }
+
+        private Color CardBackground(bool pressed, bool hovered)
+        {
+            if (pressed) return Color.Lerp(accent, Color.black, PressedShade);
+            return Color.Lerp(hovered ? HoverColor : IdleColor, accent, CardTint);
+        }
+
+        private Mesh? Glyph(InGameElement element) => element.Icon is IconGlyph glyph ? IconMesh(glyph) : null;
 
         private void DrawMenuBackdrop(InGameLayout layout)
         {

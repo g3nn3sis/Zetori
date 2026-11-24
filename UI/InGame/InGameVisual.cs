@@ -119,35 +119,37 @@ namespace Zetori.UI.InGame
             switch (style)
             {
                 case InGameTextStyle.Label:
-                    text.alignment = TextAlignmentOptions.Left;
-                    text.textWrappingMode = TextWrappingModes.Normal;
-                    text.fontSizeMax = InGameMetrics.LabelFontSize;
-                    text.fontStyle = FontStyles.Normal;
-                    text.margin = LabelMargin;
+                    Configure(TextAlignmentOptions.Left, TextWrappingModes.Normal, InGameMetrics.LabelFontSize, FontStyles.Normal, LabelMargin);
                     break;
                 case InGameTextStyle.Block:
-                    text.alignment = TextAlignmentOptions.TopLeft;
-                    text.textWrappingMode = TextWrappingModes.NoWrap;
-                    text.fontSizeMax = InGameMetrics.LabelFontSize;
-                    text.fontStyle = FontStyles.Normal;
-                    text.margin = LabelMargin;
+                    Configure(TextAlignmentOptions.TopLeft, TextWrappingModes.NoWrap, InGameMetrics.LabelFontSize, FontStyles.Normal, LabelMargin);
                     break;
                 case InGameTextStyle.Title:
-                    text.alignment = TextAlignmentOptions.Center;
-                    text.textWrappingMode = TextWrappingModes.NoWrap;
-                    text.fontSizeMax = InGameMetrics.TitleFontSize;
-                    text.fontStyle = FontStyles.Bold;
-                    text.margin = ControlMargin;
+                    Configure(TextAlignmentOptions.Center, TextWrappingModes.NoWrap, InGameMetrics.TitleFontSize, FontStyles.Bold, ControlMargin);
+                    break;
+                case InGameTextStyle.Brand:
+                    Configure(TextAlignmentOptions.Left, TextWrappingModes.NoWrap, InGameMetrics.BrandFontSize, FontStyles.Bold, LabelMargin);
+                    break;
+                case InGameTextStyle.Heading:
+                    Configure(TextAlignmentOptions.Left, TextWrappingModes.NoWrap, InGameMetrics.TitleFontSize, FontStyles.Bold, LabelMargin);
+                    break;
+                case InGameTextStyle.Caption:
+                    Configure(TextAlignmentOptions.Left, TextWrappingModes.NoWrap, InGameMetrics.CaptionFontSize, FontStyles.Normal, LabelMargin);
                     break;
                 default:
-                    text.alignment = TextAlignmentOptions.Center;
-                    text.textWrappingMode = TextWrappingModes.NoWrap;
-                    text.fontSizeMax = InGameMetrics.ControlFontSize;
-                    text.fontStyle = FontStyles.Normal;
-                    text.margin = ControlMargin;
+                    Configure(TextAlignmentOptions.Center, TextWrappingModes.NoWrap, InGameMetrics.ControlFontSize, FontStyles.Normal, ControlMargin);
                     break;
             }
-            text.fontSize = text.fontSizeMax;
+        }
+
+        private void Configure(TextAlignmentOptions alignment, TextWrappingModes wrapping, float fontSize, FontStyles fontStyle, Vector4 margin)
+        {
+            text.alignment = alignment;
+            text.textWrappingMode = wrapping;
+            text.fontSizeMax = fontSize;
+            text.fontStyle = fontStyle;
+            text.margin = margin;
+            text.fontSize = fontSize;
         }
     }
 }

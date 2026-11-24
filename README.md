@@ -36,7 +36,7 @@ Each release is built against the Gorilla Tag version that was current when it w
 | Settings | Microphone mode, audio from the spectator camera, player list updates, Discord presence, VSync, AFK kick, rig interpolation, and Rig Exaggeration, which multiplies the spectated player's arm movements from 1x to 3x on your screen only, live and in replays (paused while recording) |
 | Keybinds | Every key the mod uses: click a row, then press the new key (click the row again to cancel); **Reset Keys** restores the defaults. The number keys that pick a player are fixed |
 | Theme | Accent color of every panel and the minimap |
-| Presets | Save the current settings as named presets and load or delete them later; choose which preset loads at startup on desktop and in VR; toggle autosave and save settings on demand |
+| Presets | Save the current settings as named presets and load or delete them later; choose which preset loads at startup on desktop and in VR; toggle autosave and save settings on demand. Settings left over from removed features are deleted from the Default config and every preset at startup |
 
 The Leaderboard, Closest Lava, Scoreboard and Kill Feed overlays are Unity canvases loaded from an asset bundle embedded in the DLL, so they render at the same size on any resolution. They all share one font, picked from the game's fonts with the Previous/Next Font buttons in any of their panels. The Leaderboard, Scoreboard, Kill Feed and MiniMap each have a **Position** button that steps through their spots. Only one of them can use a corner at a time: the button skips corners that are in use, and turning one on in a corner that is already used moves it to a free corner. If all three corners are needed, the Scoreboard steps back to top-center.
 
@@ -44,7 +44,7 @@ Every panel is a thin title bar with an arrow. Click the bar or its arrow to sli
 
 ## VR camera
 
-When a headset is active, the panels start closed (`Esc` still opens them) and Zetori switches to **Camera** mode, which gives you a camera tablet you can hold in the game. It rises in front of you shortly after the game opens, and again whenever you switch back to Camera mode. Switch to Default, Spectator, Freecam or Web from the Camera panel and the tablet disappears, so you can keep casting other players from the keyboard while you play. Camera mode is only available with a headset; when a VR Default preset is set, it decides the starting mode instead. Its accents and lit buttons follow the panel theme. Other players cannot see it. The desktop window shows what the camera sees, including the tablet when it is in view.
+When a headset is active, the panels start closed (`Esc` still opens them) and Zetori switches to **Camera** mode, which gives you a camera tablet you can hold in the game. It rises in front of you shortly after the game opens, and again whenever you switch back to Camera mode. Switch to Default, Spectator or Web from the Camera panel and the tablet disappears, so you can keep casting other players from the keyboard while you play. Camera mode is only available with a headset, and Freecam and WASD only without one; when a VR Default preset is set, it decides the starting mode instead. Its accents and lit buttons follow the panel theme. Other players cannot see it. The desktop window shows what the camera sees, including the tablet when it is in view.
 
 | VR input | Action |
 | --- | --- |
@@ -57,7 +57,7 @@ When a headset is active, the panels start closed (`Esc` still opens them) and Z
 
 ## In-game panel
 
-With a headset active, double-press the left primary button (`X`) and a panel pops up in front of you that you work with your fingers. Its home page opens every desktop panel (room, camera, overlays, scoreboard, tag manager, player, settings, themes, presets, replays and the rest), plus three pages made for playing:
+With a headset active, double-press the left primary button (`X`) and a panel pops up in front of you that you work with your fingers. Its home page shows the Zetori watermark in the theme colour, live cards for **Room** (the room code), **Players** (the player count) and **VR Camera** (the shot, and whether it is live), and a grid of icon tiles that opens every desktop panel (camera, overlays, scoreboard, tag manager, player, settings, themes, presets, replays and the rest). Three pages are made for playing:
 
 - **Players**: everyone in the room with their FPS, platform and tag state. Toggle **Mute** or press **Report** for the game's Hate Speech, Cheating and Toxicity reports (the same mute and report as the game's scoreboard). Tap a name to open the player: a live view of their rig with its colour and cosmetics on the left, and their name, platform, FPS, ping, colour code, tag state, speed, distance, voice, time in room, Zetori and host status on the right, with Spectate, Mute and Report below.
 - **VR Camera**: stream from the camera tablet, pick its shot, show your cosmetics in first person and set the field of view.
@@ -92,7 +92,7 @@ While a replay plays, your own body is hidden so it does not overlap the recorde
 | Arrow keys | Orbit the spectated player when Head Distance is above 0 |
 | `←` and `→` | Web camera mode with Manual selection: previous or next node (configurable) |
 | `F2` and `F3` | While editing a camera web: add a node where the camera is, remove the nearest node (configurable) |
-| Hold right mouse | Fly the camera in Freecam mode or while editing a camera web, or your player when WASD is on (WASD turns off in Freecam mode and while editing a web) |
+| Hold right mouse | Fly the camera in Freecam mode or while editing a camera web, or your player when WASD is on (WASD turns off in VR, in Freecam mode and while editing a web) |
 | `W` `A` `S` `D` | Move while flying |
 | `Space` and `Left Shift` | Move up and down while flying |
 | `E` (held) | Noclip while flying |

@@ -115,6 +115,14 @@ namespace Zetori.UI.InGame
 
         internal void Block(string text, float height) => Add(InGameElementKind.Block, text, height, false);
 
+        internal void Brand(string name, string detail, IconGlyph icon) => Decorate(Add(InGameElementKind.Brand, name, InGameMetrics.BrandHeight, false), detail, icon);
+
+        internal void Card(string title, string detail, IconGlyph icon, Action onClick) =>
+            Decorate(Launcher(InGameElementKind.Card, title, InGameMetrics.CardHeight, onClick), detail, icon);
+
+        internal void Tile(string title, IconGlyph icon, Action onClick) =>
+            Decorate(Launcher(InGameElementKind.Tile, title, InGameMetrics.TileHeight, onClick), string.Empty, icon);
+
         internal void ResetInteraction()
         {
             queued.Clear();
@@ -152,8 +160,6 @@ namespace Zetori.UI.InGame
         public void Button(string text, Action? onClick, bool interactable = true) => Press(text, onClick, null, interactable);
 
         public void Button(string text, Action? onClick, Action onRightClick, bool interactable = true) => Press(text, onClick, onRightClick, interactable);
-
-        internal void Button(string text, IconGlyph icon, Action? onClick) => Press(text, onClick, null, true).Icon = icon;
 
         internal bool Dropdown(string text, bool open, Action drawOptions, bool interactable = true)
         {
@@ -233,6 +239,19 @@ namespace Zetori.UI.InGame
             if (onHold != null && Take(InteractionType.Hold, element, out _)) onHold();
             else if (Take(InteractionType.Click, element, out _)) onClick?.Invoke();
             return element;
+        }
+
+        private InGameElement Launcher(InGameElementKind kind, string text, float height, Action onClick)
+        {
+            InGameElement element = Add(kind, text, height, true);
+            if (Take(InteractionType.Click, element, out _)) onClick();
+            return element;
+        }
+
+        private static void Decorate(InGameElement element, string detail, IconGlyph icon)
+        {
+            element.Detail = detail;
+            element.Icon = icon;
         }
 
         private bool DrawMenu(int anchor, Action drawOptions)

@@ -15,6 +15,9 @@ namespace Zetori.UI.InGame
         Slider,
         Swatch,
         Image,
-        Block
+        Block,
+        Brand,
+        Card,
+        Tile
     }
 }

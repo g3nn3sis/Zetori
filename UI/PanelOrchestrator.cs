@@ -47,7 +47,7 @@ namespace Zetori.UI
                 var id = (PanelId)i;
                 panels[i] = new Panel(PanelWidth, PanelCatalog.Title(id), PanelCatalog.Icon(id), accent);
                 drawContent[i] = content.For(id);
-                positions[i] = CasterConfig.BindPanelPosition(PanelCatalog.PositionKey(id));
+                positions[i] = CasterConfig.PanelPosition(id);
             }
             ArrangeFromConfig();
             panels[(int)PanelId.Main].Expanded = true;

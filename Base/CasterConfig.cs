@@ -18,6 +18,7 @@ namespace Zetori.Base
     {
         private const float SaveDelay = 1f;
 
+        private static readonly ConfigEntry<string>[] panelPositions = new ConfigEntry<string>[(int)PanelId.Count];
         private static ConfigFile? file;
         private static bool dirty;
         private static float lastChange;
@@ -162,7 +163,7 @@ namespace Zetori.Base
             file = config;
             config.SaveOnConfigSet = false;
 
-            ActiveCameraMode = config.Bind("Camera", "Mode", CameraMode.Spectator, "Default shows your own first person view, Spectator follows the selected player, Freecam flies the camera on its own, Web watches the action from placed nodes, Camera uses the in-game VR camera tablet.");
+            ActiveCameraMode = config.Bind("Camera", "Mode", CameraMode.Spectator, "Default shows your own first person view, Spectator follows the selected player, Freecam flies the camera on its own (not in VR), Web watches the action from placed nodes, Camera uses the in-game VR camera tablet.");
             VrMode = config.Bind("VR Camera", "Mode", VrCameraMode.Handheld, "What the in-game VR camera shows: FirstPerson, ThirdPerson, Follower or Handheld.");
             VrFirstPersonCosmetics = config.Bind("VR Camera", "First Person Cosmetics", true, "Whether the in-game VR camera shows your own cosmetics in first person.");
             FieldOfView = Range(config, "Camera", "Field Of View", 100f, 10f, 130f);
@@ -197,7 +198,7 @@ namespace Zetori.Base
             WebPlaceNodeKey = config.Bind("Web", "Place Node Key", Key.F2, "Add a node where the camera is while editing the web.");
             WebRemoveNodeKey = config.Bind("Web", "Remove Node Key", Key.F3, "Remove the node nearest the camera while editing the web.");
 
-            Wasd = config.Bind("Freecam", "Enabled", false, "Hold right mouse to fly your own player with WASD. Turned off while the camera is in Freecam mode.");
+            Wasd = config.Bind("Freecam", "Enabled", false, "Hold right mouse to fly your own player with WASD. Turned off in VR and while the camera is in Freecam mode.");
             MouseClick = config.Bind("Freecam", "Mouse Click", false, "Left click presses whatever is under the cursor with the right hand.");
             MovementSpeed = Range(config, "Freecam", "Movement Speed", 10f, 5f, 35f);
             MouseSpeed = Range(config, "Freecam", "Mouse Sensitivity", 0.3f, 0.05f, 2f);
@@ -291,6 +292,11 @@ namespace Zetori.Base
             InGamePanelHaptics = config.Bind("In-Game Panel", "Haptics", true, "Vibrate the controller when a finger presses the in-game panel.");
             InGamePanelOnStream = config.Bind("In-Game Panel", "Show On Stream", false, "Let the Spectator, Freecam and Web views see the in-game panel. The VR camera view always shows it.");
 
+            BindPanelPositions(config);
+
+            try { ConfigCleanup.RemoveUnusedSettings(BoundKeys(config)); }
+            catch (Exception e) { Log.Exception(e, "Removing unused settings failed"); }
+
             try { Write(config); }
             catch (Exception e) { Log.Exception(e, "Saving the config failed"); }
 
@@ -304,10 +310,19 @@ namespace Zetori.Base
         private static ConfigEntry<float> Range(ConfigFile config, string section, string key, float value, float min, float max, string description = "") =>
             config.Bind(section, key, value, new ConfigDescription(description, new AcceptableValueRange<float>(min, max)));
 
-        internal static ConfigEntry<string> BindPanelPosition(string panel)
+        private static void BindPanelPositions(ConfigFile config)
         {
-            if (file == null) throw new InvalidOperationException("CasterConfig.Bind must run before panels are created.");
-            return file.Bind("Layout", $"{panel} Position", string.Empty, "Saved x,y at 1080p. Empty uses the default layout.");
+            for (int i = 0; i < panelPositions.Length; i++)
+                panelPositions[i] = config.Bind("Layout", $"{PanelCatalog.PositionKey((PanelId)i)} Position", string.Empty, "Saved x,y at 1080p. Empty uses the default layout.");
+        }
+
+        internal static ConfigEntry<string> PanelPosition(PanelId id) => panelPositions[(int)id];
+
+        private static HashSet<(string Section, string Key)> BoundKeys(ConfigFile config)
+        {
+            var keys = new HashSet<(string Section, string Key)>();
+            foreach (KeyValuePair<ConfigDefinition, ConfigEntryBase> entry in config) keys.Add((entry.Key.Section, entry.Key.Key));
+            return keys;
         }
 
         internal static string? ConfigFilePath => file?.ConfigFilePath;
@@ -339,7 +354,7 @@ namespace Zetori.Base
         {
             config.Save();
             string path = config.ConfigFilePath;
-            File.WriteAllText(path, ConfigFormat.StripComments(File.ReadAllText(path)), new UTF8Encoding(false));
+            File.WriteAllText(path, ConfigFormat.KeepKeys(File.ReadAllText(path), BoundKeys(config)), new UTF8Encoding(false));
         }
 
         internal static void Reload()

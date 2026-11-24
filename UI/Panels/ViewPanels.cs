@@ -24,7 +24,7 @@ namespace Zetori.UI.Panels
             });
             panel.HorizontalArea(() =>
             {
-                panel.Button("Freecam", () => CameraManager.mode = CameraMode.Freecam, CameraManager.mode != CameraMode.Freecam);
+                panel.Button("Freecam", () => CameraManager.mode = CameraMode.Freecam, CameraManager.mode != CameraMode.Freecam && !VrCameraRig.HeadsetActive);
                 panel.Button("Web", () => CameraManager.mode = CameraMode.Web, CameraManager.mode != CameraMode.Web);
             });
             panel.Button("Camera", () => CameraManager.mode = CameraMode.Camera, CameraManager.mode != CameraMode.Camera && VrCameraRig.HeadsetActive);
@@ -71,7 +71,8 @@ namespace Zetori.UI.Panels
 
         internal static void DrawWasd(IPanelSurface panel)
         {
-            if (CameraManager.mode == CameraMode.Freecam) panel.Label("WASD is off in Freecam mode");
+            if (VrCameraRig.HeadsetActive) panel.Label("WASD is off in VR");
+            else if (CameraManager.mode == CameraMode.Freecam) panel.Label("WASD is off in Freecam mode");
             else GorillaController.wasd = panel.Toggle("WASD", GorillaController.wasd);
             GorillaController.mouseClick = panel.Toggle("Mouse Click", GorillaController.mouseClick);
             DrawFlightSpeeds(panel);
@@ -79,7 +80,8 @@ namespace Zetori.UI.Panels
 
         internal static void DrawFreecam(IPanelSurface panel)
         {
-            if (CameraManager.ActiveMode != CameraMode.Freecam) panel.Label("Camera is not in Freecam mode");
+            if (VrCameraRig.HeadsetActive) panel.Label("Freecam is off in VR");
+            else if (CameraManager.ActiveMode != CameraMode.Freecam) panel.Label("Camera is not in Freecam mode");
             CasterConfig.FreecamMovementSpeed.Value = panel.Slider("Movement Speed", CasterConfig.FreecamMovementSpeed.Value, 1f, 50f, "F1", " m/s");
             CasterConfig.FreecamRotationSensitivity.Value = panel.Slider("Rotation Sensitivity", CasterConfig.FreecamRotationSensitivity.Value, 0.05f, 2f);
             panel.Button("Teleport Here", TeleportToFreecam, CanTeleportToFreecam);

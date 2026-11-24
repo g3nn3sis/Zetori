@@ -27,7 +27,7 @@ namespace Zetori.GameCamera
 
         internal void LateUpdate()
         {
-            if (FliesCamera && GorillaController.wasd) GorillaController.wasd = false;
+            LimitDesktopControls();
             if (!EnsureCamera()) return;
             bool listens = audioListener && !HeadsetHearsGame;
             if (RunsVrCamera)
@@ -60,6 +60,19 @@ namespace Zetori.GameCamera
         }
 
         private static bool FliesCamera => mode == CameraMode.Freecam || (mode == CameraMode.Web && WebCamera.Editing);
+
+        private static void LimitDesktopControls()
+        {
+            bool inVr = VrCameraRig.HeadsetActive;
+            if (inVr) LeaveFreecam();
+            if (GorillaController.wasd && (inVr || FliesCamera)) GorillaController.wasd = false;
+        }
+
+        private static void LeaveFreecam()
+        {
+            if (mode == CameraMode.Freecam) mode = CameraMode.Spectator;
+            if (ReplaySession.Player is ReplayPlayer { Freecam: true } replay) replay.Camera = CameraMode.Spectator;
+        }
 
         internal static CameraMode ActiveMode => ReplaySession.Player is ReplayPlayer replay ? replay.Camera : mode;
 

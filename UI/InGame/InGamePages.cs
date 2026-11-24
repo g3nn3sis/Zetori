@@ -15,27 +15,34 @@ namespace Zetori.UI.InGame
     {
         private const int Home = -1;
         private const int PlayerPage = -2;
-        private const int GridColumns = 3;
-        private const string HomeTitle = "Zetori";
+        private const int FeaturedCount = 3;
+        private const int GridColumns = 5;
+        private const string BrandVersion = "v" + PluginInfo.Version;
         private const string RoomTitle = "Room";
         private const string PlayersTitle = "Players";
         private const string HomeLabel = "Home";
         private const string BackLabel = "Back";
+        private const string Offline = "Not in a room";
         private const float TitleWeight = 3f;
-        private const float StatusInterval = 0.5f;
+        private const float BrandWeight = 4f;
+        private const float ReadoutInterval = 0.5f;
         private const float FrameRateSmoothing = 0.1f;
+
+        private static readonly string BrandName = PluginInfo.Name.ToUpperInvariant();
 
         private readonly struct Section
         {
             internal readonly string Title;
             internal readonly IconGlyph Icon;
             internal readonly Action<IPanelSurface> Draw;
+            internal readonly Func<string>? Describe;
 
-            internal Section(string title, IconGlyph icon, Action<IPanelSurface> draw)
+            internal Section(string title, IconGlyph icon, Action<IPanelSurface> draw, Func<string>? describe = null)
             {
                 Title = title;
                 Icon = icon;
                 Draw = draw;
+                Describe = describe;
             }
         }
 
@@ -45,6 +52,8 @@ namespace Zetori.UI.InGame
         private readonly Section[] sections;
         private readonly int playersSection;
         private readonly Action[] openSection;
+        private readonly string[] featuredDetails = new string[FeaturedCount];
+        private readonly Action featuredRow;
         private readonly Action[] gridRows;
         private readonly Action headerRow;
         private readonly Action goHome;
@@ -54,7 +63,7 @@ namespace Zetori.UI.InGame
         private int page = Home;
         private int? requestedPage;
         private string status = string.Empty;
-        private float nextStatus;
+        private float nextReadout;
         private float smoothedFrameTime;
 
         internal InGamePages(InGameSurface surface, PanelOrchestrator owner, Action recenter, Action close)
@@ -72,18 +81,18 @@ namespace Zetori.UI.InGame
                 int index = i;
                 openSection[i] = () => requestedPage = index;
             }
-            gridRows = new Action[(sections.Length + GridColumns - 1) / GridColumns];
+            for (int i = 0; i < FeaturedCount; i++) featuredDetails[i] = string.Empty;
+            featuredRow = DrawFeaturedRow;
+            gridRows = new Action[(sections.Length - FeaturedCount + GridColumns - 1) / GridColumns];
             for (int row = 0; row < gridRows.Length; row++)
             {
-                int first = row * GridColumns;
+                int first = FeaturedCount + row * GridColumns;
                 gridRows[row] = () => DrawGridRow(first);
             }
             goHome = () => requestedPage = Home;
             backToPlayers = () => requestedPage = playersSection;
             headerRow = DrawHeaderRow;
         }
-
-        private string Title => page == Home ? HomeTitle : sections[page].Title;
 
         internal bool ApplyRequestedPage()
         {
@@ -96,6 +105,7 @@ namespace Zetori.UI.InGame
 
         internal void Draw()
         {
+            RefreshReadouts();
             surface.EnterRegion(InGameRegion.Header);
             surface.HorizontalArea(headerRow);
             surface.EnterRegion(InGameRegion.Body);
@@ -109,7 +119,7 @@ namespace Zetori.UI.InGame
                 keyboard.Draw();
             }
             surface.EnterRegion(InGameRegion.Footer);
-            surface.Label(Status());
+            surface.Label(status);
         }
 
         internal void Conceal() => playerPage.Conceal();
@@ -136,9 +146,9 @@ namespace Zetori.UI.InGame
         {
             var list = new List<Section>
             {
-                new Section(RoomTitle, PanelCatalog.Icon(PanelId.Main), content.For(PanelId.Main)),
-                new Section(PlayersTitle, IconGlyph.People, drawPlayers),
-                new Section("VR Camera", IconGlyph.Camcorder, VrCameraPanel.Draw)
+                new Section(RoomTitle, PanelCatalog.Icon(PanelId.Main), content.For(PanelId.Main), RoomSummary),
+                new Section(PlayersTitle, IconGlyph.People, drawPlayers, PlayersSummary),
+                new Section("VR Camera", IconGlyph.Camcorder, VrCameraPanel.Draw, VrCameraPanel.Summary)
             };
             foreach (PanelId[] column in PanelCatalog.Columns)
                 foreach (PanelId id in column)
@@ -149,39 +159,66 @@ namespace Zetori.UI.InGame
 
         private void DrawHeaderRow()
         {
-            if (page == PlayerPage) surface.Button(BackLabel, backToPlayers);
-            else surface.Button(HomeLabel, goHome, page != Home);
-            surface.Weighted(TitleWeight);
-            if (page == PlayerPage) surface.Title(playerPage.Title, playerPage.TitleColor);
-            else surface.Title(Title);
+            if (page == Home) DrawBrand();
+            else if (page == PlayerPage) DrawNavigation(BackLabel, backToPlayers, playerPage.Title, playerPage.TitleColor);
+            else DrawNavigation(HomeLabel, goHome, sections[page].Title, Color.white);
             if (ReplaySession.IsReplaying) surface.Button("Exit Replay", exitReplay);
             surface.Button("Close", close);
         }
 
+        private void DrawBrand()
+        {
+            surface.Weighted(BrandWeight);
+            surface.Brand(BrandName, BrandVersion, IconGlyph.Zetori);
+        }
+
+        private void DrawNavigation(string label, Action navigate, string title, Color titleColor)
+        {
+            surface.Button(label, navigate);
+            surface.Weighted(TitleWeight);
+            surface.Title(title, titleColor);
+        }
+
         private void DrawHome()
         {
+            surface.HorizontalArea(featuredRow);
             foreach (Action row in gridRows) surface.HorizontalArea(row);
+        }
+
+        private void DrawFeaturedRow()
+        {
+            for (int i = 0; i < FeaturedCount; i++) surface.Card(sections[i].Title, featuredDetails[i], sections[i].Icon, openSection[i]);
         }
 
         private void DrawGridRow(int first)
         {
             for (int i = first; i < first + GridColumns; i++)
             {
-                if (i < sections.Length) surface.Button(sections[i].Title, sections[i].Icon, openSection[i]);
+                if (i < sections.Length) surface.Tile(sections[i].Title, sections[i].Icon, openSection[i]);
                 else surface.Spacer();
             }
         }
 
-        private string Status()
+        private void RefreshReadouts()
         {
             float deltaTime = Time.unscaledDeltaTime;
             smoothedFrameTime = smoothedFrameTime <= 0f ? deltaTime : Mathf.Lerp(smoothedFrameTime, deltaTime, FrameRateSmoothing);
             float now = Time.unscaledTime;
-            if (now < nextStatus) return status;
-            nextStatus = now + StatusInterval;
+            if (now < nextReadout) return;
+            nextReadout = now + ReadoutInterval;
             int frameRate = smoothedFrameTime > 0f ? Mathf.RoundToInt(1f / smoothedFrameTime) : 0;
             status = $"{RoomStatus()}   {frameRate} FPS   {DateTime.Now:HH:mm}";
-            return status;
+            RefreshFeaturedDetails();
+        }
+
+        private void RefreshFeaturedDetails()
+        {
+            for (int i = 0; i < FeaturedCount; i++)
+            {
+                Func<string>? describe = sections[i].Describe;
+                try { featuredDetails[i] = describe != null ? describe() : string.Empty; }
+                catch (Exception e) { Log.ExceptionOnce($"in-game-panel-describe-{sections[i].Title}", e, $"Describing the in-game {sections[i].Title} page failed"); }
+            }
         }
 
         public void Dispose() => playerPage.Dispose();
@@ -191,7 +228,20 @@ namespace Zetori.UI.InGame
             var room = PhotonNetwork.CurrentRoom;
             return PhotonNetwork.InRoom && room != null
                 ? $"{room.Name}  {room.PlayerCount}/{room.MaxPlayers}  {PhotonNetwork.GetPing()} ms"
-                : "Not in a room";
+                : Offline;
+        }
+
+        private static string RoomSummary()
+        {
+            var room = PhotonNetwork.CurrentRoom;
+            return PhotonNetwork.InRoom && room != null ? $"Code {room.Name}" : Offline;
+        }
+
+        private static string PlayersSummary()
+        {
+            var room = PhotonNetwork.CurrentRoom;
+            if (!PhotonNetwork.InRoom || room == null) return Offline;
+            return room.PlayerCount == 1 ? "1 player" : $"{room.PlayerCount} players";
         }
     }
 }

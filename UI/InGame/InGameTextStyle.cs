@@ -9,6 +9,9 @@ namespace Zetori.UI.InGame
         Control,
         Label,
         Title,
-        Block
+        Block,
+        Brand,
+        Heading,
+        Caption
     }
 }
