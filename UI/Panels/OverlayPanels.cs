@@ -15,6 +15,7 @@ namespace Zetori.UI.Panels
         internal static void DrawNameTags(IPanelSurface panel)
         {
             NameTag.enabled = panel.Toggle("NameTags", NameTag.enabled);
+            NameTag.size = panel.Slider("Size", NameTag.size, CasterConfig.MinimumNameTagSize, CasterConfig.MaximumNameTagSize, "F2", "x");
             NameTag.usePlayerColor = panel.Toggle("Player Color", NameTag.usePlayerColor);
             NameTag.hzDisplay = panel.Toggle("Player FPS", NameTag.hzDisplay);
             NameTag.platformIndicator = panel.Toggle("Platform Indicator", NameTag.platformIndicator);

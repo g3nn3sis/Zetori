@@ -21,6 +21,7 @@ namespace Zetori.Game
         internal static bool platformIndicator { get => CasterConfig.NameTagPlatform.Value; set => CasterConfig.NameTagPlatform.Value = value; }
         internal static bool zetoriIndicator { get => CasterConfig.NameTagZetori.Value; set => CasterConfig.NameTagZetori.Value = value; }
         internal static int currentFontIndex { get => CasterConfig.NameTagFont.Value; set => CasterConfig.NameTagFont.Value = value; }
+        internal static float size { get => CasterConfig.NameTagSize.Value; set => CasterConfig.NameTagSize.Value = value; }
 
         private const float NameHeight = 0.4f;
         private const float FpsHeight = 0.55f;
@@ -69,6 +70,7 @@ namespace Zetori.Game
             internal Sprite? PlatformSprite;
             internal Sprite? ZetoriSprite;
             internal bool Seen;
+            private float scale = 1f;
 
             internal Tag(Transform anchor)
             {
@@ -86,6 +88,13 @@ namespace Zetori.Game
             {
                 tagRoots.Remove(rootTransform);
                 if (Root != null) UnityEngine.Object.Destroy(Root);
+            }
+
+            internal void Resize(float tagScale)
+            {
+                if (scale == tagScale) return;
+                scale = tagScale;
+                rootTransform.localScale = Vector3.one * tagScale;
             }
 
             private static TextMeshPro CreateText(Transform parent, string name, float height, float fontSize)
@@ -215,6 +224,7 @@ namespace Zetori.Game
             if (tag.Root.activeSelf != info.Visible) tag.Root.SetActive(info.Visible);
             if (!info.Visible) return;
             tag.Root.transform.rotation = facing;
+            tag.Resize(size);
 
             bool layoutChanged = false;
             if (font != null && tag.Font != font)

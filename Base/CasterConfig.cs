@@ -79,6 +79,7 @@ namespace Zetori.Base
         internal static ConfigEntry<bool> NameTagPlatform = null!;
         internal static ConfigEntry<bool> NameTagZetori = null!;
         internal static ConfigEntry<int> NameTagFont = null!;
+        internal static ConfigEntry<float> NameTagSize = null!;
         internal static ConfigEntry<bool> MiniMapEnabled = null!;
         internal static ConfigEntry<bool> MiniMapDraggable = null!;
         internal static ConfigEntry<float> MiniMapSize = null!;
@@ -145,6 +146,8 @@ namespace Zetori.Base
         internal const float MaximumUiScale = 1f;
         internal const float MaximumPositionSmoothing = 0.95f;
         internal const float MaximumRotationSmoothing = 0.75f;
+        internal const float MinimumNameTagSize = 0.5f;
+        internal const float MaximumNameTagSize = 2f;
 
         internal static ConfigEntry<float> UiScale = null!;
         internal static ConfigEntry<bool> SnapPanels = null!;
@@ -219,6 +222,7 @@ namespace Zetori.Base
             NameTagPlatform = config.Bind("Nametags", "Platform Indicator", false);
             NameTagZetori = config.Bind("Nametags", "Zetori Users", false);
             NameTagFont = config.Bind("Nametags", "Font Index", 0, new ConfigDescription("Index into the fonts found in the game.", new AcceptableValueRange<int>(0, 255)));
+            NameTagSize = Range(config, "Nametags", "Size", 1f, MinimumNameTagSize, MaximumNameTagSize, "Size multiplier on the nametags above players.");
 
             MiniMapEnabled = config.Bind("MiniMap", "Enabled", false);
             MiniMapDraggable = config.Bind("MiniMap", "Draggable", false);

@@ -59,11 +59,11 @@ namespace Zetori.UI.Panels
             LocalPlayerManager.Blue = panel.Slider("Blue", LocalPlayerManager.Blue, 0f, 1f);
             panel.ColorSwatch(new Color(LocalPlayerManager.Red, LocalPlayerManager.Green, LocalPlayerManager.Blue));
             panel.Button($"Apply Color{wait}", LocalPlayerManager.ChangeColor, cooldown <= 0f);
+            LocalPlayerManager.microphoneStatus = panel.Toggle("Microphone", LocalPlayerManager.microphoneStatus, "All Chat", "Push To Talk");
         }
 
         internal static void DrawSettings(IPanelSurface panel)
         {
-            LocalPlayerManager.microphoneStatus = panel.Toggle("Microphone", LocalPlayerManager.microphoneStatus, "All Chat", "Push To Talk");
             CameraManager.audioListener = panel.Toggle("Audio Listener", CameraManager.audioListener);
             NetworkedPlayerManager.registerNewRigs = panel.Toggle("Register New Rigs", NetworkedPlayerManager.registerNewRigs);
             CasterConfig.DiscordPresence.Value = panel.Toggle("Discord Presence", CasterConfig.DiscordPresence.Value);
