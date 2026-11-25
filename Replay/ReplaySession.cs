@@ -140,7 +140,7 @@ namespace Zetori.Replay
             }
             try
             {
-                ReadKeys(player);
+                if (!player.Rendering) ReadKeys(player);
                 player.Tick(Time.unscaledDeltaTime);
             }
             catch (Exception e) { Log.ExceptionOnce("replay-play", e, "Playing the replay failed"); }

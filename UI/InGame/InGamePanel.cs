@@ -229,7 +229,7 @@ namespace Zetori.UI.InGame
         {
             GTPlayer? player = GTPlayer.Instance;
             bool headset = player != null && camera == player.mainCamera;
-            if (model != null && model.Shown) model.SetHiddenFromView(PhotoCapture.Renders(camera) || (!headset && !ShownOffHeadset));
+            if (model != null && model.Shown) model.SetHiddenFromView(PhotoCapture.Renders(camera) || ReplayRender.Renders(camera) || (!headset && !ShownOffHeadset));
             if (hands != null && hands.Shown) hands.SetHiddenFromView(!headset);
         }
 

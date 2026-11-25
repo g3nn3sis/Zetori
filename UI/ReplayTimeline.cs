@@ -54,6 +54,7 @@ namespace Zetori.UI
         private static readonly Color BookmarkColor = new Color(1f, 0.85f, 0.2f, 1f);
         private static readonly Color HighlightColor = new Color(1f, 0.35f, 0.8f, 1f);
         private static readonly Color KeyframeColor = new Color(0.75f, 0.6f, 1f, 1f);
+        private static readonly Color RangeColor = new Color(1f, 1f, 1f, 0.35f);
 
         private readonly int scrubHint = "ZetoriReplayScrub".GetHashCode();
         private readonly int dragHint = "ZetoriReplayTimelineDrag".GetHashCode();
@@ -108,6 +109,14 @@ namespace Zetori.UI
         }
 
         internal void Draw(ReplayPlayer replay)
+        {
+            bool previousEnabled = GUI.enabled;
+            GUI.enabled = previousEnabled && !replay.Rendering;
+            try { DrawBar(replay); }
+            finally { GUI.enabled = previousEnabled; }
+        }
+
+        private void DrawBar(ReplayPlayer replay)
         {
             EnsureStyles(ColorSpace.Current.Color);
             var bar = new Rect(Margin, barY, UiScale.Width - Margin * 2f, Height);
@@ -204,6 +213,12 @@ namespace Zetori.UI
             Fill(rail, RailColor);
             float progress = Progress(replay.Cursor, recording);
             Fill(new Rect(rail.x, rail.y, rail.width * progress, rail.height), ColorSpace.Current.Color);
+            if (replay.HasRange)
+            {
+                float rangeStart = rail.x + rail.width * Progress(replay.RangeStart, recording);
+                float rangeEnd = rail.x + rail.width * Progress(replay.RangeEnd, recording);
+                Fill(new Rect(rangeStart, rail.y - 1f, Mathf.Max(1f, rangeEnd - rangeStart), rail.height + 2f), RangeColor);
+            }
 
             ReplayPuppet? spectated = replay.Camera == CameraMode.Spectator ? replay.Spectated : null;
             if (spectated != null)

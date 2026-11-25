@@ -14,6 +14,8 @@ namespace Zetori.UI.Panels
     {
         private const int RenameLength = 32;
 
+        private static readonly RenderResolution[] ResolutionChoices = { RenderResolution.P1080, RenderResolution.P1440, RenderResolution.P2160 };
+
         private Vector2 puppetScroll;
         private Vector2 highlightScroll;
         private Vector2 keyframeScroll;
@@ -94,6 +96,11 @@ namespace Zetori.UI.Panels
 
         private void DrawPlayback(IPanelSurface panel, ReplayPlayer replay)
         {
+            if (ReplayRender.Active)
+            {
+                DrawRendering(panel);
+                return;
+            }
             panel.Label($"{ReplayTimeline.Format(replay.Cursor)} / {ReplayTimeline.Format(replay.Recording.Duration)}");
             panel.HorizontalArea(() =>
             {
@@ -116,6 +123,7 @@ namespace Zetori.UI.Panels
             replay.RigLerp = panel.Slider("Rig Lerp", replay.RigLerp, ReplayPlayer.MinRigLerp, ReplayPlayer.MaxRigLerp);
             DrawHighlights(panel, replay);
             DrawPath(panel, replay);
+            DrawRender(panel, replay);
             panel.Label(CameraStatus(replay));
             IReadOnlyList<ReplayPuppet> puppets = replay.Puppets;
             puppetScroll = panel.ScrollArea(puppetScroll, Panel.ListHeight, puppets.Count, () =>
@@ -171,6 +179,43 @@ namespace Zetori.UI.Panels
                 }
             });
         }
+
+        private static void DrawRendering(IPanelSurface panel)
+        {
+            panel.Label($"Rendering frame {ReplayRender.FramesDone} of {ReplayRender.FramesTotal}");
+            panel.Label("Your own player runs slower until it finishes.");
+            panel.Button("Cancel Render", ReplayRender.Cancel);
+        }
+
+        private static void DrawRender(IPanelSurface panel, ReplayPlayer replay)
+        {
+            panel.Label($"Render {ReplayTimeline.FormatPrecise(replay.RangeStart)} to {ReplayTimeline.FormatPrecise(replay.RangeEnd)}");
+            panel.HorizontalArea(() =>
+            {
+                panel.Button("Set Start", replay.MarkRangeStart);
+                panel.Button("Set End", replay.MarkRangeEnd);
+                panel.Button("Whole Replay", replay.ResetRange, replay.HasRange);
+            });
+            panel.HorizontalArea(() =>
+            {
+                foreach (RenderResolution resolution in ResolutionChoices)
+                    panel.Button(ResolutionLabel(resolution), () => CasterConfig.ReplayRenderResolution.Value = resolution, CasterConfig.ReplayRenderResolution.Value != resolution);
+            });
+            panel.HorizontalArea(() =>
+            {
+                foreach (int rate in CasterConfig.ReplayRenderFrameRates)
+                    panel.Button($"{rate} fps", () => CasterConfig.ReplayRenderFrameRate.Value = rate, CasterConfig.ReplayRenderFrameRate.Value != rate);
+            });
+            panel.Button("Render Frames", () => ReplayRender.Start(replay), replay.RangeEnd > replay.RangeStart);
+            if (ReplayRender.LastFolder is string folder) panel.Label($"Rendered to: {folder}");
+        }
+
+        private static string ResolutionLabel(RenderResolution resolution) => resolution switch
+        {
+            RenderResolution.P1080 => "1080p",
+            RenderResolution.P1440 => "1440p",
+            _ => "4K"
+        };
 
         private static void DrawSpeed(IPanelSurface panel, ReplayPlayer replay)
         {

@@ -39,6 +39,9 @@ namespace Zetori.Replay
         internal bool Playing { get; set; } = true;
         internal CameraMode Camera { get; set; } = CameraMode.Spectator;
         internal float Speed { get; set; } = NormalSpeed;
+        internal bool Rendering { get; set; }
+        internal float RangeStart { get; private set; }
+        internal float RangeEnd { get; private set; }
         internal bool Freecam => Camera == CameraMode.Freecam;
         internal IReadOnlyList<ReplayPuppet> Puppets => puppets;
         private float rigLerp;
@@ -64,6 +67,7 @@ namespace Zetori.Replay
             Recording = loaded.Recording;
             Highlights = loaded.Highlights;
             Path = loaded.Path;
+            RangeEnd = Recording.Duration;
             puppets = BuildPuppets(Recording, cosmetics);
             RigLerp = NetworkedPlayerManager.LiveRigLerp;
             liveEnvironment = TimeManager.Capture();
@@ -87,7 +91,7 @@ namespace Zetori.Replay
 
         internal void Tick(float deltaTime)
         {
-            if (Playing)
+            if (Playing && !Rendering)
             {
                 Cursor += deltaTime * Speed;
                 if (Cursor >= Recording.Duration)
@@ -99,17 +103,30 @@ namespace Zetori.Replay
             mask.Enforce();
             float step = Cursor - posedCursor;
             posedCursor = Cursor;
+            bool audible = Playing && !Rendering;
             foreach (ReplayPuppet puppet in puppets)
             {
                 puppet.Pose(Cursor, step, RigLerp, ArmExaggeration.Active && IsSpectating(puppet), Playing);
-                puppet.UpdateVoice(Cursor, Playing, Speed);
-                puppet.PlayHandTaps(Cursor - step, Cursor, Playing);
+                puppet.UpdateVoice(Cursor, audible, Speed);
+                puppet.PlayHandTaps(Cursor - step, Cursor, audible);
             }
             ApplyEnvironment();
             if (Spectated == null) SpectateNextVisible(1);
         }
 
         internal void Seek(float time) => Cursor = Mathf.Clamp(time, 0f, Recording.Duration);
+
+        internal void MarkRangeStart() => RangeStart = Mathf.Min(Cursor, RangeEnd);
+
+        internal void MarkRangeEnd() => RangeEnd = Mathf.Max(Cursor, RangeStart);
+
+        internal void ResetRange()
+        {
+            RangeStart = 0f;
+            RangeEnd = Recording.Duration;
+        }
+
+        internal bool HasRange => RangeStart > 0f || RangeEnd < Recording.Duration;
 
         internal void CycleSpeed()
         {

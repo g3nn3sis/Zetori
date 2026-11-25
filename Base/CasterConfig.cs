@@ -6,6 +6,7 @@ using BepInEx.Configuration;
 using Zetori.Game;
 using Zetori.GameCamera;
 using Zetori.GameCamera.Vr;
+using Zetori.Replay;
 using Zetori.UI;
 using System.IO;
 using System.Text;
@@ -28,6 +29,8 @@ namespace Zetori.Base
         internal static ConfigEntry<bool> VrFirstPersonCosmetics = null!;
         internal static ConfigEntry<float> PhotoTimer = null!;
         internal static ConfigEntry<Key> PhotoKey = null!;
+        internal static ConfigEntry<RenderResolution> ReplayRenderResolution = null!;
+        internal static ConfigEntry<int> ReplayRenderFrameRate = null!;
         internal static ConfigEntry<float> FieldOfView = null!;
         internal static ConfigEntry<float> NearClipPlane = null!;
         internal static ConfigEntry<bool> AudioListener = null!;
@@ -160,6 +163,7 @@ namespace Zetori.Base
         internal const float MinimumClipLength = 10f;
         internal const float MaximumClipLength = 120f;
         internal const float MaximumPhotoTimer = 10f;
+        internal static readonly int[] ReplayRenderFrameRates = { 30, 60 };
 
         internal static ConfigEntry<float> UiScale = null!;
         internal static ConfigEntry<bool> SnapPanels = null!;
@@ -183,6 +187,8 @@ namespace Zetori.Base
             VrFirstPersonCosmetics = config.Bind("VR Camera", "First Person Cosmetics", true, "Whether the in-game VR camera shows your own cosmetics in first person.");
             PhotoTimer = Range(config, "Photo", "Timer", 3f, 0f, MaximumPhotoTimer, "Seconds between pressing Take Photo and the photo being taken.");
             PhotoKey = config.Bind("Photo", "Photo Key", Key.F9, "Take a 4K photo from the camera, without the panels and overlays.");
+            ReplayRenderResolution = config.Bind("Render", "Resolution", RenderResolution.P2160, "Size of each frame when rendering a replay: P1080, P1440 or P2160 (4K).");
+            ReplayRenderFrameRate = config.Bind("Render", "Frame Rate", 60, new ConfigDescription("Frames per second of replay time when rendering a replay.", new AcceptableValueList<int>(ReplayRenderFrameRates)));
             FieldOfView = Range(config, "Camera", "Field Of View", 100f, 10f, 130f);
             NearClipPlane = Range(config, "Camera", "Near Clip", 0.01f, 0.01f, 0.99f);
             AudioListener = config.Bind("Camera", "Audio Listener", true, "Hear the game from the spectator camera.");
