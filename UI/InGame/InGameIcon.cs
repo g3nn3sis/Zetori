@@ -15,6 +15,7 @@ namespace Zetori.UI.InGame
         private readonly MeshFilter filter;
         private readonly Material material;
         private Color shownColor;
+        private InGameClip clip = InGameClip.None;
         private bool used;
 
         internal Renderer Renderer { get; }
@@ -33,9 +34,10 @@ namespace Zetori.UI.InGame
             iconObject.SetActive(false);
         }
 
-        internal void BeginFrame(Transform parent)
+        internal void BeginFrame(Transform parent, InGameClip frameClip)
         {
             used = false;
+            clip = frameClip;
             if (iconTransform.parent != parent) iconTransform.SetParent(parent, false);
         }
 
@@ -46,6 +48,7 @@ namespace Zetori.UI.InGame
 
         internal void Show(Mesh mesh, Vector2 center, float size, float depth, Color color)
         {
+            if (!clip.CoversBox(center.y, size)) return;
             used = true;
             if (!iconObject.activeSelf) iconObject.SetActive(true);
             if (filter.sharedMesh != mesh) filter.sharedMesh = mesh;

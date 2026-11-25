@@ -25,4 +25,6 @@ Follow **Build from source** in the [README](README.md). Test every change in ga
 ## Releases
 
 1. Update `<Version>` in `Directory.Build.props` and `Version` in `Base/PluginInfo.cs`.
-2. Build with `dotnet build -c Release`. The build drops `Zetori-<version>.dll` into your game's `BepInEx\plugins\Zetori\` folder; zip that folder (alongside the licenses) as `Zetori-v<version>.zip` and attach it to the GitHub release.
+2. Build with `dotnet build -c Release`. The build drops `Zetori-<version>.dll` into your game's `BepInEx\plugins\Zetori\` folder; zip that folder (alongside the licenses, including `Resources/FFmpeg/COPYING.GPLv2` as `FFMPEG_LICENSE.txt`) as `Zetori-v<version>.zip` and attach it to the GitHub release.
+3. Attach FFmpeg's corresponding source to the same release, as the GPL requires for distributing its binary: `ffmpeg-9.1.tar.xz` and `x264-<commit>.tar.bz2` (the exact archives `Tools/FFmpeg/build.sh` verifies, kept from its build folder) plus `Tools/FFmpeg/build.sh`.
+4. The embedded `Resources/FFmpeg/ffmpeg.exe` only changes when `Tools/FFmpeg/build.sh` is changed and run again, in the MSYS2 MINGW64 environment; update the versions in `THIRD_PARTY_NOTICES.md` to match.

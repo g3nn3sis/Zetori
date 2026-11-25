@@ -182,9 +182,16 @@ namespace Zetori.UI.Panels
 
         private static void DrawRendering(IPanelSurface panel)
         {
-            panel.Label($"Rendering frame {ReplayRender.FramesDone} of {ReplayRender.FramesTotal}");
+            panel.Label(RenderStatus());
             panel.Label("Your own player runs slower until it finishes.");
             panel.Button("Cancel Render", ReplayRender.Cancel);
+        }
+
+        private static string RenderStatus()
+        {
+            if (ReplayRender.Preparing) return "Preparing the render";
+            if (ReplayRender.Finishing) return "Finishing the video";
+            return $"Rendering frame {ReplayRender.FramesDone} of {ReplayRender.FramesTotal}";
         }
 
         private static void DrawRender(IPanelSurface panel, ReplayPlayer replay)
@@ -206,8 +213,8 @@ namespace Zetori.UI.Panels
                 foreach (int rate in CasterConfig.ReplayRenderFrameRates)
                     panel.Button($"{rate} fps", () => CasterConfig.ReplayRenderFrameRate.Value = rate, CasterConfig.ReplayRenderFrameRate.Value != rate);
             });
-            panel.Button("Render Frames", () => ReplayRender.Start(replay), replay.RangeEnd > replay.RangeStart);
-            if (ReplayRender.LastFolder is string folder) panel.Label($"Rendered to: {folder}");
+            panel.Button("Render Video", () => ReplayRender.Start(replay), replay.RangeEnd > replay.RangeStart);
+            if (ReplayRender.LastFile is string file) panel.Label($"Rendered to: {file}");
         }
 
         private static string ResolutionLabel(RenderResolution resolution) => resolution switch

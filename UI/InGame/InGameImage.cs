@@ -15,7 +15,13 @@ namespace Zetori.UI.InGame
         private readonly GameObject imageObject;
         private readonly Transform imageTransform;
         private readonly Material material;
+        private readonly Mesh mesh;
+        private readonly Vector3[] vertices = new Vector3[4];
+        private readonly Vector2[] uvs = new Vector2[4];
         private Texture? shownTexture;
+        private InGameClip clip = InGameClip.None;
+        private float shownLower = -0.5f;
+        private float shownUpper = 0.5f;
         private bool used;
 
         internal Renderer Renderer { get; }
@@ -23,6 +29,7 @@ namespace Zetori.UI.InGame
         internal InGameImage(Transform parent, Mesh quad, Material material)
         {
             this.material = material;
+            mesh = quad;
             material.EnableKeyword(TextureKeyword);
             imageObject = new GameObject("image");
             imageTransform = imageObject.transform;
@@ -34,9 +41,10 @@ namespace Zetori.UI.InGame
             imageObject.SetActive(false);
         }
 
-        internal void BeginFrame(Transform parent)
+        internal void BeginFrame(Transform parent, InGameClip frameClip)
         {
             used = false;
+            clip = frameClip;
             if (imageTransform.parent != parent) imageTransform.SetParent(parent, false);
         }
 
@@ -47,6 +55,8 @@ namespace Zetori.UI.InGame
 
         internal void Show(Texture texture, Vector2 center, Vector2 bounds, float depth)
         {
+            Vector2 size = Fit(texture, bounds);
+            if (!clip.Trim(center.y, size.y, out float bottom, out float top)) return;
             used = true;
             if (!imageObject.activeSelf) imageObject.SetActive(true);
             if (shownTexture != texture)
@@ -56,9 +66,27 @@ namespace Zetori.UI.InGame
             }
             var position = new Vector3(center.x, center.y, depth);
             if (imageTransform.localPosition != position) imageTransform.localPosition = position;
-            Vector2 size = Fit(texture, bounds);
+            Crop((bottom - center.y) / size.y, (top - center.y) / size.y);
             var scale = new Vector3(size.x, size.y, 1f);
             if (imageTransform.localScale != scale) imageTransform.localScale = scale;
+        }
+
+        private void Crop(float lower, float upper)
+        {
+            if (Mathf.Approximately(lower, shownLower) && Mathf.Approximately(upper, shownUpper)) return;
+            shownLower = lower;
+            shownUpper = upper;
+            vertices[0] = new Vector3(-0.5f, lower, 0f);
+            vertices[1] = new Vector3(0.5f, lower, 0f);
+            vertices[2] = new Vector3(0.5f, upper, 0f);
+            vertices[3] = new Vector3(-0.5f, upper, 0f);
+            uvs[0] = new Vector2(0f, lower + 0.5f);
+            uvs[1] = new Vector2(1f, lower + 0.5f);
+            uvs[2] = new Vector2(1f, upper + 0.5f);
+            uvs[3] = new Vector2(0f, upper + 0.5f);
+            mesh.vertices = vertices;
+            mesh.uv = uvs;
+            mesh.RecalculateBounds();
         }
 
         internal void Hide()

@@ -50,7 +50,8 @@ UI/Icons/        Panel icons: SVG reader, rasterizer (desktop textures), tessell
 DiscordRichPresence/  Mod-side Discord integration
 Patches/         Harmony patches, including ObjectPatcher which creates the feature components
 External/        Vendored third-party source (DiscordRPC) — do not modify
-Resources/       Embedded icons (panel icons are SVG in Icons/Panels/) + HUD asset bundle
+Resources/       Embedded icons (panel icons are SVG in Icons/Panels/), HUD asset bundle, FFmpeg binary for replay renders
+Tools/           Build scripts for bundled binaries (FFmpeg/build.sh, run in MSYS2 MINGW64)
 ```
 
 Namespaces mirror folders: `Zetori.<Folder>` (e.g. `Zetori.Game`, `Zetori.UI.Panels`).

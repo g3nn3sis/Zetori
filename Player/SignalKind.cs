@@ -17,6 +17,11 @@ namespace Zetori.Player
         Teleports = 1 << 6,
         Hovering = 1 << 7,
         ArmReach = 1 << 8,
-        TagReach = 1 << 9
+        TagReach = 1 << 9,
+        HandMotion = 1 << 10,
+        NetworkSpam = 1 << 11,
+        LowGravity = 1 << 12,
+        TagBurst = 1 << 13,
+        FlaggedBefore = 1 << 14
     }
 }

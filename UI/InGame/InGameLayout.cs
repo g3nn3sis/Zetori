@@ -69,7 +69,7 @@ namespace Zetori.UI.InGame
             Scroll = Mathf.Clamp(Scroll, 0f, MaximumScroll);
             Place(surface, InGameRegion.Body, bodyRight, BodyTop + Scroll);
             if (KeepEditedFieldInView(surface)) Place(surface, InGameRegion.Body, bodyRight, BodyTop + Scroll);
-            CullBody(surface);
+            ClipBody(surface);
             PlaceMenu(surface, bodyRight);
         }
 
@@ -126,14 +126,15 @@ namespace Zetori.UI.InGame
             return true;
         }
 
-        private void CullBody(InGameSurface surface)
+        private void ClipBody(InGameSurface surface)
         {
+            var viewport = new InGameClip(BodyBottom, BodyTop);
             for (int i = 0; i < surface.Count; i++)
             {
                 InGameElement element = surface[i];
                 if (element.Region != InGameRegion.Body || !element.Visible) continue;
-                float half = element.Size.y * 0.5f;
-                element.Visible = element.Center.y + half <= BodyTop + CullTolerance && element.Center.y - half >= BodyBottom - CullTolerance;
+                element.Clip = viewport;
+                element.Visible = !viewport.Misses(element.Center.y, element.Size.y);
             }
         }
 

@@ -15,9 +15,9 @@ namespace Zetori.Game
     internal sealed class HeadsetAlertToast : ObjectComponent
     {
         private const float Distance = 0.8f;
-        private const float Drop = 0.17f;
         private const float RowPitch = 0.04f;
         private const float FontSize = 0.2f;
+        private const float CentimetresToMetres = 0.01f;
 
         private static readonly Vector2 RowSize = new Vector2(1.2f, RowPitch);
 
@@ -46,12 +46,13 @@ namespace Zetori.Game
             GTPlayer? player = GTPlayer.Instance;
             headset = player != null ? player.mainCamera : null;
             IReadOnlyList<CheatAlert> alerts = CheatAlerts.Active;
-            if (headset == null || alerts.Count == 0 || !CheatAlerts.Enabled || !VrCameraRig.HeadsetActive || ReplaySession.IsReplaying)
+            if (headset == null || alerts.Count == 0 || !CheatAlerts.Enabled || !CasterConfig.CheatAlertsInHeadset.Value || !VrCameraRig.HeadsetActive || ReplaySession.IsReplaying)
             {
                 Hide();
                 return;
             }
             Transform parent = RootUnder(headset.transform);
+            Place(parent);
             ApplyFont();
             float now = Time.unscaledTime;
             for (int i = 0; i < alerts.Count; i++)
@@ -81,11 +82,17 @@ namespace Zetori.Game
             if (root.parent != head)
             {
                 root.SetParent(head, false);
-                root.localPosition = new Vector3(0f, -Drop, Distance);
                 root.localRotation = Quaternion.identity;
-                root.localScale = Vector3.one;
             }
             return root;
+        }
+
+        private static void Place(Transform target)
+        {
+            var position = new Vector3(CasterConfig.CheatAlertsHeadsetX.Value * CentimetresToMetres, CasterConfig.CheatAlertsHeadsetY.Value * CentimetresToMetres, Distance);
+            if (target.localPosition != position) target.localPosition = position;
+            Vector3 size = Vector3.one * CasterConfig.CheatAlertsHeadsetScale.Value;
+            if (target.localScale != size) target.localScale = size;
         }
 
         private TextMeshPro RowAt(int index, Transform parent)

@@ -115,4 +115,9 @@
 		<EmbeddedResource Include="Resources\Bundles\zetori.bundle" LogicalName="Zetori.Bundles.zetori.bundle" />
 	</ItemGroup>
 
+	<!-- Cut-down FFmpeg built by Tools\FFmpeg\build.sh; replay renders extract it and pipe frames into it. -->
+	<ItemGroup>
+		<EmbeddedResource Include="Resources\FFmpeg\ffmpeg.exe" LogicalName="Zetori.FFmpeg.ffmpeg.exe" />
+	</ItemGroup>
+
 </Project>

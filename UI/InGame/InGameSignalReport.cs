@@ -4,13 +4,14 @@
 
 using System.Globalization;
 using System.Text;
+using UnityEngine;
 using Zetori.Player;
 
 namespace Zetori.UI.InGame
 {
     internal static class InGameSignalReport
     {
-        internal const int Lines = 10;
+        internal const int Lines = 15;
         private const int ShownModKeys = 3;
         private const int ReasonLength = 36;
         private const string Ellipsis = "...";
@@ -24,7 +25,6 @@ namespace Zetori.UI.InGame
         {
             (SystemProperties.CPULevel, "CPU level"),
             (SystemProperties.GPULevel, "GPU level"),
-            (SystemProperties.RefreshRate, "Refresh rate"),
             (SystemProperties.HalfRefreshRate, "Half refresh rate"),
             (SystemProperties.SwapInterval, "Swap interval"),
             (SystemProperties.PredictionTime, "Prediction time"),
@@ -60,7 +60,12 @@ namespace Zetori.UI.InGame
             Line(builder, "Teleports", record.Teleports.ToString(CultureInfo.InvariantCulture), record.Teleporting);
             Line(builder, "Hovering", record.LongestHover >= 1f ? $"Longest {Decimal(record.LongestHover)} s off the ground" : "No", record.Hovering);
             Line(builder, "Arm reach", ReachText(record), record.LongArms);
+            Line(builder, "Hand motion", HandText(record.Hands), record.InhumanHands);
             Line(builder, "Tag reach", TagText(record), record.FarTagging);
+            Line(builder, "Tag bursts", BurstText(record.TagBursts), record.BurstTagging);
+            Line(builder, "Gravity", GravityText(record.Flight), record.LowGravity);
+            Line(builder, "Network", NetworkText(record.Messages), record.Spamming);
+            Line(builder, "Flagged before", PastText(record), record.FlaggedBefore);
             return builder.ToString();
         }
 
@@ -112,14 +117,25 @@ namespace Zetori.UI.InGame
 
         private static string SpeedText(SignalRecord record)
         {
-            string top = $"Top {Decimal(record.TopSpeed)} m/s";
-            return record.Fast ? $"{top}, over {Whole(SignalRecord.FastSpeed)} for {Decimal(record.LongestFast)} s" : top;
+            string text = $"Top {Decimal(record.TopSpeed)} m/s";
+            if (record.LongestFast >= SignalRecord.FastSeconds) text += $", over {Whole(SignalRecord.FastSpeed)} for {Decimal(record.LongestFast)} s";
+            if (record.FastPushes > 0)
+                text += $", {Pushes(record.FastPushes)} past {Decimal(SignalRecord.RoleMargin)}x their {Decimal(record.LimitAtFastest)} m/s limit";
+            return text;
         }
 
         private static string ReachText(SignalRecord record)
         {
             string longest = $"{record.LongestReach.ToString("0.00", CultureInfo.InvariantCulture)} m";
             return record.ReachSeconds > 0f ? $"{longest}, past {Decimal(SignalRecord.LongReach)} m for {Decimal(record.ReachSeconds)} s" : longest;
+        }
+
+        private static string HandText(HandMotion hands)
+        {
+            string top = $"Top {Decimal(hands.TopSpeed)} m/s";
+            if (hands.Snaps == 0 && hands.FastSeconds <= 0f && hands.OverreachSeconds <= 0f) return top;
+            string snaps = hands.Snaps == 1 ? "1 jerk" : $"{hands.Snaps} jerks";
+            return $"{top}, {snaps}, flung out {Decimal(hands.OverreachSeconds)} s";
         }
 
         private static string TagText(SignalRecord record)
@@ -129,6 +145,46 @@ namespace Zetori.UI.InGame
             string far = record.FarTags > 0 ? $", {record.FarTags} from {Whole(SignalRecord.FarTagDistance)}+ m" : string.Empty;
             return $"{tags}, longest {Decimal(record.LongestTag)} m{far}";
         }
+
+        private static string Pushes(int count) => count == 1 ? "1 push" : $"{count} pushes";
+
+        private static string BurstText(TagBurst bursts)
+        {
+            if (bursts.Bursts == 0) return "None";
+            string count = bursts.Bursts == 1 ? "1 burst" : $"{bursts.Bursts} bursts";
+            return $"{count}, up to {bursts.LargestBurst} tags in {Decimal(TagBurst.Window)} s";
+        }
+
+        private static string GravityText(BodyFlight flight)
+        {
+            if (float.IsPositiveInfinity(flight.WeakestPull)) return "No free fall measured yet";
+            string weakest = $"Weakest pull {Percent(flight.WeakestPull)}% of gravity";
+            return flight.FloatSeconds > 0f ? $"{weakest}, under {Percent(BodyFlight.LowPull)}% for {Decimal(flight.FloatSeconds)} s" : weakest;
+        }
+
+        private static string NetworkText(MessageRate messages)
+        {
+            string top = $"Top {messages.TopRate} messages/s";
+            if (messages.SpamSeconds == 0) return top;
+            string seconds = messages.SpamSeconds == 1 ? "1 s" : $"{messages.SpamSeconds} s";
+            return $"{top}, {seconds} far above the room";
+        }
+
+        private static string PastText(SignalRecord record)
+        {
+            if (!record.PastChecked) return "Checking...";
+            return record.FlaggedBefore ? $"{SignalNames.Describe(record.PastSignals)}, {Age(record.PastFlagged)}" : "No";
+        }
+
+        private static string Age(DateTime then)
+        {
+            TimeSpan age = DateTime.Now - then;
+            if (age.TotalHours < 1d) return "under an hour ago";
+            if (age.TotalDays < 1d) return $"{(int)age.TotalHours} h ago";
+            return age.TotalDays < 2d ? "yesterday" : $"{(int)age.TotalDays} days ago";
+        }
+
+        private static string Percent(float fraction) => Mathf.RoundToInt(fraction * 100f).ToString(CultureInfo.InvariantCulture);
 
         private static string Decimal(float value) => value.ToString("0.0", CultureInfo.InvariantCulture);
 

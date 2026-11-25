@@ -51,7 +51,6 @@ namespace Zetori.UI.InGame
             Content = content.transform;
             Keyboard = CreateKeyboardPlane(root.transform);
             Quad = CreateQuad();
-            meshes.Add(Quad);
         }
 
         internal static InGameModel Create()
@@ -78,6 +77,13 @@ namespace Zetori.UI.InGame
         }
 
         internal void Adopt(Mesh mesh) => meshes.Add(mesh);
+
+        internal Mesh CreateQuad()
+        {
+            Mesh mesh = NewQuad();
+            meshes.Add(mesh);
+            return mesh;
+        }
 
         internal void Register(Renderer renderer)
         {
@@ -162,7 +168,7 @@ namespace Zetori.UI.InGame
             return plane;
         }
 
-        private static Mesh CreateQuad()
+        private static Mesh NewQuad()
         {
             var mesh = new Mesh
             {

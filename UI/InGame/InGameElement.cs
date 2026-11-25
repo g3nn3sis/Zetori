@@ -27,6 +27,7 @@ namespace Zetori.UI.InGame
         internal Vector2 Center { get; set; }
         internal Vector2 Size { get; set; }
         internal bool Visible { get; set; }
+        internal InGameClip Clip { get; set; }
 
         internal InGamePlane Plane => Region == InGameRegion.Keyboard ? InGamePlane.Keyboard : InGamePlane.Panel;
 
@@ -52,9 +53,10 @@ namespace Zetori.UI.InGame
             Icon = null;
             Texture = null;
             Visible = false;
+            Clip = InGameClip.None;
         }
 
         internal bool Contains(Vector2 point) =>
-            Mathf.Abs(point.x - Center.x) <= Size.x * 0.5f && Mathf.Abs(point.y - Center.y) <= Size.y * 0.5f;
+            Mathf.Abs(point.x - Center.x) <= Size.x * 0.5f && Mathf.Abs(point.y - Center.y) <= Size.y * 0.5f && Clip.Contains(point.y);
     }
 }

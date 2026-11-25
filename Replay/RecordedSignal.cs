@@ -12,6 +12,10 @@ namespace Zetori.Replay
         Teleports = 1 << 1,
         Hovering = 1 << 2,
         ArmReach = 1 << 3,
-        TagReach = 1 << 4
+        TagReach = 1 << 4,
+        HandMotion = 1 << 5,
+        LowGravity = 1 << 6,
+        TagBurst = 1 << 7,
+        NetworkSpam = 1 << 8
     }
 }

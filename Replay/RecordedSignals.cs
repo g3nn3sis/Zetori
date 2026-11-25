@@ -14,7 +14,11 @@ namespace Zetori.Replay
             (RecordedSignal.Teleports, "teleports"),
             (RecordedSignal.Hovering, "hovering"),
             (RecordedSignal.ArmReach, "arm reach"),
-            (RecordedSignal.TagReach, "tag reach")
+            (RecordedSignal.TagReach, "tag reach"),
+            (RecordedSignal.HandMotion, "inhuman hands"),
+            (RecordedSignal.LowGravity, "low gravity"),
+            (RecordedSignal.TagBurst, "tag burst"),
+            (RecordedSignal.NetworkSpam, "network spam")
         };
 
         internal static RecordedSignal Of(SignalRecord? record)
@@ -26,6 +30,10 @@ namespace Zetori.Replay
             if (record.Hovering) signals |= RecordedSignal.Hovering;
             if (record.LongArms) signals |= RecordedSignal.ArmReach;
             if (record.FarTagging) signals |= RecordedSignal.TagReach;
+            if (record.InhumanHands) signals |= RecordedSignal.HandMotion;
+            if (record.LowGravity) signals |= RecordedSignal.LowGravity;
+            if (record.BurstTagging) signals |= RecordedSignal.TagBurst;
+            if (record.Spamming) signals |= RecordedSignal.NetworkSpam;
             return signals;
         }
 

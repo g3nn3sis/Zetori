@@ -32,6 +32,7 @@ namespace Zetori.UI.Icons
         Record,
         History,
         Chart,
-        Crown
+        Crown,
+        Shield
     }
 }

@@ -15,7 +15,7 @@ namespace Zetori.Patches
 
         static void Postfix(VRRig __instance, InputStruct data)
         {
-            try { CheatSignals.ObserveSync(__instance, (data.packedFields & TeleportedFlag) != 0); }
+            try { CheatSignals.ObserveSync(__instance, (data.packedFields & TeleportedFlag) != 0, data.serverTimeStamp, data.isGroundedHand || data.isGroundedButt); }
             catch (Exception e) { Log.ExceptionOnce("rig-sync", e, "Reading a player's position failed"); }
         }
     }

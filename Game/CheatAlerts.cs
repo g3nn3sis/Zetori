@@ -3,6 +3,7 @@
 // Unauthorized use, modification, or distribution is prohibited. See LICENSE.
 
 using System.Text;
+using BepInEx.Configuration;
 using UnityEngine;
 using Zetori.Base;
 using Zetori.Player;
@@ -16,20 +17,8 @@ namespace Zetori.Game
         private const int ReasonLength = 32;
         private const string Ellipsis = "...";
         private const string SignalColor = "FF8C1A";
-
-        private static readonly (SignalKind Kind, string Name)[] SignalNames =
-        {
-            (SignalKind.GameReport, "Game report"),
-            (SignalKind.ModData, "Mod data"),
-            (SignalKind.Name, "Odd name"),
-            (SignalKind.QuestTweaks, "Quest tweaks"),
-            (SignalKind.Cosmetics, "Unowned cosmetics"),
-            (SignalKind.Speed, "Too fast"),
-            (SignalKind.Teleports, "Teleporting"),
-            (SignalKind.Hovering, "Hovering"),
-            (SignalKind.ArmReach, "Long arms"),
-            (SignalKind.TagReach, "Far tags")
-        };
+        private const string TestName = "Test Player";
+        private const SignalKind TestSignals = SignalKind.Speed | SignalKind.Teleports;
 
         private static readonly List<CheatAlert> alerts = new List<CheatAlert>();
         private static readonly StringBuilder builder = new StringBuilder();
@@ -53,28 +42,63 @@ namespace Zetori.Game
 
         private static void Scan(float now)
         {
+            SignalKind shown = Shown();
             foreach (VRRig? rig in VRRigCache.ActiveRigs)
             {
                 if (rig == null || !(CheatSignals.For(rig) is SignalRecord record)) continue;
-                SignalKind raised = record.TakeNewlyRaised();
+                SignalKind raised = record.TakeNewlyRaised() & shown;
                 if (CheatSignals.ModdedLobby) raised &= ~SignalKind.ModData;
-                if (raised != SignalKind.None && Enabled) Push(new CheatAlert(Compose(rig, record, raised), now));
+                if (raised != SignalKind.None && Enabled) Push(new CheatAlert(Compose(TagManagerControl.NameOf(rig.Creator), record, raised), now));
             }
         }
 
-        private static string Compose(VRRig rig, SignalRecord record, SignalKind raised)
+        internal static void ShowTest()
+        {
+            if (Enabled) Push(new CheatAlert(Compose(TestName, null, TestSignals), Time.unscaledTime));
+        }
+
+        private static SignalKind Shown()
+        {
+            SignalKind shown = SignalKind.None;
+            foreach ((SignalKind kind, _) in SignalNames.All)
+                if (SettingOf(kind).Value) shown |= kind;
+            return shown;
+        }
+
+        private static ConfigEntry<bool> SettingOf(SignalKind kind) => kind switch
+        {
+            SignalKind.GameReport => CasterConfig.CheatAlertGameReports,
+            SignalKind.ModData => CasterConfig.CheatAlertModData,
+            SignalKind.Name => CasterConfig.CheatAlertOddNames,
+            SignalKind.QuestTweaks => CasterConfig.CheatAlertQuestTweaks,
+            SignalKind.Cosmetics => CasterConfig.CheatAlertCosmetics,
+            SignalKind.Speed => CasterConfig.CheatAlertSpeed,
+            SignalKind.Teleports => CasterConfig.CheatAlertTeleports,
+            SignalKind.Hovering => CasterConfig.CheatAlertHovering,
+            SignalKind.ArmReach => CasterConfig.CheatAlertArmReach,
+            SignalKind.HandMotion => CasterConfig.CheatAlertHandMotion,
+            SignalKind.NetworkSpam => CasterConfig.CheatAlertNetworkSpam,
+            SignalKind.LowGravity => CasterConfig.CheatAlertLowGravity,
+            SignalKind.TagBurst => CasterConfig.CheatAlertTagBursts,
+            SignalKind.FlaggedBefore => CasterConfig.CheatAlertFlaggedBefore,
+            _ => CasterConfig.CheatAlertTagReach
+        };
+
+        private static string Compose(string player, SignalRecord? record, SignalKind raised)
         {
             builder.Clear();
-            builder.Append("<b><noparse>").Append(TagManagerControl.NameOf(rig.Creator)).Append("</noparse></b>  flagged: <color=#").Append(SignalColor).Append('>');
+            builder.Append("<b><noparse>").Append(player).Append("</noparse></b>  flagged: <color=#").Append(SignalColor).Append('>');
             bool first = true;
-            foreach ((SignalKind kind, string name) in SignalNames)
+            foreach ((SignalKind kind, string name) in SignalNames.All)
             {
                 if ((raised & kind) == 0) continue;
                 if (!first) builder.Append(", ");
                 first = false;
                 builder.Append(name);
-                if (kind == SignalKind.GameReport && record.ReportReasons.Count > 0)
+                if (kind == SignalKind.GameReport && record != null && record.ReportReasons.Count > 0 && CasterConfig.CheatAlertsReasons.Value)
                     builder.Append(" (<noparse>").Append(Shorten(record.ReportReasons[0])).Append("</noparse>)");
+                if (kind == SignalKind.FlaggedBefore && record != null)
+                    builder.Append(" (").Append(Shorten(SignalNames.Describe(record.PastSignals).ToLowerInvariant())).Append(')');
             }
             return builder.Append("</color>").ToString();
         }

@@ -19,6 +19,7 @@ namespace Zetori.Base
         internal static string Webs => Path.Combine(Root, "Webs");
         internal static string Photos => Path.Combine(Root, "Photos");
         internal static string Renders => Path.Combine(Root, "Renders");
+        internal static string Tools => Path.Combine(Root, "Tools");
         internal static string DefaultConfig => Path.Combine(Configs, DefaultConfigName + ConfigExtension);
         internal static string PresetDefaults => Path.Combine(Root, "PresetDefaults.txt");
     }

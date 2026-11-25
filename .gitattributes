@@ -10,3 +10,5 @@
 *.bundle binary
 *.zmdl binary
 *.blend binary
+*.sh text eol=lf
+*.exe binary

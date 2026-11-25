@@ -6,9 +6,7 @@ using Zetori.Base;
 using Zetori.GameCamera;
 using System.Globalization;
 using System.IO;
-using System.Threading.Tasks;
 using UnityEngine;
-using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 
 namespace Zetori.Replay
@@ -16,21 +14,25 @@ namespace Zetori.Replay
     internal sealed class ReplayRender : ObjectComponent
     {
         private const string ObjectName = "_Zetori Render Camera";
-        private const string AudioName = "audio.wav";
+        private const string VideoExtension = ".mp4";
+        private const string AudioExtension = ".wav";
+        private const string TemporaryAudioPrefix = "zetori-render-";
         private const int DepthBits = 24;
         private const int MaximumPendingFrames = 4;
         private const int FramesPerCapture = 2;
         private const float TimeTolerance = 0.0001f;
         private const int NoFrame = -1;
 
-        private static readonly List<Task> pending = new List<Task>();
-
         private static ReplayPlayer? replay;
         private static Camera? capturing;
         private static GameObject? cameraObject;
         private static RenderTexture? texture;
         private static Texture2D? readback;
-        private static string folder = string.Empty;
+        private static Task<VideoEncoder>? preparing;
+        private static VideoEncoder? encoder;
+        private static Task? finishing;
+        private static string output = string.Empty;
+        private static string audioPath = string.Empty;
         private static float start;
         private static float frameDuration;
         private static int next;
@@ -39,9 +41,11 @@ namespace Zetori.Replay
         private static int previousCaptureFramerate;
 
         internal static bool Active => replay != null;
+        internal static bool Preparing => preparing != null;
+        internal static bool Finishing => finishing != null;
         internal static int FramesDone => next;
         internal static int FramesTotal { get; private set; }
-        internal static string? LastFolder { get; private set; }
+        internal static string? LastFile { get; private set; }
 
         internal static bool Renders(Camera camera) => capturing != null && camera == capturing;
 
@@ -55,25 +59,32 @@ namespace Zetori.Replay
         internal static void Start(ReplayPlayer player)
         {
             if (Active) return;
-            CameraWrapper? output = CameraManager.camera;
-            if (output == null || !output.IsAlive)
+            CameraWrapper? camera = CameraManager.camera;
+            if (camera == null || !camera.IsAlive)
             {
                 Log.Warning("There is no camera to render the replay with yet.");
                 return;
             }
             int frameRate = CasterConfig.ReplayRenderFrameRate.Value;
+            (int Width, int Height) size = Size(CasterConfig.ReplayRenderResolution.Value);
+            try
+            {
+                BuildCamera(camera, size);
+            }
+            catch (Exception e)
+            {
+                Release();
+                Log.Exception(e, "Couldn't create the render camera");
+                return;
+            }
             start = player.RangeStart;
             frameDuration = 1f / frameRate;
             FramesTotal = Mathf.FloorToInt((player.RangeEnd - start) * frameRate) + 1;
             next = 0;
             renderedFrame = NoFrame;
-            folder = UniqueFolder(player.Name);
-            Directory.CreateDirectory(folder);
-            float end = player.RangeEnd;
-            string audioPath = Path.Combine(folder, AudioName);
-            ReplayRecording recording = player.Recording;
-            pending.Add(Task.Run(() => RenderAudio.Write(audioPath, recording, start, end)));
-            BuildCamera(output, Size(CasterConfig.ReplayRenderResolution.Value));
+            output = ReserveFile(player.Name);
+            audioPath = Path.Combine(Path.GetTempPath(), $"{TemporaryAudioPrefix}{Guid.NewGuid():N}{AudioExtension}");
+            preparing = Prepare(DataFolders.Tools, new VideoFormat(size.Width, size.Height, frameRate), player.Recording, start, player.RangeEnd, audioPath, output);
             replay = player;
             player.Rendering = true;
             player.Playing = true;
@@ -87,7 +98,17 @@ namespace Zetori.Replay
         {
             if (!Active) return;
             Log.Info("Rendering the replay was cancelled.");
+            Abandon();
             Finish();
+        }
+
+        private static Task<VideoEncoder> Prepare(string tools, VideoFormat format, ReplayRecording recording, float from, float to, string audio, string video)
+        {
+            return Task.Run(() =>
+            {
+                RenderAudio.Write(audio, recording, from, to);
+                return VideoEncoder.Start(BundledFFmpeg.Extract(tools), format, audio, video);
+            });
         }
 
         private static void BuildCamera(CameraWrapper output, (int Width, int Height) size)
@@ -114,12 +135,12 @@ namespace Zetori.Replay
 
         internal void LateUpdate()
         {
-            ObservePending();
             if (replay == null) return;
             try { Advance(replay); }
             catch (Exception e)
             {
                 Log.ExceptionOnce("replay-render", e, "Rendering the replay failed");
+                Abandon();
                 Finish();
             }
         }
@@ -131,24 +152,60 @@ namespace Zetori.Replay
                 Cancel();
                 return;
             }
-            if (next >= FramesTotal)
+            if (encoder == null) TakeEncoder();
+            if (encoder == null) return;
+            if (finishing != null)
             {
-                if (pending.Count > 0) return;
-                LastFolder = Path.GetFileName(folder);
-                Log.Info($"Rendered {FramesTotal} frames to '{folder}'.");
-                Finish();
+                if (finishing.IsCompleted) Complete(finishing, encoder);
+                return;
+            }
+            if (encoder.Faulted || next >= FramesTotal)
+            {
+                finishing = encoder.Finish();
                 return;
             }
             if (renderedFrame != Time.frameCount - 1 || Mathf.Abs(renderedAt - TimeOf(next)) > TimeTolerance) return;
-            if (pending.Count >= MaximumPendingFrames) return;
-            Capture(next);
+            if (encoder.Pending >= MaximumPendingFrames) return;
+            Capture(encoder);
             next++;
             if (next < FramesTotal) player.Seek(TimeOf(next));
         }
 
+        private static void TakeEncoder()
+        {
+            if (preparing == null || !preparing.IsCompleted) return;
+            Task<VideoEncoder> prepared = preparing;
+            preparing = null;
+            if (prepared.IsFaulted)
+            {
+                Log.Exception(prepared.Exception!.GetBaseException(), "Couldn't start the video encoder");
+                DeleteQuietly(audioPath);
+                DeleteQuietly(output);
+                Finish();
+                return;
+            }
+            encoder = prepared.Result;
+        }
+
+        private static void Complete(Task finished, VideoEncoder done)
+        {
+            if (finished.IsFaulted) Log.Exception(finished.Exception!.GetBaseException(), "Encoding the replay video failed");
+            else
+            {
+                LastFile = Path.GetFileName(output);
+                Log.Info($"Rendered {FramesTotal} frames to '{output}'.");
+            }
+            try { done.Dispose(); }
+            finally
+            {
+                DeleteQuietly(audioPath);
+                Finish();
+            }
+        }
+
         private static float TimeOf(int frame) => start + frame * frameDuration;
 
-        private static void Capture(int frame)
+        private static void Capture(VideoEncoder target)
         {
             if (texture == null || readback == null) return;
             RenderTexture previous = RenderTexture.active;
@@ -158,30 +215,87 @@ namespace Zetori.Replay
                 readback.ReadPixels(new Rect(0f, 0f, texture.width, texture.height), 0, 0);
             }
             finally { RenderTexture.active = previous; }
-            byte[] pixels = readback.GetRawTextureData();
-            GraphicsFormat format = readback.graphicsFormat;
-            uint width = (uint)readback.width, height = (uint)readback.height;
-            string path = Path.Combine(folder, $"frame_{frame:000000}.png");
-            pending.Add(Task.Run(() => File.WriteAllBytes(path, ImageConversion.EncodeArrayToPNG(pixels, format, width, height))));
+            byte[] frame = target.RentFrame();
+            readback.GetRawTextureData<byte>().CopyTo(frame);
+            target.Write(frame);
         }
 
-        private static void ObservePending()
+        private static void Abandon()
         {
-            for (int i = pending.Count - 1; i >= 0; i--)
+            string audio = audioPath;
+            string video = output;
+            try
             {
-                Task task = pending[i];
-                if (!task.IsCompleted) continue;
-                if (task.IsFaulted) Log.Exception(task.Exception!.GetBaseException(), "Writing a rendered replay file failed");
-                pending.RemoveAt(i);
+                if (encoder != null) AbandonEncoder(encoder, finishing, audio, video);
+                else preparing?.ContinueWith(prepared => AbandonPrepared(prepared, audio, video), TaskScheduler.Default);
+            }
+            catch (Exception e)
+            {
+                Log.Exception(e, "Stopping the video encoder failed");
             }
         }
 
-        private static string UniqueFolder(string replayName)
+        private static void AbandonEncoder(VideoEncoder abandoned, Task? finished, string audio, string video)
         {
+            try
+            {
+                if (!abandoned.Abort()) Log.Warning($"Couldn't delete the cancelled render '{video}'.");
+            }
+            finally
+            {
+                if (finished == null) DisposeEncoder(abandoned, audio);
+                else finished.ContinueWith(task => ReleaseAfterFinish(task, abandoned, audio), TaskScheduler.Default);
+            }
+        }
+
+        private static void ReleaseAfterFinish(Task finished, VideoEncoder abandoned, string audio)
+        {
+            if (finished.Exception != null) Log.Debug($"The cancelled render's encoder stopped with: {finished.Exception.GetBaseException().Message}");
+            DisposeEncoder(abandoned, audio);
+        }
+
+        private static void DisposeEncoder(VideoEncoder abandoned, string audio)
+        {
+            try { abandoned.Dispose(); }
+            finally { DeleteQuietly(audio); }
+        }
+
+        private static void AbandonPrepared(Task<VideoEncoder> prepared, string audio, string video)
+        {
+            if (prepared.Status == TaskStatus.RanToCompletion) DisposeEncoder(prepared.Result, audio);
+            else
+            {
+                if (prepared.Exception != null) Log.Debug($"The cancelled render's encoder did not start: {prepared.Exception.GetBaseException().Message}");
+                DeleteQuietly(audio);
+                DeleteQuietly(video);
+            }
+        }
+
+        private static void DeleteQuietly(string path)
+        {
+            try
+            {
+                if (File.Exists(path)) File.Delete(path);
+            }
+            catch (IOException e)
+            {
+                Log.Warning($"Couldn't delete '{path}': {e.Message}");
+            }
+            catch (UnauthorizedAccessException e)
+            {
+                Log.Warning($"Couldn't delete '{path}': {e.Message}");
+            }
+        }
+
+        private static string ReserveFile(string replayName)
+        {
+            Directory.CreateDirectory(DataFolders.Renders);
             string stamp = $"{replayName} {DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss", CultureInfo.InvariantCulture)}";
             string name = stamp;
-            for (int copy = 2; Directory.Exists(Path.Combine(DataFolders.Renders, name)); copy++) name = $"{stamp} ({copy})";
-            return Path.Combine(DataFolders.Renders, name);
+            for (int copy = 2; File.Exists(Path.Combine(DataFolders.Renders, name + VideoExtension)); copy++) name = $"{stamp} ({copy})";
+            string path = Path.Combine(DataFolders.Renders, name + VideoExtension);
+            File.Create(path).Dispose();
+            return path;
         }
 
         private static void OnBeginCameraRendering(ScriptableRenderContext context, Camera camera)
@@ -211,6 +325,9 @@ namespace Zetori.Replay
                 replay.Playing = false;
             }
             replay = null;
+            preparing = null;
+            encoder = null;
+            finishing = null;
             Release();
         }
 
@@ -234,7 +351,7 @@ namespace Zetori.Replay
         {
             RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;
             RenderPipelineManager.endCameraRendering -= OnEndCameraRendering;
-            if (Active) Finish();
+            Cancel();
             base.OnDestroy();
         }
     }

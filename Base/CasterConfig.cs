@@ -103,6 +103,30 @@ namespace Zetori.Base
         internal static ConfigEntry<bool> DiscordPresence = null!;
         internal static ConfigEntry<bool> HideRoomCodes = null!;
         internal static ConfigEntry<bool> CheatAlerts = null!;
+        internal static ConfigEntry<bool> CheatAlertsOnScreen = null!;
+        internal static ConfigEntry<float> CheatAlertsScale = null!;
+        internal static ConfigEntry<float> CheatAlertsOffsetX = null!;
+        internal static ConfigEntry<float> CheatAlertsOffsetY = null!;
+        internal static ConfigEntry<bool> CheatAlertsInHeadset = null!;
+        internal static ConfigEntry<float> CheatAlertsHeadsetScale = null!;
+        internal static ConfigEntry<float> CheatAlertsHeadsetX = null!;
+        internal static ConfigEntry<float> CheatAlertsHeadsetY = null!;
+        internal static ConfigEntry<bool> CheatAlertsReasons = null!;
+        internal static ConfigEntry<bool> CheatAlertGameReports = null!;
+        internal static ConfigEntry<bool> CheatAlertModData = null!;
+        internal static ConfigEntry<bool> CheatAlertOddNames = null!;
+        internal static ConfigEntry<bool> CheatAlertQuestTweaks = null!;
+        internal static ConfigEntry<bool> CheatAlertCosmetics = null!;
+        internal static ConfigEntry<bool> CheatAlertSpeed = null!;
+        internal static ConfigEntry<bool> CheatAlertTeleports = null!;
+        internal static ConfigEntry<bool> CheatAlertHovering = null!;
+        internal static ConfigEntry<bool> CheatAlertArmReach = null!;
+        internal static ConfigEntry<bool> CheatAlertTagReach = null!;
+        internal static ConfigEntry<bool> CheatAlertHandMotion = null!;
+        internal static ConfigEntry<bool> CheatAlertNetworkSpam = null!;
+        internal static ConfigEntry<bool> CheatAlertLowGravity = null!;
+        internal static ConfigEntry<bool> CheatAlertTagBursts = null!;
+        internal static ConfigEntry<bool> CheatAlertFlaggedBefore = null!;
 
         internal static ConfigEntry<int> HudFont = null!;
 
@@ -265,6 +289,30 @@ namespace Zetori.Base
 
             DiscordPresence = config.Bind("Discord", "Rich Presence", true, "Show what you are doing on your Discord profile.");
             CheatAlerts = config.Bind("Cheat Alerts", "Enabled", false, "Show a short notice below the centre of the screen and of your headset view when another player raises a cheat or mod signal.");
+            CheatAlertsOnScreen = config.Bind("Cheat Alerts", "On Screen", true, "Show the alerts on the game window.");
+            CheatAlertsScale = Range(config, "Cheat Alerts", "Scale", 1f, 0.5f, 2f, "Size multiplier of the on-screen alerts on top of automatic resolution scaling.");
+            CheatAlertsOffsetX = Range(config, "Cheat Alerts", "Offset X", 0f, -800f, 800f, "Where the top of the on-screen alerts sits left (negative) or right (positive) of the screen centre, in 1080p pixels.");
+            CheatAlertsOffsetY = Range(config, "Cheat Alerts", "Offset Y", -150f, -500f, 500f, "Where the top of the on-screen alerts sits below (negative) or above (positive) the screen centre, in 1080p pixels.");
+            CheatAlertsInHeadset = config.Bind("Cheat Alerts", "In Headset", true, "With a headset on, also show the alerts in your view, seen only by your headset.");
+            CheatAlertsHeadsetScale = Range(config, "Cheat Alerts", "Headset Scale", 1f, 0.5f, 2f, "Size multiplier of the alerts in your headset view.");
+            CheatAlertsHeadsetX = Range(config, "Cheat Alerts", "Headset X", 0f, -40f, 40f, "Where the alerts sit left (negative) or right (positive) of the centre of your headset view, in centimetres at 80 cm away.");
+            CheatAlertsHeadsetY = Range(config, "Cheat Alerts", "Headset Y", -17f, -40f, 40f, "Where the alerts sit below (negative) or above (positive) the centre of your headset view, in centimetres at 80 cm away.");
+            CheatAlertsReasons = config.Bind("Cheat Alerts", "Report Reasons", true, "Add the game's reason after a game report.");
+            CheatAlertGameReports = config.Bind("Cheat Alerts", "Game Reports", true, "Alert when the game's own cheat checks report a player.");
+            CheatAlertModData = config.Bind("Cheat Alerts", "Mod Data", true, "Alert when a player's profile carries mod data.");
+            CheatAlertOddNames = config.Bind("Cheat Alerts", "Odd Names", true, "Alert when a player's name is banned, too long or has symbols the game's keyboard lacks.");
+            CheatAlertQuestTweaks = config.Bind("Cheat Alerts", "Quest Tweaks", true, "Alert when a Quest player's headset settings were changed with developer tools such as ADB.");
+            CheatAlertCosmetics = config.Bind("Cheat Alerts", "Unowned Cosmetics", true, "Alert when a player wears cosmetics they do not own.");
+            CheatAlertSpeed = config.Bind("Cheat Alerts", "Too Fast", true, "Alert when a player moves faster than the game allows.");
+            CheatAlertTeleports = config.Bind("Cheat Alerts", "Teleporting", true, "Alert when a player jumps across the map.");
+            CheatAlertHovering = config.Bind("Cheat Alerts", "Hovering", true, "Alert when a player stays in the air without falling.");
+            CheatAlertArmReach = config.Bind("Cheat Alerts", "Long Arms", true, "Alert when a player's hands reach further than the game allows.");
+            CheatAlertTagReach = config.Bind("Cheat Alerts", "Far Tags", true, "Alert when a player tags others from too far away.");
+            CheatAlertHandMotion = config.Bind("Cheat Alerts", "Inhuman Hands", true, "Alert when a player's hands move faster, jerk harder or fling further than a real arm can, as a hand prediction cheat makes them.");
+            CheatAlertNetworkSpam = config.Bind("Cheat Alerts", "Network Spam", true, "Alert when a player sends network messages many times faster than everyone else in the room, as lag, crash and sound spam cheats do.");
+            CheatAlertLowGravity = config.Bind("Cheat Alerts", "Low Gravity", true, "Alert when a player in open air falls much slower than gravity pulls, or rises, as fly and low gravity cheats make them.");
+            CheatAlertTagBursts = config.Bind("Cheat Alerts", "Tag Bursts", true, "Alert when a player tags several players in the same half second, as tag all cheats do.");
+            CheatAlertFlaggedBefore = config.Bind("Cheat Alerts", "Flagged Before", true, "Alert when a player joins who raised cheat signals in an earlier room.");
             HideRoomCodes = config.Bind("Streamer", "Hide Room Codes", false, "Show Hidden instead of room codes in every panel, the in-game panel and its keyboard, so they never appear on stream or in a recording.");
 
             HudFont = config.Bind("HUD", "Font Index", 0, new ConfigDescription("Index into the fonts found in the game, shared by the leaderboard and closest-lava overlays.", new AcceptableValueRange<int>(0, 255)));

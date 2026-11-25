@@ -26,7 +26,6 @@ namespace Zetori.UI.Panels
             CasterConfig.InGamePanelHaptics.Value = panel.Toggle("Haptics", CasterConfig.InGamePanelHaptics.Value);
             CasterConfig.InGamePanelOnStream.Value = panel.Toggle("Show On Stream", CasterConfig.InGamePanelOnStream.Value);
             CasterConfig.HideRoomCodes.Value = panel.Toggle("Hide Room Codes", CasterConfig.HideRoomCodes.Value);
-            CasterConfig.CheatAlerts.Value = panel.Toggle("Cheat Alerts", CasterConfig.CheatAlerts.Value);
             drawing = panel;
             try { panel.HorizontalArea(placementRow); }
             finally { drawing = null; }

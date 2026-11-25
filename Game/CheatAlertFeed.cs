@@ -2,16 +2,15 @@
 // SPDX-License-Identifier: LicenseRef-Zetori-Source-Available
 // Unauthorized use, modification, or distribution is prohibited. See LICENSE.
 
-using Photon.Pun;
 using TMPro;
 using UnityEngine;
+using Zetori.Base;
 using Zetori.Replay;
 
 namespace Zetori.Game
 {
     internal sealed class CheatAlertFeed : HudOverlay
     {
-        private const float CentreDrop = 150f;
         private const float RowSpacing = 6f;
         private const float FallbackRowHeight = 48f;
 
@@ -34,7 +33,7 @@ namespace Zetori.Game
         private float rowHeight = FallbackRowHeight;
 
         protected override bool Active =>
-            CheatAlerts.Enabled && CheatAlerts.Active.Count > 0 && PhotonNetwork.InRoom && !ReplaySession.IsReplaying;
+            CheatAlerts.Enabled && CasterConfig.CheatAlertsOnScreen.Value && CheatAlerts.Active.Count > 0 && !ReplaySession.IsReplaying;
 
         protected override GameObject? Prefab => HudAssets.ClosestLavaPrefab;
 
@@ -54,12 +53,12 @@ namespace Zetori.Game
             feed.anchorMax = Centre;
             feed.pivot = TopCentre;
             feed.sizeDelta = Vector2.zero;
-            feed.anchoredPosition = new Vector2(0f, -CentreDrop);
             return true;
         }
 
         protected override void Refresh()
         {
+            Place(feed!, Vector2.zero, CasterConfig.CheatAlertsScale, CasterConfig.CheatAlertsOffsetX, CasterConfig.CheatAlertsOffsetY);
             ApplyFontIfChanged();
             IReadOnlyList<CheatAlert> alerts = CheatAlerts.Active;
             float now = Time.unscaledTime;

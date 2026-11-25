@@ -29,6 +29,7 @@ namespace Zetori.UI
         Capture,
         RecentPlayers,
         Stats,
+        CheatAlerts,
         Count
     }
 }

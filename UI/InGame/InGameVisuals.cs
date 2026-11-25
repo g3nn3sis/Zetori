@@ -72,6 +72,7 @@ namespace Zetori.UI.InGame
         private Color accent;
         private Color accentText;
         private Color iconTint;
+        private InGameClip clip = InGameClip.None;
         private string brandName = string.Empty;
         private string brandDetail = string.Empty;
         private string brandMarkup = string.Empty;
@@ -120,8 +121,10 @@ namespace Zetori.UI.InGame
             {
                 InGameElement element = surface[i];
                 if (!element.Visible || element.Plane != plane || (element.Region == InGameRegion.Menu) != menu) continue;
+                clip = element.Clip;
                 Draw(element, AnyTargets(pointers, i), AnyHovers(pointers, i), lift);
             }
+            clip = InGameClip.None;
         }
 
         private static bool AnyTargets(InGamePointer[] pointers, int index)
@@ -358,7 +361,7 @@ namespace Zetori.UI.InGame
                 pool.Add(visual);
             }
             InGameVisual next = pool[used++];
-            next.BeginFrame(canvas);
+            next.BeginFrame(canvas, clip);
             return next;
         }
 
@@ -371,7 +374,7 @@ namespace Zetori.UI.InGame
                 icons.Add(icon);
             }
             InGameIcon next = icons[iconsUsed++];
-            next.BeginFrame(canvas);
+            next.BeginFrame(canvas, clip);
             return next;
         }
 
@@ -379,12 +382,12 @@ namespace Zetori.UI.InGame
         {
             if (imagesUsed == images.Count)
             {
-                var image = new InGameImage(model.Content, model.Quad, model.CreateMaterial(Color.white));
+                var image = new InGameImage(model.Content, model.CreateQuad(), model.CreateMaterial(Color.white));
                 model.Register(image.Renderer);
                 images.Add(image);
             }
             InGameImage next = images[imagesUsed++];
-            next.BeginFrame(canvas);
+            next.BeginFrame(canvas, clip);
             return next;
         }
 

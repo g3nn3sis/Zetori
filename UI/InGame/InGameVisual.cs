@@ -9,6 +9,8 @@ namespace Zetori.UI.InGame
 {
     internal sealed class InGameVisual
     {
+        private const int NoProbe = -1;
+
         private static readonly int BaseColorProperty = Shader.PropertyToID("_BaseColor");
         private static readonly Vector4 ControlMargin = new Vector4(0.003f, 0f, 0.003f, 0f);
         private static readonly Vector4 LabelMargin = new Vector4(0.002f, 0f, 0.002f, 0f);
@@ -20,6 +22,11 @@ namespace Zetori.UI.InGame
         private readonly Transform textTransform;
         private Color shownColor;
         private InGameTextStyle? shownStyle;
+        private InGameClip clip = InGameClip.None;
+        private int keptFirstLine;
+        private int keptLastLine;
+        private int probeMaterial;
+        private int probeVertex = NoProbe;
         private bool quadUsed;
         private bool textUsed;
 
@@ -57,10 +64,11 @@ namespace Zetori.UI.InGame
             if (text.font != font) text.font = font;
         }
 
-        internal void BeginFrame(Transform parent)
+        internal void BeginFrame(Transform parent, InGameClip frameClip)
         {
             quadUsed = false;
             textUsed = false;
+            clip = frameClip;
             if (quadTransform.parent == parent) return;
             quadTransform.SetParent(parent, false);
             textTransform.SetParent(parent, false);
@@ -74,11 +82,12 @@ namespace Zetori.UI.InGame
 
         internal void ShowQuad(Vector2 center, Vector2 size, float depth, Color color)
         {
+            if (!clip.Trim(center.y, size.y, out float bottom, out float top)) return;
             quadUsed = true;
             if (!quadObject.activeSelf) quadObject.SetActive(true);
-            var position = new Vector3(center.x, center.y, depth);
+            var position = new Vector3(center.x, (bottom + top) * 0.5f, depth);
             if (quadTransform.localPosition != position) quadTransform.localPosition = position;
-            var scale = new Vector3(size.x, size.y, 1f);
+            var scale = new Vector3(size.x, top - bottom, 1f);
             if (quadTransform.localScale != scale) quadTransform.localScale = scale;
             if (color == shownColor) return;
             shownColor = color;
@@ -92,6 +101,7 @@ namespace Zetori.UI.InGame
 
         internal void ShowText(string value, Vector2 center, Vector2 size, float depth, InGameTextStyle style, Color color)
         {
+            if (clip.Misses(center.y, size.y)) return;
             textUsed = true;
             GameObject textObject = text.gameObject;
             if (!textObject.activeSelf) textObject.SetActive(true);
@@ -101,6 +111,67 @@ namespace Zetori.UI.InGame
             if (text.rectTransform.sizeDelta != size) text.rectTransform.sizeDelta = size;
             if (!string.Equals(text.text, value, StringComparison.Ordinal)) text.text = value;
             if (text.color != color) text.color = color;
+            if (clip.CoversBox(center.y, size.y)) RestoreLines();
+            else ClipLines(center.y);
+        }
+
+        private void RestoreLines()
+        {
+            if (probeVertex == NoProbe) return;
+            probeVertex = NoProbe;
+            text.ForceMeshUpdate();
+        }
+
+        private void ClipLines(float centerY)
+        {
+            if (text.havePropertiesChanged)
+            {
+                text.ForceMeshUpdate();
+                probeVertex = NoProbe;
+            }
+            TMP_TextInfo info = text.textInfo;
+            FindShownLines(info, centerY, out int first, out int last);
+            if (probeVertex != NoProbe && first == keptFirstLine && last == keptLastLine && ProbeHidden(info)) return;
+            if (probeVertex != NoProbe) text.ForceMeshUpdate();
+            keptFirstLine = first;
+            keptLastLine = last;
+            HideLinesOutside(text.textInfo, first, last);
+        }
+
+        private void FindShownLines(TMP_TextInfo info, float centerY, out int first, out int last)
+        {
+            first = info.lineCount;
+            last = -1;
+            for (int i = 0; i < info.lineCount; i++)
+            {
+                TMP_LineInfo line = info.lineInfo[i];
+                if (!clip.Covers(centerY + line.descender, centerY + line.ascender)) continue;
+                if (last < 0) first = i;
+                last = i;
+            }
+        }
+
+        private void HideLinesOutside(TMP_TextInfo info, int first, int last)
+        {
+            probeVertex = NoProbe;
+            for (int i = 0; i < info.characterCount; i++)
+            {
+                TMP_CharacterInfo character = info.characterInfo[i];
+                if (!character.isVisible || (character.lineNumber >= first && character.lineNumber <= last)) continue;
+                Vector3[] vertices = info.meshInfo[character.materialReferenceIndex].vertices;
+                int start = character.vertexIndex;
+                for (int corner = 1; corner < 4; corner++) vertices[start + corner] = vertices[start];
+                probeMaterial = character.materialReferenceIndex;
+                probeVertex = start;
+            }
+            if (probeVertex != NoProbe) text.UpdateVertexData(TMP_VertexDataUpdateFlags.Vertices);
+        }
+
+        private bool ProbeHidden(TMP_TextInfo info)
+        {
+            if (probeMaterial >= info.meshInfo.Length) return false;
+            Vector3[] vertices = info.meshInfo[probeMaterial].vertices;
+            return probeVertex + 2 < vertices.Length && vertices[probeVertex] == vertices[probeVertex + 2];
         }
 
         private void HideText()

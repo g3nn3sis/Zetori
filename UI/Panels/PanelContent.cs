@@ -46,6 +46,7 @@ namespace Zetori.UI.Panels
             PanelId.Capture => CapturePanel.Draw,
             PanelId.RecentPlayers => recentPlayers.Draw,
             PanelId.Stats => StatsPanel.Draw,
+            PanelId.CheatAlerts => CheatAlertsPanel.Draw,
             _ => DrawNothing
         };
 
