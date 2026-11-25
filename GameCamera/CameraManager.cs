@@ -43,6 +43,7 @@ namespace Zetori.GameCamera
                 case CameraMode.Default: RunDefault(camera); break;
                 case CameraMode.Freecam: RunFreecam(camera); break;
                 case CameraMode.Web: RunWeb(camera); break;
+                case CameraMode.Path: RunPath(camera); break;
                 default: RunSpectator(camera); break;
             }
         }
@@ -145,6 +146,17 @@ namespace Zetori.GameCamera
         {
             try { FreecamCamera.Run(camera); }
             catch (Exception e) { Log.ExceptionOnce("freecam-camera", e, "Moving the freecam camera failed"); }
+        }
+
+        private static void RunPath(CameraWrapper camera)
+        {
+            if (ReplaySession.Player is not ReplayPlayer replay)
+            {
+                RunSpectator(camera);
+                return;
+            }
+            try { PathCamera.Run(camera, replay); }
+            catch (Exception e) { Log.ExceptionOnce("path-camera", e, "Moving the camera along its path failed"); }
         }
 
         private static void RunWeb(CameraWrapper camera)

@@ -72,6 +72,7 @@ namespace Zetori.Replay
                 if (!File.Exists(source)) return false;
                 if (!string.Equals(newName, name, StringComparison.OrdinalIgnoreCase) && File.Exists(target)) return false;
                 File.Move(source, target);
+                CameraPathFile.Rename(name, newName);
                 Log.Info($"Renamed replay '{name}' to '{newName}'.");
                 return true;
             }
@@ -88,6 +89,7 @@ namespace Zetori.Replay
             {
                 string path = PathOf(name);
                 if (File.Exists(path)) File.Delete(path);
+                CameraPathFile.Delete(name);
                 Log.Info($"Deleted replay '{name}'.");
             }
             catch (Exception e) { Log.Exception(e, $"Deleting replay '{name}' failed"); }

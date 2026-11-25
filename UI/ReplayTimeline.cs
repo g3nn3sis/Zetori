@@ -34,6 +34,8 @@ namespace Zetori.UI
         private const float VoiceHeight = 3f;
         private const float HighlightWidth = 3f;
         private const float HighlightHeight = 12f;
+        private const float KeyframeSize = 5f;
+        private const float KeyframeGap = 8f;
         private const float HoverRadius = 4f;
         private const float TooltipWidth = 300f;
         private const float TooltipHeight = 20f;
@@ -51,6 +53,7 @@ namespace Zetori.UI
         private static readonly Color EnvironmentColor = new Color(0.55f, 0.7f, 1f, 1f);
         private static readonly Color BookmarkColor = new Color(1f, 0.85f, 0.2f, 1f);
         private static readonly Color HighlightColor = new Color(1f, 0.35f, 0.8f, 1f);
+        private static readonly Color KeyframeColor = new Color(0.75f, 0.6f, 1f, 1f);
 
         private readonly int scrubHint = "ZetoriReplayScrub".GetHashCode();
         private readonly int dragHint = "ZetoriReplayTimelineDrag".GetHashCode();
@@ -67,6 +70,13 @@ namespace Zetori.UI
         {
             int total = Mathf.Max(0, Mathf.FloorToInt(seconds));
             return $"{total / 60}:{total % 60:00}";
+        }
+
+        internal static string FormatPrecise(float seconds)
+        {
+            float clamped = Mathf.Max(0f, seconds);
+            int minutes = Mathf.FloorToInt(clamped / 60f);
+            return $"{minutes}:{(clamped - minutes * 60f).ToString("00.0", CultureInfo.InvariantCulture)}";
         }
 
         internal static string FormatSpeed(float speed) => speed.ToString("0.##", CultureInfo.InvariantCulture) + "x";
@@ -217,6 +227,12 @@ namespace Zetori.UI
             {
                 float highlightX = rail.x + rail.width * Progress(highlight.Time, recording);
                 Fill(new Rect(highlightX - HighlightWidth * 0.5f, rail.y - HighlightHeight - 2f, HighlightWidth, HighlightHeight), HighlightColor);
+            }
+
+            foreach (CameraKeyframe keyframe in replay.Path.Keyframes)
+            {
+                float keyframeX = rail.x + rail.width * Progress(keyframe.Time, recording);
+                Fill(new Rect(keyframeX - KeyframeSize * 0.5f, rail.yMax + KeyframeGap, KeyframeSize, KeyframeSize), KeyframeColor);
             }
 
             float knobX = rail.x + rail.width * progress;

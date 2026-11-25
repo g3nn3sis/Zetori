@@ -30,8 +30,11 @@ namespace Zetori.Replay
         private int spectated;
         private float posedCursor;
 
+        internal string Name { get; }
         internal ReplayRecording Recording { get; }
         internal IReadOnlyList<ReplayHighlight> Highlights { get; }
+        internal CameraPath Path { get; }
+        internal float PosedAt => posedCursor;
         internal float Cursor { get; private set; }
         internal bool Playing { get; set; } = true;
         internal CameraMode Camera { get; set; } = CameraMode.Spectator;
@@ -57,8 +60,10 @@ namespace Zetori.Replay
 
         internal ReplayPlayer(LoadedReplay loaded)
         {
+            Name = loaded.Name;
             Recording = loaded.Recording;
             Highlights = loaded.Highlights;
+            Path = loaded.Path;
             puppets = BuildPuppets(Recording, cosmetics);
             RigLerp = NetworkedPlayerManager.LiveRigLerp;
             liveEnvironment = TimeManager.Capture();
@@ -152,6 +157,28 @@ namespace Zetori.Replay
             for (int i = Highlights.Count - 1; i >= 0; i--)
                 if (StartOf(Highlights[i]) < Cursor - HighlightRepeatWindow) return Highlights[i];
             return null;
+        }
+
+        internal void AddKeyframe()
+        {
+            CameraWrapper? output = CameraManager.camera;
+            if (output == null || !output.IsAlive) return;
+            Path.Add(new CameraKeyframe(Cursor, output.Transform.position, output.Transform.rotation, output.Camera.fieldOfView));
+            CameraPathFile.Save(Name, Path);
+        }
+
+        internal void RemoveKeyframe(int index)
+        {
+            Path.RemoveAt(index);
+            CameraPathFile.Save(Name, Path);
+            if (Path.IsEmpty && Camera == CameraMode.Path) Camera = CameraMode.Spectator;
+        }
+
+        internal void ClearPath()
+        {
+            Path.Clear();
+            CameraPathFile.Save(Name, Path);
+            if (Camera == CameraMode.Path) Camera = CameraMode.Spectator;
         }
 
         internal void Spectate(int index)

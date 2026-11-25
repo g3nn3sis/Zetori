@@ -16,6 +16,7 @@ namespace Zetori.UI.Panels
 
         private Vector2 puppetScroll;
         private Vector2 highlightScroll;
+        private Vector2 keyframeScroll;
         private Vector2 savedScroll;
         private string? renaming;
         private string renameText = string.Empty;
@@ -105,6 +106,7 @@ namespace Zetori.UI.Panels
                 panel.Button("Spectate", () => replay.Camera = CameraMode.Spectator, replay.Camera != CameraMode.Spectator);
                 panel.Button("FreeCam", () => replay.Camera = CameraMode.Freecam, replay.Camera != CameraMode.Freecam && !VrCameraRig.HeadsetActive);
                 panel.Button("Web", () => replay.Camera = CameraMode.Web, replay.Camera != CameraMode.Web);
+                panel.Button("Path", () => replay.Camera = CameraMode.Path, replay.Camera != CameraMode.Path && !replay.Path.IsEmpty);
             });
             panel.HorizontalArea(() =>
             {
@@ -113,6 +115,7 @@ namespace Zetori.UI.Panels
             });
             replay.RigLerp = panel.Slider("Rig Lerp", replay.RigLerp, ReplayPlayer.MinRigLerp, ReplayPlayer.MaxRigLerp);
             DrawHighlights(panel, replay);
+            DrawPath(panel, replay);
             panel.Label(CameraStatus(replay));
             IReadOnlyList<ReplayPuppet> puppets = replay.Puppets;
             puppetScroll = panel.ScrollArea(puppetScroll, Panel.ListHeight, puppets.Count, () =>
@@ -145,6 +148,30 @@ namespace Zetori.UI.Panels
             });
         }
 
+        private void DrawPath(IPanelSurface panel, ReplayPlayer replay)
+        {
+            IReadOnlyList<CameraKeyframe> keyframes = replay.Path.Keyframes;
+            panel.HorizontalArea(() =>
+            {
+                panel.Button("Add Keyframe", replay.AddKeyframe);
+                panel.Button("Clear Path", replay.ClearPath, keyframes.Count > 0);
+            });
+            if (keyframes.Count == 0) return;
+            keyframeScroll = panel.ScrollArea(keyframeScroll, Panel.ListHeight, keyframes.Count, () =>
+            {
+                for (int i = 0; i < keyframes.Count; i++)
+                {
+                    int index = i;
+                    float time = keyframes[i].Time;
+                    panel.HorizontalArea(() =>
+                    {
+                        panel.Button($"Keyframe {index + 1} at {ReplayTimeline.FormatPrecise(time)}", () => replay.Seek(time));
+                        panel.Button("x", () => replay.RemoveKeyframe(index));
+                    });
+                }
+            });
+        }
+
         private static void DrawSpeed(IPanelSurface panel, ReplayPlayer replay)
         {
             panel.HorizontalArea(() =>
@@ -162,6 +189,7 @@ namespace Zetori.UI.Panels
         {
             CameraMode.Freecam => "FreeCam: hold right mouse, WASD to fly",
             CameraMode.Web => "Web: watching from the camera web",
+            CameraMode.Path => $"Path: flying through {replay.Path.Keyframes.Count} keyframes",
             _ => $"Spectating: {replay.Spectated?.Actor.Name ?? "nobody"}"
         };
     }
