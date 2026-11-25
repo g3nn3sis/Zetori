@@ -29,6 +29,8 @@ namespace Zetori.Base
         internal static ConfigEntry<bool> VrFirstPersonCosmetics = null!;
         internal static ConfigEntry<float> PhotoTimer = null!;
         internal static ConfigEntry<Key> PhotoKey = null!;
+        internal static ConfigEntry<PhotoBackground> PhotoBackground = null!;
+        internal static ConfigEntry<bool> PhotoThirdsGrid = null!;
         internal static ConfigEntry<RenderResolution> ReplayRenderResolution = null!;
         internal static ConfigEntry<int> ReplayRenderFrameRate = null!;
         internal static ConfigEntry<float> FieldOfView = null!;
@@ -187,6 +189,8 @@ namespace Zetori.Base
             VrFirstPersonCosmetics = config.Bind("VR Camera", "First Person Cosmetics", true, "Whether the in-game VR camera shows your own cosmetics in first person.");
             PhotoTimer = Range(config, "Photo", "Timer", 3f, 0f, MaximumPhotoTimer, "Seconds between pressing Take Photo and the photo being taken.");
             PhotoKey = config.Bind("Photo", "Photo Key", Key.F9, "Take a 4K photo from the camera, without the panels and overlays.");
+            PhotoBackground = config.Bind("Photo", "Background", GameCamera.PhotoBackground.Scene, "Scene photographs everything; Transparent, Green and Blue show only the spectated player, on a see-through, green-screen or blue-screen background.");
+            PhotoThirdsGrid = config.Bind("Photo", "Thirds Grid", false, "Draw rule-of-thirds lines over the game window to help frame a shot. They are never in photos.");
             ReplayRenderResolution = config.Bind("Render", "Resolution", RenderResolution.P2160, "Size of each frame when rendering a replay: P1080, P1440 or P2160 (4K).");
             ReplayRenderFrameRate = config.Bind("Render", "Frame Rate", 60, new ConfigDescription("Frames per second of replay time when rendering a replay.", new AcceptableValueList<int>(ReplayRenderFrameRates)));
             FieldOfView = Range(config, "Camera", "Field Of View", 100f, 10f, 130f);

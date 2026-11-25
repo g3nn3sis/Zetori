@@ -81,6 +81,7 @@ namespace Zetori.UI
         internal void OnGUI()
         {
             if (panels == null) return;
+            if (CasterConfig.PhotoThirdsGrid.Value) ThirdsGrid.Draw();
             ReplayPlayer? replay = ReplaySession.Player;
             bool showTimeline = replay != null && timelineProgress > 0f;
             if (!showTimeline && panelProgress <= 0f) return;

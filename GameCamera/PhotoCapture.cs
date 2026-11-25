@@ -6,9 +6,12 @@ using System.Globalization;
 using System.IO;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 using Zetori.Base;
 using Zetori.GameCamera.Vr;
+using Zetori.Player;
+using Zetori.Replay;
 
 namespace Zetori.GameCamera
 {
@@ -26,20 +29,58 @@ namespace Zetori.GameCamera
         private const float ShutterStrength = 0.35f;
         private const float ShutterSeconds = 0.08f;
 
+        private static readonly Color GreenScreen = new Color32(0, 177, 64, 255);
+        private static readonly Color BlueScreen = new Color32(0, 71, 187, 255);
+
+        private sealed class Shot : IDisposable
+        {
+            private readonly GameObject holder;
+
+            internal Camera Camera { get; }
+            internal RenderTexture Texture { get; }
+            internal bool Rendered { get; set; }
+
+            internal Shot(Camera source, Color? background)
+            {
+                Texture = new RenderTexture(Width, Height, DepthBits, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB) { name = ObjectName };
+                holder = new GameObject(ObjectName);
+                DontDestroyOnLoad(holder);
+                Camera = holder.AddComponent<Camera>();
+                Camera.CopyFrom(source);
+                Camera.stereoTargetEye = StereoTargetEyeMask.None;
+                Camera.targetTexture = Texture;
+                Camera.ResetAspect();
+                if (background is Color color)
+                {
+                    Camera.clearFlags = CameraClearFlags.SolidColor;
+                    Camera.backgroundColor = color;
+                }
+                Camera.enabled = true;
+            }
+
+            public void Dispose()
+            {
+                if (Camera != null) Camera.targetTexture = null;
+                if (holder != null) Destroy(holder);
+                if (Texture == null) return;
+                Texture.Release();
+                Destroy(Texture);
+            }
+        }
+
+        private static readonly List<Shot> shots = new List<Shot>();
         private static float countdownEnds = NotCounting;
-        private static Camera? shooting;
+        private static PlayerIsolation? isolation;
+        private static bool transparent;
         private static Task? saving;
         private static string? savingName;
 
-        private RenderTexture? texture;
-        private GameObject? cameraObject;
         private int shotFrame;
-        private bool rendered;
         private int lastTick;
 
         internal static bool CountingDown => countdownEnds >= 0f;
         internal static int SecondsLeft => CountingDown ? Mathf.CeilToInt(Mathf.Max(0f, countdownEnds - Time.unscaledTime)) : 0;
-        internal static bool Busy => CountingDown || shooting != null || saving != null;
+        internal static bool Busy => CountingDown || shots.Count > 0 || saving != null;
         internal static string? LastSaved { get; private set; }
 
         internal static void Take()
@@ -50,7 +91,7 @@ namespace Zetori.GameCamera
 
         internal static void Cancel() => countdownEnds = NotCounting;
 
-        internal static bool Renders(Camera camera) => shooting != null && camera == shooting;
+        internal static bool Renders(Camera camera) => shots.Exists(shot => shot.Camera == camera);
 
         protected override void Awake()
         {
@@ -68,7 +109,7 @@ namespace Zetori.GameCamera
             PollSaving();
             try
             {
-                if (shooting != null) Develop();
+                if (shots.Count > 0) Develop();
                 else if (CountingDown) CountDown();
             }
             catch (Exception e)
@@ -100,26 +141,54 @@ namespace Zetori.GameCamera
                 Log.Warning("There is no camera to take a photo with yet.");
                 return;
             }
-            texture = new RenderTexture(Width, Height, DepthBits, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB) { name = ObjectName };
-            cameraObject = new GameObject(ObjectName);
-            DontDestroyOnLoad(cameraObject);
-            Camera camera = cameraObject.AddComponent<Camera>();
-            camera.CopyFrom(output.Camera);
-            camera.stereoTargetEye = StereoTargetEyeMask.None;
-            camera.targetTexture = texture;
-            camera.ResetAspect();
-            camera.enabled = true;
-            shooting = camera;
+            PhotoBackground background = CasterConfig.PhotoBackground.Value;
+            transparent = false;
+            if (background == PhotoBackground.Scene || !TryIsolate(output, background)) shots.Add(new Shot(output.Camera, null));
             shotFrame = Time.frameCount;
-            rendered = false;
             Vibrate(ShutterStrength, ShutterSeconds);
+        }
+
+        private static bool TryIsolate(CameraWrapper output, PhotoBackground background)
+        {
+            Transform? target = CutoutTarget();
+            if (target == null)
+            {
+                Log.Warning("There is no spectated player to cut out, so the photo shows the whole scene.");
+                return false;
+            }
+            Shot[] taken = background == PhotoBackground.Transparent
+                ? new[] { new Shot(output.Camera, Color.black), new Shot(output.Camera, Color.white) }
+                : new[] { new Shot(output.Camera, background == PhotoBackground.Green ? GreenScreen : BlueScreen) };
+            isolation = PlayerIsolation.TryCreate(target, taken.Select(shot => shot.Camera).ToArray());
+            if (isolation == null)
+            {
+                foreach (Shot shot in taken) shot.Dispose();
+                Log.Warning("The player could not be cut out, so the photo shows the whole scene.");
+                return false;
+            }
+            shots.AddRange(taken);
+            transparent = background == PhotoBackground.Transparent;
+            return true;
+        }
+
+        private static Transform? CutoutTarget()
+        {
+            if (ReplaySession.Player is ReplayPlayer replay) return replay.Spectated?.Body;
+            VRRig? rig = NetworkedPlayerManager.selectedPlayer;
+            return rig != null ? rig.transform : null;
         }
 
         private void Develop()
         {
+            bool rendered = shots.TrueForAll(shot => shot.Rendered);
             if (!rendered && Time.frameCount - shotFrame < MaximumWaitFrames) return;
-            if (rendered && texture != null) Save(Encode(texture));
-            else Log.Warning("The photo camera did not render, so no photo was saved.");
+            if (!rendered) Log.Warning("The photo camera did not render, so no photo was saved.");
+            else if (transparent) SaveCutout(Read(shots[0].Texture), Read(shots[1].Texture));
+            else
+            {
+                byte[] png = Encode(shots[0].Texture);
+                Save(() => png);
+            }
             Release();
         }
 
@@ -141,13 +210,33 @@ namespace Zetori.GameCamera
             }
         }
 
-        private static void Save(byte[] png)
+        private static byte[] Read(RenderTexture source)
+        {
+            RenderTexture previous = RenderTexture.active;
+            var image = new Texture2D(Width, Height, TextureFormat.RGB24, false);
+            try
+            {
+                RenderTexture.active = source;
+                image.ReadPixels(new Rect(0f, 0f, Width, Height), 0, 0);
+                return image.GetRawTextureData();
+            }
+            finally
+            {
+                RenderTexture.active = previous;
+                Destroy(image);
+            }
+        }
+
+        private static void SaveCutout(byte[] overBlack, byte[] overWhite) =>
+            Save(() => ImageConversion.EncodeArrayToPNG(CutoutMatte.Extract(overBlack, overWhite), GraphicsFormat.R8G8B8A8_SRGB, Width, Height));
+
+        private static void Save(Func<byte[]> encode)
         {
             Directory.CreateDirectory(DataFolders.Photos);
             string name = UniqueName();
             string path = Path.Combine(DataFolders.Photos, name + Extension);
             savingName = name;
-            saving = Task.Run(() => File.WriteAllBytes(path, png));
+            saving = Task.Run(() => File.WriteAllBytes(path, encode()));
         }
 
         private static string UniqueName()
@@ -179,21 +268,16 @@ namespace Zetori.GameCamera
 
         private void OnEndCameraRendering(ScriptableRenderContext context, Camera camera)
         {
-            if (shooting != null && camera == shooting) rendered = true;
+            foreach (Shot shot in shots)
+                if (shot.Camera == camera) shot.Rendered = true;
         }
 
-        private void Release()
+        private static void Release()
         {
-            if (shooting != null) shooting.targetTexture = null;
-            shooting = null;
-            if (cameraObject != null) Destroy(cameraObject);
-            cameraObject = null;
-            if (texture != null)
-            {
-                texture.Release();
-                Destroy(texture);
-            }
-            texture = null;
+            isolation?.Dispose();
+            isolation = null;
+            foreach (Shot shot in shots) shot.Dispose();
+            shots.Clear();
         }
 
         protected override void OnDestroy()

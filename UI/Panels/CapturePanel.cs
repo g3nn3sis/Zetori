@@ -11,6 +11,14 @@ namespace Zetori.UI.Panels
 {
     internal static class CapturePanel
     {
+        private static readonly (PhotoBackground Background, string Label)[] Backgrounds =
+        {
+            (PhotoBackground.Scene, "Scene"),
+            (PhotoBackground.Transparent, "Cutout"),
+            (PhotoBackground.Green, "Green"),
+            (PhotoBackground.Blue, "Blue")
+        };
+
         internal static void Draw(IPanelSurface panel)
         {
             DrawInstantReplay(panel);
@@ -74,6 +82,13 @@ namespace Zetori.UI.Panels
             else panel.Button("Take Photo", PhotoCapture.Take, !PhotoCapture.Busy);
             float timer = panel.Slider("Photo Timer", CasterConfig.PhotoTimer.Value, 0f, CasterConfig.MaximumPhotoTimer, "F0", " s");
             CasterConfig.PhotoTimer.Value = Mathf.Round(timer);
+            panel.HorizontalArea(() =>
+            {
+                foreach ((PhotoBackground background, string label) in Backgrounds)
+                    panel.Button(label, () => CasterConfig.PhotoBackground.Value = background, CasterConfig.PhotoBackground.Value != background);
+            });
+            if (CasterConfig.PhotoBackground.Value != PhotoBackground.Scene) panel.Label("Only the spectated player is in the photo.");
+            CasterConfig.PhotoThirdsGrid.Value = panel.Toggle("Thirds Grid", CasterConfig.PhotoThirdsGrid.Value);
             if (PhotoCapture.LastSaved is string photo) panel.Label($"Saved photo: {photo}");
         }
     }
