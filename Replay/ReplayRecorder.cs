@@ -39,6 +39,7 @@ namespace Zetori.Replay
         private readonly double dspStart = AudioSettings.dspTime;
         private float[] voiceBuffer = Array.Empty<float>();
         private float nextSample;
+        private int markers;
         private EnvironmentState? lastEnvironment;
 
         internal float Elapsed => Time.unscaledTime - startTime;
@@ -59,6 +60,22 @@ namespace Zetori.Replay
             string? key = KeyOf(rig);
             if (key == null || !bindings.TryGetValue(key, out Binding binding) || binding.Rig != rig) return;
             binding.Actor.HandTaps.Add(new HandTap(Elapsed, isLeftHand, surface, volume));
+        }
+
+        internal ReplayRecording Snapshot(float seconds)
+        {
+            DrainVoices();
+            float now = Elapsed;
+            return recording.Slice(Mathf.Max(0f, now - seconds), now);
+        }
+
+        internal void ForgetOlderThan(float seconds) => recording.ForgetBefore(Elapsed - seconds);
+
+        internal int Mark()
+        {
+            markers++;
+            recording.Events.Add(new ReplayEvent(Elapsed, ReplayEventKind.Marker, -1, markers));
+            return markers;
         }
 
         internal ReplayRecording Finish()
@@ -148,7 +165,7 @@ namespace Zetori.Replay
             if (actorIds.TryGetValue(key, out int id) && recording.Actors[id].Skeleton.Matches(joints))
             {
                 ReplayActor returning = recording.Actors[id];
-                if (returning.Frames.Count > 0 && now - returning.Frames[returning.Frames.Count - 1].Time > ReplayRecording.SampleInterval * 2f)
+                if (returning.Frames.Count == 0 || now - returning.Frames[returning.Frames.Count - 1].Time > ReplayRecording.SampleInterval * 2f)
                     recording.Events.Add(new ReplayEvent(now, ReplayEventKind.Joined, id));
                 return returning;
             }

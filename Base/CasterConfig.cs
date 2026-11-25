@@ -26,6 +26,8 @@ namespace Zetori.Base
         internal static ConfigEntry<CameraMode> ActiveCameraMode = null!;
         internal static ConfigEntry<VrCameraMode> VrMode = null!;
         internal static ConfigEntry<bool> VrFirstPersonCosmetics = null!;
+        internal static ConfigEntry<float> PhotoTimer = null!;
+        internal static ConfigEntry<Key> PhotoKey = null!;
         internal static ConfigEntry<float> FieldOfView = null!;
         internal static ConfigEntry<float> NearClipPlane = null!;
         internal static ConfigEntry<bool> AudioListener = null!;
@@ -45,6 +47,10 @@ namespace Zetori.Base
         internal static ConfigEntry<Key> ReplayPauseKey = null!;
         internal static ConfigEntry<Key> ReplayTimelineKey = null!;
         internal static ConfigEntry<TimelineEdge> ReplayTimelineEdge = null!;
+        internal static ConfigEntry<bool> InstantReplay = null!;
+        internal static ConfigEntry<float> ClipLength = null!;
+        internal static ConfigEntry<Key> ClipKey = null!;
+        internal static ConfigEntry<Key> MarkerKey = null!;
         internal static ConfigEntry<Key> OrbitLeftKey = null!;
         internal static ConfigEntry<Key> OrbitRightKey = null!;
         internal static ConfigEntry<Key> OrbitUpKey = null!;
@@ -88,6 +94,7 @@ namespace Zetori.Base
         internal static ConfigEntry<float> MiniMapOffsetY = null!;
         internal static ConfigEntry<HudPosition> MiniMapPosition = null!;
         internal static ConfigEntry<bool> DiscordPresence = null!;
+        internal static ConfigEntry<bool> HideRoomCodes = null!;
 
         internal static ConfigEntry<int> HudFont = null!;
 
@@ -148,6 +155,9 @@ namespace Zetori.Base
         internal const float MaximumRotationSmoothing = 0.75f;
         internal const float MinimumNameTagSize = 0.5f;
         internal const float MaximumNameTagSize = 2f;
+        internal const float MinimumClipLength = 10f;
+        internal const float MaximumClipLength = 120f;
+        internal const float MaximumPhotoTimer = 10f;
 
         internal static ConfigEntry<float> UiScale = null!;
         internal static ConfigEntry<bool> SnapPanels = null!;
@@ -169,6 +179,8 @@ namespace Zetori.Base
             ActiveCameraMode = config.Bind("Camera", "Mode", CameraMode.Spectator, "Default shows your own first person view, Spectator follows the selected player, Freecam flies the camera on its own (not in VR), Web watches the action from placed nodes, Camera uses the in-game VR camera tablet.");
             VrMode = config.Bind("VR Camera", "Mode", VrCameraMode.Handheld, "What the in-game VR camera shows: FirstPerson, ThirdPerson, Follower or Handheld.");
             VrFirstPersonCosmetics = config.Bind("VR Camera", "First Person Cosmetics", true, "Whether the in-game VR camera shows your own cosmetics in first person.");
+            PhotoTimer = Range(config, "Photo", "Timer", 3f, 0f, MaximumPhotoTimer, "Seconds between pressing Take Photo and the photo being taken.");
+            PhotoKey = config.Bind("Photo", "Photo Key", Key.F9, "Take a 4K photo from the camera, without the panels and overlays.");
             FieldOfView = Range(config, "Camera", "Field Of View", 100f, 10f, 130f);
             NearClipPlane = Range(config, "Camera", "Near Clip", 0.01f, 0.01f, 0.99f);
             AudioListener = config.Bind("Camera", "Audio Listener", true, "Hear the game from the spectator camera.");
@@ -193,6 +205,10 @@ namespace Zetori.Base
             ReplayPauseKey = config.Bind("Replay", "Pause Key", Key.P, "Pause and unpause the replay while in replay mode.");
             ReplayTimelineKey = config.Bind("Replay", "Timeline Key", Key.F1, "Show and hide the replay timeline while in replay mode.");
             ReplayTimelineEdge = config.Bind("Replay", "Timeline Position", TimelineEdge.Top, "Screen edge the replay timeline docks to: Top or Bottom. Drag the timeline to move it.");
+            InstantReplay = config.Bind("Replay", "Instant Replay", false, "Keep the last moments of play in memory so Clip can save them as a replay at any time.");
+            ClipLength = Range(config, "Replay", "Clip Length", 30f, MinimumClipLength, MaximumClipLength, "How many seconds Clip saves.");
+            ClipKey = config.Bind("Replay", "Clip Key", Key.F8, "Save the last moments as a replay clip.");
+            MarkerKey = config.Bind("Replay", "Marker Key", Key.F7, "Drop a numbered marker on the replay timeline while recording or keeping an instant replay.");
 
             WebName = config.Bind("Web", "Name", string.Empty, "Name of the saved camera web to use, from the Webs folder.");
             WebDynamic = config.Bind("Web", "Dynamic", true, "On picks the node nearest the action by itself, off steps through nodes with the node keys.");
@@ -233,6 +249,7 @@ namespace Zetori.Base
             MiniMapPosition = config.Bind("MiniMap", "Position", HudPosition.TopRight, "Corner the minimap sits in: BottomLeft, BottomRight or TopRight. Only one overlay can use a corner.");
 
             DiscordPresence = config.Bind("Discord", "Rich Presence", true, "Show what you are doing on your Discord profile.");
+            HideRoomCodes = config.Bind("Streamer", "Hide Room Codes", false, "Show Hidden instead of room codes in every panel, the in-game panel and its keyboard, so they never appear on stream or in a recording.");
 
             HudFont = config.Bind("HUD", "Font Index", 0, new ConfigDescription("Index into the fonts found in the game, shared by the leaderboard and closest-lava overlays.", new AcceptableValueRange<int>(0, 255)));
 

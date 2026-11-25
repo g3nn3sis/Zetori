@@ -25,6 +25,7 @@ namespace Zetori.UI.Panels
             CasterConfig.InGamePanelSize.Value = panel.Slider("Panel Size", CasterConfig.InGamePanelSize.Value, CasterConfig.MinimumInGamePanelSize, CasterConfig.MaximumInGamePanelSize, "F2", "x");
             CasterConfig.InGamePanelHaptics.Value = panel.Toggle("Haptics", CasterConfig.InGamePanelHaptics.Value);
             CasterConfig.InGamePanelOnStream.Value = panel.Toggle("Show On Stream", CasterConfig.InGamePanelOnStream.Value);
+            CasterConfig.HideRoomCodes.Value = panel.Toggle("Hide Room Codes", CasterConfig.HideRoomCodes.Value);
             drawing = panel;
             try { panel.HorizontalArea(placementRow); }
             finally { drawing = null; }

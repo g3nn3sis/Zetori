@@ -38,7 +38,7 @@ namespace Zetori.Player
         {
             get
             {
-                if (!Active || VrCameraRig.HeadsetActive || ReplaySession.IsRecording || ReplaySession.IsReplaying) return null;
+                if (!Active || VrCameraRig.HeadsetActive || ReplaySession.IsCapturing || ReplaySession.IsReplaying) return null;
                 if (CameraManager.ActiveMode != CameraMode.Spectator) return null;
                 VRRig? rig = NetworkedPlayerManager.selectedPlayer;
                 return rig != null && !rig.isLocal ? rig : null;

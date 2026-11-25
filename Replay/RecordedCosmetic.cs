@@ -22,6 +22,13 @@ namespace Zetori.Replay
             Rest = rest;
         }
 
+        internal RecordedCosmetic Copy()
+        {
+            var copy = new RecordedCosmetic(Key);
+            copy.Describe(NodeNames, Rest);
+            return copy;
+        }
+
         internal void Write(BinaryWriter writer)
         {
             Key.Write(writer);

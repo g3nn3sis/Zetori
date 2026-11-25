@@ -34,6 +34,7 @@ namespace Zetori.GameCamera.Vr
         private const float ThirdPersonRate = 8f;
         private const float HandheldMoveRate = 18f;
         private const float HandheldTurnRate = 10f;
+        private const float FilmingTurnRate = 6f;
 
         private readonly DoublePressDetector summonPress = new DoublePressDetector(SummonWindow);
         private readonly VrCameraHand leftHand = new VrCameraHand(true);
@@ -102,7 +103,9 @@ namespace Zetori.GameCamera.Vr
 
             if (summonPress.Update(input.rightControllerPrimaryButton, now)) ToggleTablet(tagger, output, head, scale);
             else SummonOnArrival(tagger, output, head, scale, now);
+            if (VrCameraDirector.TryTakePlacement(out Pose spot)) Place(tagger, output, spot);
             if (model != null) UpdateTablet(tagger, model, head, scale, now, deltaTime);
+            VrCameraDirector.TabletPose = model != null && TabletInteractive ? new Pose(model.Root.position, model.Root.rotation) : (Pose?)null;
 
             AimView(head, player.headCollider.transform.parent, scale, deltaTime);
             output.SetPose(view.Position, view.Rotation);
@@ -116,6 +119,7 @@ namespace Zetori.GameCamera.Vr
 
         internal void FadeAway()
         {
+            VrCameraDirector.TabletPose = null;
             cosmetics.Restore();
             deployed = false;
             arrivalSummonHandled = false;
@@ -174,6 +178,7 @@ namespace Zetori.GameCamera.Vr
             bool visible = TabletVisible;
             if (!visible) holder = null;
             if (visible) AdvanceRise(camera, deltaTime);
+            if (visible) FilmSubject(camera, deltaTime);
             MoveFollower(camera, head, scale, deltaTime);
             StepFade(camera, visible, deltaTime);
         }
@@ -218,6 +223,32 @@ namespace Zetori.GameCamera.Vr
             model.Root.SetPositionAndRotation(riseStart, VrCameraShots.LookAt(head.position, position, head.rotation));
             view.Invalidate();
             tagger.StartVibration(false, HapticStrength, HapticSeconds);
+        }
+
+        private void Place(GorillaTagger tagger, CameraWrapper output, Pose spot)
+        {
+            model ??= VrCameraModel.Create(output.Camera);
+            arrivalSummonHandled = true;
+            deployed = true;
+            holder = null;
+            if (Mode != VrCameraMode.Handheld) Mode = VrCameraMode.Handheld;
+            riseProgress = 1f;
+            riseEnd = spot.position;
+            model.Root.SetPositionAndRotation(spot.position, spot.rotation);
+            view.Invalidate();
+            tagger.StartVibration(false, HapticStrength, HapticSeconds);
+        }
+
+        private void FilmSubject(VrCameraModel camera, float deltaTime)
+        {
+            VRRig? subject = VrCameraDirector.Subject;
+            if (subject == null || holder != null || Mode != VrCameraMode.Handheld || !TabletRisen) return;
+            Transform root = camera.Root;
+            Transform lens = camera.Lens;
+            Quaternion lensOffset = Quaternion.Inverse(root.rotation) * lens.rotation;
+            Quaternion aim = VrCameraShots.LookAt(lens.position, HeadView.Eyes(subject).position, lens.rotation);
+            Quaternion goal = aim * Quaternion.Inverse(lensOffset);
+            root.rotation = Quaternion.Slerp(root.rotation, goal, VrCameraView.Blend(FilmingTurnRate, deltaTime));
         }
 
         private void UpdateGrab(GorillaTagger tagger, VrCameraModel camera)

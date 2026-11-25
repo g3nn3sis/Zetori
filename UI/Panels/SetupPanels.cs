@@ -67,6 +67,7 @@ namespace Zetori.UI.Panels
             CameraManager.audioListener = panel.Toggle("Audio Listener", CameraManager.audioListener);
             NetworkedPlayerManager.registerNewRigs = panel.Toggle("Register New Rigs", NetworkedPlayerManager.registerNewRigs);
             CasterConfig.DiscordPresence.Value = panel.Toggle("Discord Presence", CasterConfig.DiscordPresence.Value);
+            CasterConfig.HideRoomCodes.Value = panel.Toggle("Hide Room Codes", CasterConfig.HideRoomCodes.Value);
             CasterConfig.DisableVSync.Value = panel.Toggle("Disable VSync", CasterConfig.DisableVSync.Value);
             CasterConfig.UncapFps.Value = panel.Toggle("Uncap FPS", CasterConfig.UncapFps.Value);
             CasterConfig.DisableAfkKick.Value = panel.Toggle("Disable AFK Kick", CasterConfig.DisableAfkKick.Value);
@@ -79,7 +80,7 @@ namespace Zetori.UI.Panels
             ArmExaggeration.Enabled = panel.Toggle("Rig Exaggeration", ArmExaggeration.Enabled);
             if (!ArmExaggeration.Enabled) return;
             ArmExaggeration.Amount = panel.Slider("Arm Movement", ArmExaggeration.Amount, ArmExaggeration.MinimumAmount, ArmExaggeration.MaximumAmount, "F2", "x");
-            if (ReplaySession.IsRecording) panel.Label("Paused while recording");
+            if (ReplaySession.IsCapturing) panel.Label("Paused while recording or keeping an instant replay");
         }
 
         internal void DrawUiControl(IPanelSurface panel)

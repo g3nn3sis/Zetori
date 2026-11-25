@@ -30,6 +30,16 @@ namespace Zetori.Replay
                 samples.Add((short)Mathf.RoundToInt(Mathf.Clamp(buffer[i], -1f, 1f) * SampleRange));
         }
 
+        internal VoiceSegment? Slice(float from, float to)
+        {
+            int first = Mathf.Clamp(Mathf.CeilToInt((from - Start) * SampleRate), 0, samples.Count);
+            int end = Mathf.Clamp(Mathf.FloorToInt((to - Start) * SampleRate), 0, samples.Count);
+            if (end <= first) return null;
+            var slice = new VoiceSegment(Start + first / (float)SampleRate - from, SampleRate);
+            slice.samples.AddRange(samples.GetRange(first, end - first));
+            return slice;
+        }
+
         internal void TrimEnd(int count)
         {
             int keep = Mathf.Max(0, samples.Count - count);
@@ -100,6 +110,20 @@ namespace Zetori.Replay
             open = null;
             trailingSilence = 0;
         }
+
+        internal VoiceTrack Slice(float from, float to)
+        {
+            var slice = new VoiceTrack();
+            foreach (VoiceSegment segment in segments)
+            {
+                if (segment.End <= from || segment.Start >= to) continue;
+                VoiceSegment? part = segment.Slice(from, to);
+                if (part != null) slice.segments.Add(part);
+            }
+            return slice;
+        }
+
+        internal void ForgetBefore(float time) => segments.RemoveAll(segment => segment != open && segment.End <= time);
 
         internal void Write(BinaryWriter writer)
         {

@@ -61,6 +61,8 @@ namespace Zetori.UI.InGame
 
         internal static float BodyContentWidth => Right - ScrollbarWidth - ScrollbarGap - Left;
 
+        internal static float BlockHeight(int lines) => lines * LabelLineHeight + LabelPadding;
+
         internal static float LabelHeight(string text, float width)
         {
             int perLine = Mathf.Max(1, Mathf.FloorToInt(width / LabelCharacterWidth));

@@ -29,7 +29,11 @@ namespace Zetori.UI.Panels
             if (ReplaySession.IsRecording)
             {
                 panel.Label($"Recording {ReplayTimeline.Format(ReplaySession.RecordedSeconds)} / {ReplayTimeline.Format(ReplaySession.MaxSeconds)}");
-                panel.Button("Stop Recording", ReplaySession.StopRecording);
+                panel.HorizontalArea(() =>
+                {
+                    panel.Button("Stop Recording", ReplaySession.StopRecording);
+                    panel.Button("Add Marker", ReplaySession.AddMarker);
+                });
                 return;
             }
             panel.Button("Record", ReplaySession.StartRecording, !ReplaySession.IsLoading);

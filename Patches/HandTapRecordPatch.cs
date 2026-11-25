@@ -22,7 +22,7 @@ namespace Zetori.Patches
 
         static void Postfix(VRRig __instance, object effectContext, int audioClipIndex, bool isLeftHand)
         {
-            if (!ReplaySession.IsRecording) return;
+            if (!ReplaySession.IsCapturing) return;
             try
             {
                 if (HandEffectReader.TryReadSound(effectContext, out float volume))

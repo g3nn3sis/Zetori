@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Text;
 using UnityEngine;
 using Zetori.Game;
+using Zetori.GameCamera.Vr;
 using Zetori.Player;
 using Zetori.UI.Panels;
 
@@ -20,30 +21,37 @@ namespace Zetori.UI.InGame
         private const float MinimumNameLuminance = 0.3f;
         private const float NameLift = 0.45f;
         private const int ColorCodeSteps = 9;
+        private const float Percent = 100f;
         private const int NoActor = -1;
         private const string DefaultTitle = "Player";
         private const string LeftRoom = "This player is no longer in the room.";
         private const string SpectateLabel = "Spectate";
         private const string SpectatingLabel = "Spectating";
-        private const string ValueColumn = "<pos=38%>";
-        private const string ValueColor = "FFFFFF";
+        private const string FilmLabel = "Film";
+        private const string FilmingLabel = "Filming";
         private const string Unknown = "Unknown";
         private const string Yes = "Yes";
         private const string No = "No";
+
+        private static readonly float SignalsHeight = InGameMetrics.BlockHeight(InGameSignalReport.Lines);
 
         private readonly InGameSurface surface;
         private readonly InGameMirror mirror = new InGameMirror();
         private readonly InGameReportMenu report;
         private readonly StringBuilder builder = new StringBuilder();
+        private readonly StringBuilder signalBuilder = new StringBuilder();
         private readonly Action viewRow;
         private readonly Action actionRow;
         private readonly Action spectate;
+        private readonly Action film;
         private VRRig? rig;
         private RigContainer? container;
         private GorillaPlayerScoreboardLine? line;
         private Texture? view;
         private int actorNumber = NoActor;
         private string details = string.Empty;
+        private string signalHeading = string.Empty;
+        private string signals = string.Empty;
         private float nextDetails;
         private float nextLineLookup;
 
@@ -54,6 +62,7 @@ namespace Zetori.UI.InGame
             viewRow = DrawViewRow;
             actionRow = DrawActionRow;
             spectate = Spectate;
+            film = Film;
         }
 
         internal string Title => Present ? TagManagerControl.NameOf(rig!.Creator) : DefaultTitle;
@@ -91,10 +100,34 @@ namespace Zetori.UI.InGame
             {
                 nextDetails = now + DetailsInterval;
                 details = Describe(current);
+                DescribeSignals(current);
             }
             view = mirror.Follow(current);
             surface.HorizontalArea(viewRow);
+            if (!current.isOfflineVRRig) DrawSignals();
             surface.HorizontalArea(actionRow);
+            if (!current.isOfflineVRRig) DrawVolume(current);
+        }
+
+        private void DescribeSignals(VRRig target)
+        {
+            SignalRecord? record = CheatSignals.For(target);
+            signalHeading = InGameSignalReport.Heading(record);
+            signals = record != null ? InGameSignalReport.Describe(record, signalBuilder) : string.Empty;
+        }
+
+        private void DrawSignals()
+        {
+            surface.Label(signalHeading);
+            if (signals.Length > 0) surface.Block(signals, SignalsHeight);
+            surface.Label(InGameSignalReport.CaveatText);
+        }
+
+        private void DrawVolume(VRRig target)
+        {
+            float volume = PlayerVolume.Of(target);
+            float chosen = surface.Slider("Volume", volume * Percent, PlayerVolume.Minimum * Percent, PlayerVolume.Maximum * Percent, "F0", "%") / Percent;
+            if (!Mathf.Approximately(chosen, volume)) PlayerVolume.Set(target, chosen);
         }
 
         internal void Conceal() => mirror.Conceal();
@@ -109,6 +142,7 @@ namespace Zetori.UI.InGame
         {
             bool spectating = NetworkedPlayerManager.selectedPlayer == rig;
             surface.Button(spectating ? SpectatingLabel : SpectateLabel, spectate, !spectating);
+            surface.Button(VrCameraDirector.IsFilming(rig) ? FilmingLabel : FilmLabel, film);
             MuteToggle.Draw(surface, line);
             report.Draw(line);
         }
@@ -116,6 +150,13 @@ namespace Zetori.UI.InGame
         private void Spectate()
         {
             if (rig != null) NetworkedPlayerManager.Spectate(rig);
+        }
+
+        private void Film()
+        {
+            if (rig == null) return;
+            if (VrCameraDirector.IsFilming(rig)) VrCameraDirector.StopFilming();
+            else VrCameraDirector.Film(rig);
         }
 
         private string Describe(VRRig target)
@@ -139,11 +180,7 @@ namespace Zetori.UI.InGame
             return builder.ToString();
         }
 
-        private void AddDetail(string label, string value, string hex = ValueColor)
-        {
-            if (builder.Length > 0) builder.Append('\n');
-            builder.Append(label).Append(ValueColumn).Append("<color=#").Append(hex).Append('>').Append(value).Append("</color>");
-        }
+        private void AddDetail(string label, string value, string hex = InGameDetails.ValueColor) => InGameDetails.Append(builder, label, value, hex);
 
         private static string PlatformText(VRRig target)
         {
@@ -155,7 +192,8 @@ namespace Zetori.UI.InGame
         {
             int frameRate = Mathf.RoundToInt(NetworkedPlayerManager.GetFPS(target));
             int refreshRate = container != null ? container.PlayerStats.TargetFPS : 0;
-            return refreshRate > 0 ? $"{frameRate} of {refreshRate} Hz" : frameRate.ToString(CultureInfo.InvariantCulture);
+            if (refreshRate > 0) return $"{frameRate} of {refreshRate} Hz";
+            return refreshRate < 0 ? $"{frameRate}, uncapped" : frameRate.ToString(CultureInfo.InvariantCulture);
         }
 
         private string PingText()

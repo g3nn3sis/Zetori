@@ -10,6 +10,7 @@ namespace Zetori.UI.InGame
     internal sealed class InGameSurface : IPanelSurface
     {
         private const string Caret = "_";
+        private const char MaskCharacter = '*';
         private const string EmptyField = "Tap to type";
         private const string StepDown = "-";
         private const string StepUp = "+";
@@ -198,23 +199,29 @@ namespace Zetori.UI.InGame
             return value;
         }
 
-        public string TextField(string text, int maxLength, Func<string, string>? normalize = null)
+        public string TextField(string text, int maxLength, Func<string, string>? normalize = null) => Field(text, maxLength, normalize, false);
+
+        public string MaskedField(string text, int maxLength, Func<string, string>? normalize = null) => Field(text, maxLength, normalize, true);
+
+        private string Field(string text, int maxLength, Func<string, string>? normalize, bool masked)
         {
             string current = text ?? string.Empty;
             InGameElement element = Add(InGameElementKind.Field, current, InGameMetrics.ButtonHeight, true);
             if (Take(InteractionType.Focus, element, out _)) StartEditing(element.Index, current);
             if (EditingIndex != element.Index)
             {
-                element.Text = current.Length > 0 ? current : EmptyField;
+                element.Text = current.Length > 0 ? Shown(current, masked) : EmptyField;
                 return current;
             }
             editedThisFrame = true;
             editMaxLength = maxLength;
             editText = Normalize(editText, maxLength, normalize);
             element.Active = true;
-            element.Text = editText + Caret;
+            element.Text = Shown(editText, masked) + Caret;
             return editText;
         }
+
+        private static string Shown(string text, bool masked) => masked ? new string(MaskCharacter, text.Length) : text;
 
         public void ColorSwatch(Color color) => Add(InGameElementKind.Swatch, string.Empty, InGameMetrics.SwatchHeight, false).Color = color;
 

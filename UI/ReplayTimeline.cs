@@ -46,6 +46,7 @@ namespace Zetori.UI
         private static readonly Color JoinColor = new Color(0.35f, 0.9f, 0.45f, 1f);
         private static readonly Color LeaveColor = new Color(0.6f, 0.6f, 0.6f, 1f);
         private static readonly Color EnvironmentColor = new Color(0.55f, 0.7f, 1f, 1f);
+        private static readonly Color BookmarkColor = new Color(1f, 0.85f, 0.2f, 1f);
 
         private readonly int scrubHint = "ZetoriReplayScrub".GetHashCode();
         private readonly int dragHint = "ZetoriReplayTimelineDrag".GetHashCode();
@@ -237,6 +238,7 @@ namespace Zetori.UI
             ReplayEventKind.Tagged => TagColor,
             ReplayEventKind.Joined => JoinColor,
             ReplayEventKind.Left => LeaveColor,
+            ReplayEventKind.Marker => BookmarkColor,
             _ => EnvironmentColor
         };
 

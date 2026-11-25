@@ -10,7 +10,7 @@ namespace Zetori.Player
 {
     internal sealed class ZetoriUsers : ObjectComponent
     {
-        private const string PropertyKey = "zetori";
+        internal const string PropertyKey = "zetori";
         private const float AnnounceInterval = 3f;
 
         internal void Start() => InvokeRepeating(nameof(Announce), 0f, AnnounceInterval);

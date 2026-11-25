@@ -22,7 +22,7 @@ namespace Zetori.Replay
         internal Color Color { get; }
         internal RigSkeleton Skeleton { get; }
         internal List<ActorFrame> Frames { get; } = new List<ActorFrame>();
-        internal VoiceTrack Voice { get; } = new VoiceTrack();
+        internal VoiceTrack Voice { get; private set; } = new VoiceTrack();
         internal List<HandTap> HandTaps { get; } = new List<HandTap>();
         internal bool IsLocal { get; }
         internal int Platform { get; set; }
@@ -113,6 +113,54 @@ namespace Zetori.Replay
             int count = ReplayIO.ReadCount(reader);
             HandTaps.Capacity = count;
             for (int i = 0; i < count; i++) HandTaps.Add(HandTap.Read(reader));
+        }
+
+        internal ReplayActor? Slice(int id, float from, float to)
+        {
+            int first = FirstFrameFrom(from);
+            if (first >= Frames.Count || Frames[first].Time > to) return null;
+            var slice = new ReplayActor(id, Name, Color, Skeleton, IsLocal) { Platform = Platform };
+            foreach (RecordedCosmetic cosmetic in cosmetics)
+            {
+                slice.cosmeticIndices[cosmetic.Key] = slice.cosmetics.Count;
+                slice.cosmetics.Add(cosmetic.Copy());
+            }
+            foreach (RecordedSkin skin in skins)
+            {
+                slice.skinIndices[skin] = slice.skins.Count;
+                slice.skins.Add(skin);
+            }
+            foreach (CosmeticSoundTrack sound in sounds) slice.sounds.Add(sound.Slice(from, to));
+            for (int i = first; i < Frames.Count && Frames[i].Time <= to; i++)
+            {
+                ActorFrame frame = Frames[i];
+                frame.Time -= from;
+                slice.Frames.Add(frame);
+            }
+            foreach (HandTap tap in HandTaps)
+                if (tap.Time >= from && tap.Time <= to) slice.HandTaps.Add(new HandTap(tap.Time - from, tap.IsLeftHand, tap.Surface, tap.Volume));
+            slice.Voice = Voice.Slice(from, to);
+            return slice;
+        }
+
+        internal void ForgetBefore(float time)
+        {
+            Frames.RemoveRange(0, FirstFrameFrom(time));
+            HandTaps.RemoveAll(tap => tap.Time < time);
+            Voice.ForgetBefore(time);
+            foreach (CosmeticSoundTrack sound in sounds) sound.Track.ForgetBefore(time);
+        }
+
+        private int FirstFrameFrom(float time)
+        {
+            int low = 0, high = Frames.Count;
+            while (low < high)
+            {
+                int mid = (low + high) / 2;
+                if (Frames[mid].Time < time) low = mid + 1;
+                else high = mid;
+            }
+            return low;
         }
 
         internal bool TryFindSpan(float time, float sampleInterval, out int index, out float blend)

@@ -67,7 +67,7 @@ namespace Zetori.UI.InGame
         {
             string name = TagManagerControl.NameOf(rig.Creator);
             string tagged = TagManagerControl.IsTagged(rig) ? "  [tagged]" : string.Empty;
-            return $"{name}  {Mathf.RoundToInt(NetworkedPlayerManager.GetFPS(rig))} FPS  {Platform.Name(NetworkedPlayerManager.GetPlatform(rig))}{tagged}";
+            return $"{name}  {Mathf.RoundToInt(NetworkedPlayerManager.GetFPS(rig))} FPS  {Platform.Name(NetworkedPlayerManager.GetPlatform(rig))}{tagged}{InGameSignalReport.RowSuffix(CheatSignals.For(rig))}";
         }
 
         private void Refresh()

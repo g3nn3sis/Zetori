@@ -15,7 +15,8 @@ namespace Zetori.UI.InGame
     {
         private const int Home = -1;
         private const int PlayerPage = -2;
-        private const int FeaturedCount = 3;
+        private const int FeaturedCount = 6;
+        private const int FeaturedColumns = 3;
         private const int GridColumns = 5;
         private const string BrandVersion = "v" + PluginInfo.Version;
         private const string RoomTitle = "Room";
@@ -29,6 +30,7 @@ namespace Zetori.UI.InGame
         private const float FrameRateSmoothing = 0.1f;
 
         private static readonly string BrandName = PluginInfo.Name.ToUpperInvariant();
+        private static readonly PanelId[] FeaturedPanels = { PanelId.Main, PanelId.Capture, PanelId.Stats };
 
         private readonly struct Section
         {
@@ -53,7 +55,7 @@ namespace Zetori.UI.InGame
         private readonly int playersSection;
         private readonly Action[] openSection;
         private readonly string[] featuredDetails = new string[FeaturedCount];
-        private readonly Action featuredRow;
+        private readonly Action[] featuredRows;
         private readonly Action[] gridRows;
         private readonly Action headerRow;
         private readonly Action goHome;
@@ -82,7 +84,12 @@ namespace Zetori.UI.InGame
                 openSection[i] = () => requestedPage = index;
             }
             for (int i = 0; i < FeaturedCount; i++) featuredDetails[i] = string.Empty;
-            featuredRow = DrawFeaturedRow;
+            featuredRows = new Action[(FeaturedCount + FeaturedColumns - 1) / FeaturedColumns];
+            for (int row = 0; row < featuredRows.Length; row++)
+            {
+                int first = row * FeaturedColumns;
+                featuredRows[row] = () => DrawFeaturedRow(first);
+            }
             gridRows = new Action[(sections.Length - FeaturedCount + GridColumns - 1) / GridColumns];
             for (int row = 0; row < gridRows.Length; row++)
             {
@@ -148,14 +155,20 @@ namespace Zetori.UI.InGame
             {
                 new Section(RoomTitle, PanelCatalog.Icon(PanelId.Main), content.For(PanelId.Main), RoomSummary),
                 new Section(PlayersTitle, IconGlyph.People, drawPlayers, PlayersSummary),
-                new Section("VR Camera", IconGlyph.Camcorder, VrCameraPanel.Draw, VrCameraPanel.Summary)
+                new Section("VR Camera", IconGlyph.Camcorder, VrCameraPanel.Draw, VrCameraPanel.Summary),
+                Featured(content, PanelId.Capture, CapturePanel.Summary),
+                Featured(content, PanelId.Stats, StatsPanel.Summary),
+                new Section("Host", IconGlyph.Crown, new HostPanel().Draw, HostPanel.Summary)
             };
             foreach (PanelId[] column in PanelCatalog.Columns)
                 foreach (PanelId id in column)
-                    if (id != PanelId.Main) list.Add(new Section(PanelCatalog.Title(id), PanelCatalog.Icon(id), content.For(id)));
+                    if (!Array.Exists(FeaturedPanels, featured => featured == id)) list.Add(new Section(PanelCatalog.Title(id), PanelCatalog.Icon(id), content.For(id)));
             list.Add(new Section("Panel", IconGlyph.Panel, new InGameSettingsPanel(recenter, close).Draw));
             return list.ToArray();
         }
+
+        private static Section Featured(PanelContent content, PanelId id, Func<string> describe) =>
+            new Section(PanelCatalog.Title(id), PanelCatalog.Icon(id), content.For(id), describe);
 
         private void DrawHeaderRow()
         {
@@ -181,13 +194,17 @@ namespace Zetori.UI.InGame
 
         private void DrawHome()
         {
-            surface.HorizontalArea(featuredRow);
+            foreach (Action row in featuredRows) surface.HorizontalArea(row);
             foreach (Action row in gridRows) surface.HorizontalArea(row);
         }
 
-        private void DrawFeaturedRow()
+        private void DrawFeaturedRow(int first)
         {
-            for (int i = 0; i < FeaturedCount; i++) surface.Card(sections[i].Title, featuredDetails[i], sections[i].Icon, openSection[i]);
+            for (int i = first; i < first + FeaturedColumns; i++)
+            {
+                if (i < FeaturedCount) surface.Card(sections[i].Title, featuredDetails[i], sections[i].Icon, openSection[i]);
+                else surface.Spacer();
+            }
         }
 
         private void DrawGridRow(int first)
@@ -227,14 +244,14 @@ namespace Zetori.UI.InGame
         {
             var room = PhotonNetwork.CurrentRoom;
             return PhotonNetwork.InRoom && room != null
-                ? $"{room.Name}  {room.PlayerCount}/{room.MaxPlayers}  {PhotonNetwork.GetPing()} ms"
+                ? $"{StreamerMode.RoomCode(room.Name)}  {room.PlayerCount}/{room.MaxPlayers}  {PhotonNetwork.GetPing()} ms"
                 : Offline;
         }
 
         private static string RoomSummary()
         {
             var room = PhotonNetwork.CurrentRoom;
-            return PhotonNetwork.InRoom && room != null ? $"Code {room.Name}" : Offline;
+            return PhotonNetwork.InRoom && room != null ? $"Code {StreamerMode.RoomCode(room.Name)}" : Offline;
         }
 
         private static string PlayersSummary()

@@ -36,8 +36,40 @@ namespace Zetori.Replay
                 ReplayEventKind.Tagged => $"{name} TAGGED",
                 ReplayEventKind.TimeOfDay => "Time of day changed",
                 ReplayEventKind.Rain => e.Value != 0 ? "Rain started" : "Rain stopped",
+                ReplayEventKind.Marker => $"Marker {e.Value}",
                 _ => string.Empty
             };
+        }
+
+        internal ReplayRecording Slice(float from, float to)
+        {
+            var slice = new ReplayRecording { Duration = to - from };
+            var ids = new Dictionary<int, int>();
+            foreach (ReplayActor actor in Actors)
+            {
+                ReplayActor? part = actor.Slice(slice.Actors.Count, from, to);
+                if (part == null) continue;
+                ids[actor.Id] = part.Id;
+                slice.Actors.Add(part);
+            }
+            if (EnvironmentAt(from) is EnvironmentState opening) slice.Environment.Add((0f, opening));
+            foreach ((float at, EnvironmentState state) in Environment)
+                if (at > from && at <= to) slice.Environment.Add((at - from, state));
+            foreach (ReplayEvent e in Events)
+            {
+                if (e.Time < from || e.Time > to) continue;
+                if (e.ActorId < 0) slice.Events.Add(new ReplayEvent(e.Time - from, e.Kind, e.ActorId, e.Value));
+                else if (ids.TryGetValue(e.ActorId, out int id)) slice.Events.Add(new ReplayEvent(e.Time - from, e.Kind, id, e.Value));
+            }
+            return slice;
+        }
+
+        internal void ForgetBefore(float time)
+        {
+            foreach (ReplayActor actor in Actors) actor.ForgetBefore(time);
+            Events.RemoveAll(e => e.Time < time);
+            int current = Environment.FindLastIndex(entry => entry.Time <= time);
+            if (current > 0) Environment.RemoveRange(0, current);
         }
     }
 }

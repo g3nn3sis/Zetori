@@ -13,6 +13,7 @@ namespace Zetori.UI.Panels
         private readonly KeybindPanel keybinds = new KeybindPanel();
         private readonly WebPanel web = new WebPanel();
         private readonly TagManagerPanel tagManager = new TagManagerPanel();
+        private readonly RecentPlayersPanel recentPlayers = new RecentPlayersPanel();
 
         internal PanelContent(PanelOrchestrator owner)
         {
@@ -42,6 +43,9 @@ namespace Zetori.UI.Panels
             PanelId.Theme => setup.DrawUiControl,
             PanelId.Presets => setup.DrawPresets,
             PanelId.Keybinds => keybinds.Draw,
+            PanelId.Capture => CapturePanel.Draw,
+            PanelId.RecentPlayers => recentPlayers.Draw,
+            PanelId.Stats => StatsPanel.Draw,
             _ => DrawNothing
         };
 

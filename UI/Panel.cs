@@ -36,6 +36,7 @@ namespace Zetori.UI
         private const float DragThreshold = 4f;
         private const float StalePressTimeout = 0.5f;
         private const int MeasureCacheLimit = 256;
+        private const char MaskCharacter = '*';
 
         private static int nextWindowId = 0x47430000;
 
@@ -337,6 +338,13 @@ namespace Zetori.UI
         {
             fieldStyle!.fontSize = ControlFontSize;
             string value = GUI.TextField(NextRect(ButtonHeight), text ?? string.Empty, maxLength, fieldStyle);
+            return normalize != null ? normalize(value) : value;
+        }
+
+        public string MaskedField(string text, int maxLength, Func<string, string>? normalize = null)
+        {
+            fieldStyle!.fontSize = ControlFontSize;
+            string value = GUI.PasswordField(NextRect(ButtonHeight), text ?? string.Empty, MaskCharacter, maxLength, fieldStyle);
             return normalize != null ? normalize(value) : value;
         }
 

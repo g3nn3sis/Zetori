@@ -5,6 +5,7 @@
 using Zetori.Player;
 using GorillaNetworking;
 using Photon.Pun;
+using UnityEngine;
 
 namespace Zetori.UI.Panels
 {
@@ -12,6 +13,7 @@ namespace Zetori.UI.Panels
     {
         private readonly PanelOrchestrator owner;
         private string roomToJoin = string.Empty;
+        private Vector2 savedScroll;
 
         internal MainPanel(PanelOrchestrator owner) => this.owner = owner;
 
@@ -19,18 +21,54 @@ namespace Zetori.UI.Panels
         {
             panel.Label(RoomStatus());
             panel.Label("Room Code");
-            roomToJoin = panel.TextField(roomToJoin, LocalPlayerManager.MaxNameLength, LocalPlayerManager.NormalizeName);
+            roomToJoin = StreamerMode.HidesRoomCodes
+                ? panel.MaskedField(roomToJoin, LocalPlayerManager.MaxNameLength, LocalPlayerManager.NormalizeName)
+                : panel.TextField(roomToJoin, LocalPlayerManager.MaxNameLength, LocalPlayerManager.NormalizeName);
             if (PhotonNetwork.InRoom) panel.Button("Leave Room", LocalPlayerManager.LeaveRoom);
-            else panel.Button("Join Room", () => LocalPlayerManager.AttemptRoomJoin(roomToJoin, JoinType.Solo), roomToJoin.Length > 0);
+            else panel.Button("Join Room", () => Join(roomToJoin), roomToJoin.Length > 0);
             panel.Button("Join Public", () => LocalPlayerManager.AttemptPublicRoomJoin(JoinType.Solo, true), !PhotonNetwork.InRoom);
+            DrawRejoin(panel);
+            DrawSavedRooms(panel);
             panel.Button("Reset Layout", owner.ResetLayout);
         }
+
+        private static void DrawRejoin(IPanelSurface panel)
+        {
+            string? last = RoomBook.LastRoom;
+            if (last == null || PhotonNetwork.InRoom) return;
+            panel.Button($"Rejoin {StreamerMode.RoomCode(last)}", () => Join(last));
+        }
+
+        private void DrawSavedRooms(IPanelSurface panel)
+        {
+            string current = PlayerHistory.CurrentRoom;
+            string candidate = current.Length > 0 ? current : roomToJoin;
+            panel.Button(current.Length > 0 ? "Save This Room" : "Save Code", () => RoomBook.Save(candidate), candidate.Length > 0 && !RoomBook.IsSaved(candidate));
+            IReadOnlyList<string> saved = RoomBook.Saved;
+            if (saved.Count == 0) return;
+            savedScroll = panel.ScrollArea(savedScroll, Panel.ListHeight, saved.Count, () =>
+            {
+                for (int i = 0; i < saved.Count; i++) DrawSavedRoom(panel, saved[i], i, current);
+            });
+        }
+
+        private static void DrawSavedRoom(IPanelSurface panel, string code, int index, string current)
+        {
+            string label = StreamerMode.HidesRoomCodes ? $"Saved Room {index + 1}" : code;
+            panel.HorizontalArea(() =>
+            {
+                panel.Button(label, () => Join(code), !string.Equals(code, current, StringComparison.OrdinalIgnoreCase));
+                panel.Button("x", () => RoomBook.Remove(code));
+            });
+        }
+
+        private static void Join(string code) => LocalPlayerManager.AttemptRoomJoin(code, JoinType.Solo);
 
         private static string RoomStatus()
         {
             var room = PhotonNetwork.CurrentRoom;
             return PhotonNetwork.InRoom && room != null
-                ? $"In room: {room.Name} ({room.PlayerCount}/{room.MaxPlayers})"
+                ? $"In room: {StreamerMode.RoomCode(room.Name)} ({room.PlayerCount}/{room.MaxPlayers})"
                 : "Not in a room";
         }
     }

@@ -20,6 +20,8 @@ namespace Zetori.UI
 
         string TextField(string text, int maxLength, Func<string, string>? normalize = null);
 
+        string MaskedField(string text, int maxLength, Func<string, string>? normalize = null);
+
         void ColorSwatch(Color color);
 
         void HorizontalArea(Action draw);

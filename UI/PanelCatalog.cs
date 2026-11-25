@@ -10,10 +10,10 @@ namespace Zetori.UI
     {
         internal static readonly PanelId[][] Columns =
         {
-            new[] { PanelId.Main, PanelId.Wasd, PanelId.FreecamCamera, PanelId.Replay },
-            new[] { PanelId.Camera, PanelId.Web, PanelId.MiniMap },
+            new[] { PanelId.Main, PanelId.RecentPlayers, PanelId.Wasd, PanelId.FreecamCamera, PanelId.Replay },
+            new[] { PanelId.Camera, PanelId.Capture, PanelId.Web, PanelId.MiniMap },
             new[] { PanelId.Nametag, PanelId.Leaderboard, PanelId.ClosestLava, PanelId.KillFeed },
-            new[] { PanelId.Scoreboard, PanelId.Time, PanelId.MapLoader, PanelId.TagManager },
+            new[] { PanelId.Scoreboard, PanelId.Time, PanelId.MapLoader, PanelId.TagManager, PanelId.Stats },
             new[] { PanelId.Player, PanelId.PlayerSettings, PanelId.Keybinds, PanelId.Theme, PanelId.Presets }
         };
 
@@ -39,6 +39,9 @@ namespace Zetori.UI
             PanelId.Theme => "UI Control",
             PanelId.Presets => "Presets",
             PanelId.Keybinds => "Keybinds",
+            PanelId.Capture => "Capture",
+            PanelId.RecentPlayers => "Recent Players",
+            PanelId.Stats => "Session Stats",
             _ => id.ToString()
         };
 
@@ -64,6 +67,9 @@ namespace Zetori.UI
             PanelId.Theme => IconGlyph.Sliders,
             PanelId.Presets => IconGlyph.Layers,
             PanelId.Keybinds => IconGlyph.Keyboard,
+            PanelId.Capture => IconGlyph.Record,
+            PanelId.RecentPlayers => IconGlyph.History,
+            PanelId.Stats => IconGlyph.Chart,
             _ => IconGlyph.Zetori
         };
 

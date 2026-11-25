@@ -26,6 +26,9 @@ namespace Zetori.UI
         Web,
         FreecamCamera,
         TagManager,
+        Capture,
+        RecentPlayers,
+        Stats,
         Count
     }
 }

@@ -28,6 +28,10 @@ namespace Zetori.UI.Icons
         Keyboard,
         People,
         Camcorder,
-        Panel
+        Panel,
+        Record,
+        History,
+        Chart,
+        Crown
     }
 }

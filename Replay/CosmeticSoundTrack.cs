@@ -12,7 +12,7 @@ namespace Zetori.Replay
         internal int Node { get; }
         internal VoiceSettings Settings { get; }
         internal string Mixer { get; }
-        internal VoiceTrack Track { get; } = new VoiceTrack();
+        internal VoiceTrack Track { get; private set; } = new VoiceTrack();
 
         internal CosmeticSoundTrack(int cosmetic, int node, VoiceSettings settings, string mixer)
         {
@@ -21,6 +21,9 @@ namespace Zetori.Replay
             Settings = settings;
             Mixer = mixer;
         }
+
+        internal CosmeticSoundTrack Slice(float from, float to) =>
+            new CosmeticSoundTrack(Cosmetic, Node, Settings, Mixer) { Track = Track.Slice(from, to) };
 
         internal void Write(BinaryWriter writer)
         {
