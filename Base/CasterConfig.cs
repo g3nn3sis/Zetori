@@ -102,6 +102,7 @@ namespace Zetori.Base
         internal static ConfigEntry<HudPosition> MiniMapPosition = null!;
         internal static ConfigEntry<bool> DiscordPresence = null!;
         internal static ConfigEntry<bool> HideRoomCodes = null!;
+        internal static ConfigEntry<bool> CheatAlerts = null!;
 
         internal static ConfigEntry<int> HudFont = null!;
 
@@ -263,6 +264,7 @@ namespace Zetori.Base
             MiniMapPosition = config.Bind("MiniMap", "Position", HudPosition.TopRight, "Corner the minimap sits in: BottomLeft, BottomRight or TopRight. Only one overlay can use a corner.");
 
             DiscordPresence = config.Bind("Discord", "Rich Presence", true, "Show what you are doing on your Discord profile.");
+            CheatAlerts = config.Bind("Cheat Alerts", "Enabled", false, "Show a short notice below the centre of the screen and of your headset view when another player raises a cheat or mod signal.");
             HideRoomCodes = config.Bind("Streamer", "Hide Room Codes", false, "Show Hidden instead of room codes in every panel, the in-game panel and its keyboard, so they never appear on stream or in a recording.");
 
             HudFont = config.Bind("HUD", "Font Index", 0, new ConfigDescription("Index into the fonts found in the game, shared by the leaderboard and closest-lava overlays.", new AcceptableValueRange<int>(0, 255)));

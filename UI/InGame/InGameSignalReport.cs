@@ -10,13 +10,15 @@ namespace Zetori.UI.InGame
 {
     internal static class InGameSignalReport
     {
-        internal const int Lines = 9;
+        internal const int Lines = 10;
         private const int ShownModKeys = 3;
+        private const int ReasonLength = 36;
+        private const string Ellipsis = "...";
         private const int ShownOverrides = 3;
         private const string RaisedColor = "FF8C1A";
         private const string ClearColor = "8CE08C";
         private const string Caveat =
-            "Hints, not proof. Lag, launchers, ropes, gliders, water and the game's own teleports can raise the speed, teleport, hover and tag signals. The game caps arm reach at 1 m. Quest tweaks are headset settings changed with developer tools; only Quest headsets report them.";
+            "Hints, not proof. Game reports are the game's own cheat checks, run on your headset. Lag, launchers, ropes, gliders and water can raise the speed, teleport, hover and tag signals. The game caps arm reach at 1 m. Quest tweaks are headset settings changed with developer tools; only Quest headsets report them.";
 
         private static readonly (SystemProperties Flag, string Name)[] OverrideNames =
         {
@@ -43,14 +45,15 @@ namespace Zetori.UI.InGame
             string lobby = CheatSignals.ModdedLobby ? " Modded lobby: mods are allowed here." : string.Empty;
             if (record == null) return $"Cheat and mod signals: watching...{lobby}";
             string raised = record.Count == 1 ? "1 raised" : $"{record.Count} raised";
-            return $"Cheat and mod signals: {raised}, watched {Duration(record.Watched)}.{lobby}";
+            return $"Cheat and mod signals: {raised}, watched {InGameDetails.Clock(record.Watched)}.{lobby}";
         }
 
         internal static string Describe(SignalRecord record, StringBuilder builder)
         {
             builder.Clear();
+            Line(builder, "Game reports", ReportText(record), record.Reported);
             Line(builder, "Mod data", record.Modded ? ModText(record.ModKeys) : "None", record.Modded);
-            Line(builder, "Name", record.OddName ? "Symbols or over 12 letters" : "Normal", record.OddName);
+            Line(builder, "Name", NameText(record.Name), record.OddName);
             Line(builder, "Quest tweaks", record.Tweaked ? OverrideText(record.QuestOverrides) : "None reported", record.Tweaked);
             Line(builder, "Cosmetics", CosmeticsText(record), record.Unowned);
             Line(builder, "Speed", SpeedText(record), record.Fast);
@@ -75,6 +78,22 @@ namespace Zetori.UI.InGame
             string shown = string.Join(", ", keys.Take(ShownModKeys));
             return keys.Length > ShownModKeys ? $"{shown} +{keys.Length - ShownModKeys} more" : shown;
         }
+
+        private static string ReportText(SignalRecord record)
+        {
+            IReadOnlyList<string> reasons = record.ReportReasons;
+            if (reasons.Count == 0) return "None";
+            string first = reasons[0].Length > ReasonLength ? reasons[0].Substring(0, ReasonLength - Ellipsis.Length) + Ellipsis : reasons[0];
+            return reasons.Count > 1 ? $"{first} +{reasons.Count - 1} more" : first;
+        }
+
+        private static string NameText(NameIssue issue) => issue switch
+        {
+            NameIssue.Banned => "Has a word the game bans in names",
+            NameIssue.Symbols => "Symbols the game's keyboard lacks",
+            NameIssue.TooLong => "Over 12 letters",
+            _ => "Normal"
+        };
 
         private static string OverrideText(SystemProperties overrides)
         {
@@ -109,14 +128,6 @@ namespace Zetori.UI.InGame
             string tags = record.Tags == 1 ? "1 tag" : $"{record.Tags} tags";
             string far = record.FarTags > 0 ? $", {record.FarTags} from {Whole(SignalRecord.FarTagDistance)}+ m" : string.Empty;
             return $"{tags}, longest {Decimal(record.LongestTag)} m{far}";
-        }
-
-        private static string Duration(float seconds)
-        {
-            var span = TimeSpan.FromSeconds(Math.Max(0f, seconds));
-            return span.TotalHours >= 1d
-                ? span.ToString(@"h\:mm\:ss", CultureInfo.InvariantCulture)
-                : span.ToString(@"m\:ss", CultureInfo.InvariantCulture);
         }
 
         private static string Decimal(float value) => value.ToString("0.0", CultureInfo.InvariantCulture);

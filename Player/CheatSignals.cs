@@ -31,6 +31,18 @@ namespace Zetori.Player
             "didTutorial", "platform", "mothershipId", "gtfcExpirationTime", "isRedTeam", ZetoriUsers.PropertyKey
         };
 
+        private static readonly Dictionary<string, string> ReadableReasons = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["invlProj"] = "invalid projectile",
+            ["NmError"] = "name error"
+        };
+
+        private static readonly (string Prefix, string Replacement)[] ReadablePrefixes =
+        {
+            ("inappropriate tag data being sent ", "bad data: "),
+            ("too many rpc calls! ", "RPC spam: ")
+        };
+
         private static readonly AccessTools.FieldRef<VRRig, bool>? CosmeticsReady = ReadyAccessor();
         private static readonly Dictionary<int, SignalRecord> records = new Dictionary<int, SignalRecord>();
 
@@ -60,6 +72,23 @@ namespace Zetori.Player
             RecordOf(tagging.ActorNumber).ObserveTag(TagDistance(tagger, target) / ScaleOf(tagger));
         }
 
+        internal static void ObserveSync(VRRig rig, bool flaggedTeleport)
+        {
+            if (!IsRemote(rig)) return;
+            RecordOf(rig.Creator.ActorNumber).ObservePosition(rig.syncPos, Time.unscaledTime, ScaleOf(rig), flaggedTeleport);
+        }
+
+        internal static void ObserveReport(string? userId, string? reason)
+        {
+            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(reason) || PhotonNetwork.CurrentRoom == null) return;
+            foreach (Photon.Realtime.Player player in PhotonNetwork.CurrentRoom.Players.Values)
+            {
+                if (player.IsLocal || player.UserId != userId) continue;
+                RecordOf(player.ActorNumber).ObserveReport(ReadableReason(reason!));
+                return;
+            }
+        }
+
         internal void Update()
         {
             float now = Time.unscaledTime;
@@ -71,7 +100,7 @@ namespace Zetori.Player
                     float elapsed = lastSample > 0f ? Mathf.Min(now - lastSample, MaximumStep) : SampleInterval;
                     lastSample = now;
                     nextSample = now + SampleInterval;
-                    Sample(elapsed, now);
+                    Sample(elapsed);
                 }
                 if (now >= nextProfile)
                 {
@@ -93,7 +122,7 @@ namespace Zetori.Player
             return current.Length > 0;
         }
 
-        private static void Sample(float deltaTime, float now)
+        private static void Sample(float deltaTime)
         {
             int layers = GTPlayer.LocomotionEnabledLayers;
             foreach (VRRig rig in VRRigCache.ActiveRigs)
@@ -101,9 +130,7 @@ namespace Zetori.Player
                 if (!IsRemote(rig)) continue;
                 float scale = ScaleOf(rig);
                 Vector3 velocity = rig.LatestVelocity();
-                SignalRecord record = RecordOf(rig.Creator.ActorNumber);
-                record.ObservePosition(rig.syncPos, now, scale);
-                record.Observe(deltaTime, velocity.magnitude / scale, IsHovering(rig, velocity, scale, layers), Reach(rig) / scale);
+                RecordOf(rig.Creator.ActorNumber).Observe(deltaTime, velocity.magnitude / scale, IsHovering(rig, velocity, scale, layers), Reach(rig) / scale);
             }
         }
 
@@ -113,7 +140,7 @@ namespace Zetori.Player
             {
                 if (!IsRemote(rig)) continue;
                 SignalRecord record = RecordOf(rig.Creator.ActorNumber);
-                record.ObserveProfile(ModKeys(rig.Creator.ActorNumber), IsOddName(rig.Creator.NickName), QuestOverrides(rig));
+                record.ObserveProfile(ModKeys(rig.Creator.ActorNumber), NameIssueOf(rig.Creator.NickName), QuestOverrides(rig));
                 if (UnownedCosmetics(rig) is int unowned) record.ObserveCosmetics(unowned);
             }
         }
@@ -191,13 +218,38 @@ namespace Zetori.Player
             return container != null ? container.PlayerStats.SystemPropertiesFlags : 0;
         }
 
-        private static bool IsOddName(string? name)
+        private static string ReadableReason(string reason)
         {
-            if (string.IsNullOrEmpty(name)) return false;
-            if (name!.Length > MaximumNameLength) return true;
-            foreach (char c in name)
-                if (!((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9'))) return true;
-            return false;
+            string readable = reason.Trim();
+            if (ReadableReasons.TryGetValue(readable, out string named)) readable = named;
+            foreach ((string prefix, string replacement) in ReadablePrefixes)
+                if (readable.StartsWith(prefix, StringComparison.Ordinal)) readable = replacement + readable.Substring(prefix.Length);
+            return readable.Length > 0 ? char.ToUpperInvariant(readable[0]) + readable.Substring(1) : readable;
+        }
+
+        private static NameIssue NameIssueOf(string? name)
+        {
+            if (name == null || name.Length == 0) return NameIssue.None;
+            if (IsBannedName(name)) return NameIssue.Banned;
+            if (!name.All(IsTypeable)) return NameIssue.Symbols;
+            return name.Length > MaximumNameLength ? NameIssue.TooLong : NameIssue.None;
+        }
+
+        private static bool IsTypeable(char c) => (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9');
+
+        private static bool IsBannedName(string name)
+        {
+            GorillaComputer? computer = GorillaComputer.instance;
+            if (computer == null) return false;
+            try
+            {
+                return !computer.CheckAutoBanListForName(name);
+            }
+            catch (Exception e)
+            {
+                Log.ExceptionOnce("cheat-signals-name", e, "Checking a player's name against the game's banned words failed");
+                return false;
+            }
         }
 
         private static int? UnownedCosmetics(VRRig rig)

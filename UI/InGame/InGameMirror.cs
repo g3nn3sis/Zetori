@@ -23,7 +23,7 @@ namespace Zetori.UI.InGame
         private const float NearClip = 0.05f;
         private const float DepthMargin = 2f;
         private const float MinimumScale = 0.01f;
-        private const float TurnSharpness = 6f;
+        private const float TurnSmoothTime = 0.6f;
         private const float RescanInterval = 1f;
 
         private readonly List<Renderer> renderers = new List<Renderer>();
@@ -33,22 +33,24 @@ namespace Zetori.UI.InGame
         private GameObject? cameraObject;
         private Camera? camera;
         private RenderTexture? texture;
-        private VRRig? target;
-        private Quaternion facing = Quaternion.identity;
+        private Transform? target;
+        private float yaw;
+        private float yawVelocity;
         private float nextScan;
 
-        internal Texture Follow(VRRig rig)
+        internal Texture Follow(Transform body, float scale)
         {
             if (camera == null || texture == null) Create();
-            bool retargeted = rig != target;
+            bool retargeted = body != target;
             if (retargeted)
             {
-                target = rig;
+                target = body;
                 nextScan = 0f;
             }
-            if (Time.unscaledTime >= nextScan) Rescan(rig);
-            Aim(camera!, rig, retargeted);
-            if (!camera!.enabled) camera.enabled = true;
+            if (Time.unscaledTime >= nextScan) Rescan(body);
+            Camera view = camera!;
+            Aim(view, body, scale, retargeted || !view.enabled);
+            if (!view.enabled) view.enabled = true;
             return texture!;
         }
 
@@ -80,28 +82,38 @@ namespace Zetori.UI.InGame
             RenderPipelineManager.endCameraRendering += OnEndCameraRendering;
         }
 
-        private void Rescan(VRRig rig)
+        private void Rescan(Transform body)
         {
             nextScan = Time.unscaledTime + RescanInterval;
             renderers.Clear();
-            rig.GetComponentsInChildren(false, scanned);
+            body.GetComponentsInChildren(false, scanned);
             foreach (Renderer renderer in scanned)
                 if (!NameTag.IsTagPart(renderer.transform)) renderers.Add(renderer);
             scanned.Clear();
         }
 
-        private void Aim(Camera view, VRRig rig, bool snap)
+        private void Aim(Camera view, Transform body, float bodyScale, bool snap)
         {
-            Transform body = rig.transform;
-            float scale = Mathf.Max(MinimumScale, rig.scaleFactor);
-            Vector3 forward = Vector3.ProjectOnPlane(body.forward, Vector3.up);
-            Quaternion goal = forward.sqrMagnitude > Mathf.Epsilon ? Quaternion.LookRotation(-forward, Vector3.up) : facing;
-            facing = snap ? goal : Quaternion.Slerp(facing, goal, 1f - Mathf.Exp(-TurnSharpness * Time.unscaledDeltaTime));
+            float scale = Mathf.Max(MinimumScale, bodyScale);
+            Turn(body.forward, snap);
+            Quaternion facing = Quaternion.Euler(0f, yaw, 0f);
             float distance = FrameHalfHeight * scale / Mathf.Tan(FieldOfView * 0.5f * Mathf.Deg2Rad);
             Vector3 center = body.position + Vector3.up * (FrameLift * scale);
             view.transform.SetPositionAndRotation(center - facing * Vector3.forward * distance, facing);
             view.nearClipPlane = NearClip * scale;
             view.farClipPlane = distance + DepthMargin * scale;
+        }
+
+        private void Turn(Vector3 forward, bool snap)
+        {
+            float goal = forward.x * forward.x + forward.z * forward.z > Mathf.Epsilon ? Mathf.Atan2(-forward.x, -forward.z) * Mathf.Rad2Deg : yaw;
+            if (snap)
+            {
+                yaw = goal;
+                yawVelocity = 0f;
+                return;
+            }
+            yaw = Mathf.SmoothDampAngle(yaw, goal, ref yawVelocity, TurnSmoothTime, Mathf.Infinity, Time.unscaledDeltaTime);
         }
 
         private void OnBeginCameraRendering(ScriptableRenderContext context, Camera rendering)

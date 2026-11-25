@@ -8,6 +8,7 @@ using UnityEngine;
 using Zetori.Game;
 using Zetori.GameCamera.Vr;
 using Zetori.Player;
+using Zetori.Replay;
 using Zetori.UI.Panels;
 
 namespace Zetori.UI.InGame
@@ -18,13 +19,11 @@ namespace Zetori.UI.InGame
         private const float DetailsInterval = 0.25f;
         private const float LineLookupInterval = 1f;
         private const float TalkingLoudness = 0.05f;
-        private const float MinimumNameLuminance = 0.3f;
-        private const float NameLift = 0.45f;
-        private const int ColorCodeSteps = 9;
         private const float Percent = 100f;
         private const int NoActor = -1;
         private const string DefaultTitle = "Player";
         private const string LeftRoom = "This player is no longer in the room.";
+        private const string HiddenByReplay = "Live players are hidden while a replay plays. Open Players to see who is in the replay.";
         private const string SpectateLabel = "Spectate";
         private const string SpectatingLabel = "Spectating";
         private const string FilmLabel = "Film";
@@ -83,10 +82,10 @@ namespace Zetori.UI.InGame
 
         internal void Draw()
         {
-            if (!Present)
+            if (ReplaySession.IsReplaying || !Present)
             {
                 Conceal();
-                surface.Label(LeftRoom);
+                surface.Label(ReplaySession.IsReplaying ? HiddenByReplay : LeftRoom);
                 return;
             }
             VRRig current = rig!;
@@ -102,7 +101,7 @@ namespace Zetori.UI.InGame
                 details = Describe(current);
                 DescribeSignals(current);
             }
-            view = mirror.Follow(current);
+            view = mirror.Follow(current.transform, current.scaleFactor);
             surface.HorizontalArea(viewRow);
             if (!current.isOfflineVRRig) DrawSignals();
             surface.HorizontalArea(actionRow);
@@ -169,7 +168,7 @@ namespace Zetori.UI.InGame
             AddDetail("Platform", PlatformText(target));
             AddDetail("FPS", FrameRateText(target));
             AddDetail("Ping", PingText());
-            AddDetail("Color", $"{ColorCode(color.r)} {ColorCode(color.g)} {ColorCode(color.b)}", nameHex);
+            AddDetail("Color", InGameDetails.ColorCode(color), nameHex);
             AddDetail("Status", TagManagerControl.IsTagged(target) ? "Tagged" : "Not tagged");
             AddDetail("Speed", $"{Decimal(target.LatestVelocity().magnitude)} m/s");
             AddDetail("Distance", DistanceText(target));
@@ -215,26 +214,11 @@ namespace Zetori.UI.InGame
             return target.SpeakingLoudness > TalkingLoudness ? "Talking" : "Quiet";
         }
 
-        private static string DurationText(float seconds)
-        {
-            if (seconds <= 0f) return Unknown;
-            var span = TimeSpan.FromSeconds(seconds);
-            return span.TotalHours >= 1d
-                ? span.ToString(@"h\:mm\:ss", CultureInfo.InvariantCulture)
-                : span.ToString(@"m\:ss", CultureInfo.InvariantCulture);
-        }
-
-        private static int ColorCode(float channel) => Mathf.RoundToInt(Mathf.Clamp01(channel) * ColorCodeSteps);
+        private static string DurationText(float seconds) => seconds > 0f ? InGameDetails.Clock(seconds) : Unknown;
 
         private static string Decimal(float value) => value.ToString("0.0", CultureInfo.InvariantCulture);
 
-        private static Color NameColor(VRRig target)
-        {
-            Color color = target.playerColor;
-            color.a = 1f;
-            float luminance = 0.2126f * color.r + 0.7152f * color.g + 0.0722f * color.b;
-            return luminance < MinimumNameLuminance ? Color.Lerp(color, Color.white, NameLift) : color;
-        }
+        private static Color NameColor(VRRig target) => InGameDetails.Legible(target.playerColor);
 
         public void Dispose() => mirror.Dispose();
     }

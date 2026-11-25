@@ -18,15 +18,18 @@ namespace Zetori.Player
         private const int FarTagsToFlag = 2;
         private const int TeleportsToFlag = 3;
         private const int UnownedChecksToFlag = 2;
+        private const int MaximumReasons = 8;
         private const float TeleportDistance = 6f;
         private const float TeleportSpeed = 60f;
         private const float MinimumElapsed = 0.001f;
 
+        private readonly List<string> reasons = new List<string>();
         private Vector3? lastSync;
         private float lastSyncTime;
         private float fastRun;
         private float hoverRun;
         private int unownedChecks;
+        private SignalKind announced;
 
         internal float Watched { get; private set; }
         internal float TopSpeed { get; private set; }
@@ -40,7 +43,7 @@ namespace Zetori.Player
         internal float LongestTag { get; private set; }
         internal int UnownedCosmetics { get; private set; } = -1;
         internal string[] ModKeys { get; private set; } = Array.Empty<string>();
-        internal bool OddName { get; private set; }
+        internal NameIssue Name { get; private set; }
         internal SystemProperties QuestOverrides { get; private set; }
 
         internal bool Fast => LongestFast >= FastSeconds;
@@ -51,9 +54,16 @@ namespace Zetori.Player
         internal bool Unowned => unownedChecks >= UnownedChecksToFlag;
         internal bool Modded => ModKeys.Length > 0;
         internal bool Tweaked => QuestOverrides != 0;
+        internal bool OddName => Name != NameIssue.None;
+        internal bool Reported => reasons.Count > 0;
+        internal IReadOnlyList<string> ReportReasons => reasons;
 
-        internal int Count =>
-            Flag(OddName) + Flag(Modded) + Flag(Tweaked) + Flag(Unowned) + Flag(Fast) + Flag(Teleporting) + Flag(Hovering) + Flag(LongArms) + Flag(FarTagging);
+        internal SignalKind Raised =>
+            Kind(Reported, SignalKind.GameReport) | Kind(Modded, SignalKind.ModData) | Kind(OddName, SignalKind.Name) | Kind(Tweaked, SignalKind.QuestTweaks)
+            | Kind(Unowned, SignalKind.Cosmetics) | Kind(Fast, SignalKind.Speed) | Kind(Teleporting, SignalKind.Teleports) | Kind(Hovering, SignalKind.Hovering)
+            | Kind(LongArms, SignalKind.ArmReach) | Kind(FarTagging, SignalKind.TagReach);
+
+        internal int Count => CountOf(Raised);
 
         internal void Observe(float deltaTime, float speed, bool hovering, float reach)
         {
@@ -67,11 +77,10 @@ namespace Zetori.Player
             if (reach >= LongReach) ReachSeconds += deltaTime;
         }
 
-        internal void ObservePosition(Vector3 synced, float now, float scale)
+        internal void ObservePosition(Vector3 synced, float now, float scale, bool flaggedTeleport)
         {
-            if (lastSync is Vector3 previous)
+            if (lastSync is Vector3 previous && !flaggedTeleport)
             {
-                if (synced == previous) return;
                 float distance = Vector3.Distance(previous, synced);
                 float elapsed = Mathf.Max(MinimumElapsed, now - lastSyncTime);
                 if (distance > TeleportDistance * scale && distance / elapsed > TeleportSpeed * scale) Teleports++;
@@ -93,13 +102,32 @@ namespace Zetori.Player
             unownedChecks = unowned > 0 ? unownedChecks + 1 : 0;
         }
 
-        internal void ObserveProfile(string[] modKeys, bool oddName, SystemProperties questOverrides)
+        internal void ObserveProfile(string[] modKeys, NameIssue name, SystemProperties questOverrides)
         {
             ModKeys = modKeys;
-            OddName = oddName;
+            Name = name;
             QuestOverrides = questOverrides;
         }
 
-        private static int Flag(bool raised) => raised ? 1 : 0;
+        internal void ObserveReport(string reason)
+        {
+            if (reasons.Count < MaximumReasons && !reasons.Contains(reason)) reasons.Add(reason);
+        }
+
+        internal SignalKind TakeNewlyRaised()
+        {
+            SignalKind raised = Raised & ~announced;
+            announced |= raised;
+            return raised;
+        }
+
+        private static SignalKind Kind(bool raised, SignalKind kind) => raised ? kind : SignalKind.None;
+
+        private static int CountOf(SignalKind kinds)
+        {
+            int count = 0;
+            for (int bits = (int)kinds; bits != 0; bits &= bits - 1) count++;
+            return count;
+        }
     }
 }

@@ -68,6 +68,7 @@ namespace Zetori.UI.Panels
             NetworkedPlayerManager.registerNewRigs = panel.Toggle("Register New Rigs", NetworkedPlayerManager.registerNewRigs);
             CasterConfig.DiscordPresence.Value = panel.Toggle("Discord Presence", CasterConfig.DiscordPresence.Value);
             CasterConfig.HideRoomCodes.Value = panel.Toggle("Hide Room Codes", CasterConfig.HideRoomCodes.Value);
+            CasterConfig.CheatAlerts.Value = panel.Toggle("Cheat Alerts", CasterConfig.CheatAlerts.Value);
             CasterConfig.DisableVSync.Value = panel.Toggle("Disable VSync", CasterConfig.DisableVSync.Value);
             CasterConfig.UncapFps.Value = panel.Toggle("Uncap FPS", CasterConfig.UncapFps.Value);
             CasterConfig.DisableAfkKick.Value = panel.Toggle("Disable AFK Kick", CasterConfig.DisableAfkKick.Value);

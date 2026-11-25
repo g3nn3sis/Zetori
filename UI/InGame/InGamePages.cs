@@ -15,6 +15,7 @@ namespace Zetori.UI.InGame
     {
         private const int Home = -1;
         private const int PlayerPage = -2;
+        private const int RecordedPlayerPage = -3;
         private const int FeaturedCount = 6;
         private const int FeaturedColumns = 3;
         private const int GridColumns = 5;
@@ -51,6 +52,7 @@ namespace Zetori.UI.InGame
         private readonly InGameSurface surface;
         private readonly InGameKeyboard keyboard;
         private readonly InGamePlayerPage playerPage;
+        private readonly InGameRecordedPlayerPage recordedPlayerPage;
         private readonly Section[] sections;
         private readonly int playersSection;
         private readonly Action[] openSection;
@@ -74,7 +76,8 @@ namespace Zetori.UI.InGame
             this.close = close;
             keyboard = new InGameKeyboard(surface);
             playerPage = new InGamePlayerPage(surface);
-            var players = new InGamePlayersPage(surface, OpenPlayer);
+            recordedPlayerPage = new InGameRecordedPlayerPage(surface);
+            var players = new InGamePlayersPage(surface, OpenPlayer, OpenRecordedPlayer);
             sections = BuildSections(new PanelContent(owner), _ => players.Draw(), recenter, close);
             playersSection = Array.FindIndex(sections, section => section.Title == PlayersTitle);
             openSection = new Action[sections.Length];
@@ -118,8 +121,10 @@ namespace Zetori.UI.InGame
             surface.EnterRegion(InGameRegion.Body);
             if (page == Home) DrawHome();
             else if (page == PlayerPage) DrawPlayer();
+            else if (page == RecordedPlayerPage) DrawRecordedPlayer();
             else DrawSection(sections[page]);
             if (page != PlayerPage) playerPage.Conceal();
+            if (page != RecordedPlayerPage) recordedPlayerPage.Conceal();
             if (surface.Editing)
             {
                 surface.EnterRegion(InGameRegion.Keyboard);
@@ -129,7 +134,11 @@ namespace Zetori.UI.InGame
             surface.Label(status);
         }
 
-        internal void Conceal() => playerPage.Conceal();
+        internal void Conceal()
+        {
+            playerPage.Conceal();
+            recordedPlayerPage.Conceal();
+        }
 
         private void OpenPlayer(VRRig rig)
         {
@@ -137,10 +146,22 @@ namespace Zetori.UI.InGame
             requestedPage = PlayerPage;
         }
 
+        private void OpenRecordedPlayer(ReplayPlayer replay, ReplayPuppet puppet)
+        {
+            recordedPlayerPage.Open(replay, puppet);
+            requestedPage = RecordedPlayerPage;
+        }
+
         private void DrawPlayer()
         {
             try { playerPage.Draw(); }
             catch (Exception e) { Log.ExceptionOnce("in-game-panel-player", e, "Drawing the in-game player page failed"); }
+        }
+
+        private void DrawRecordedPlayer()
+        {
+            try { recordedPlayerPage.Draw(); }
+            catch (Exception e) { Log.ExceptionOnce("in-game-panel-recorded-player", e, "Drawing the in-game recorded player page failed"); }
         }
 
         private void DrawSection(Section section)
@@ -174,6 +195,7 @@ namespace Zetori.UI.InGame
         {
             if (page == Home) DrawBrand();
             else if (page == PlayerPage) DrawNavigation(BackLabel, backToPlayers, playerPage.Title, playerPage.TitleColor);
+            else if (page == RecordedPlayerPage) DrawNavigation(BackLabel, backToPlayers, recordedPlayerPage.Title, recordedPlayerPage.TitleColor);
             else DrawNavigation(HomeLabel, goHome, sections[page].Title, Color.white);
             if (ReplaySession.IsReplaying) surface.Button("Exit Replay", exitReplay);
             surface.Button("Close", close);
@@ -238,7 +260,11 @@ namespace Zetori.UI.InGame
             }
         }
 
-        public void Dispose() => playerPage.Dispose();
+        public void Dispose()
+        {
+            playerPage.Dispose();
+            recordedPlayerPage.Dispose();
+        }
 
         private static string RoomStatus()
         {
@@ -256,6 +282,11 @@ namespace Zetori.UI.InGame
 
         private static string PlayersSummary()
         {
+            if (ReplaySession.Player is ReplayPlayer replay)
+            {
+                int recorded = InGamePlayersPage.RecordedCount(replay);
+                return recorded == 1 ? "1 in replay" : $"{recorded} in replay";
+            }
             var room = PhotonNetwork.CurrentRoom;
             if (!PhotonNetwork.InRoom || room == null) return Offline;
             return room.PlayerCount == 1 ? "1 player" : $"{room.PlayerCount} players";
