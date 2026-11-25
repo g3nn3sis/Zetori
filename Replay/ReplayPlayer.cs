@@ -16,6 +16,10 @@ namespace Zetori.Replay
         internal const float MaxRigLerp = 1f;
         internal const float NormalSpeed = 1f;
 
+        private const float HighlightLeadIn = 3f;
+        private const float HighlightRepeatWindow = 0.5f;
+        private const float HighlightStep = 0.05f;
+
         internal static readonly float[] Speeds = { 0.25f, 0.5f, NormalSpeed, 2f };
 
         private readonly List<ReplayPuppet> puppets;
@@ -27,6 +31,7 @@ namespace Zetori.Replay
         private float posedCursor;
 
         internal ReplayRecording Recording { get; }
+        internal IReadOnlyList<ReplayHighlight> Highlights { get; }
         internal float Cursor { get; private set; }
         internal bool Playing { get; set; } = true;
         internal CameraMode Camera { get; set; } = CameraMode.Spectator;
@@ -50,10 +55,11 @@ namespace Zetori.Replay
             }
         }
 
-        internal ReplayPlayer(ReplayRecording recording)
+        internal ReplayPlayer(LoadedReplay loaded)
         {
-            Recording = recording;
-            puppets = BuildPuppets(recording, cosmetics);
+            Recording = loaded.Recording;
+            Highlights = loaded.Highlights;
+            puppets = BuildPuppets(Recording, cosmetics);
             RigLerp = NetworkedPlayerManager.LiveRigLerp;
             liveEnvironment = TimeManager.Capture();
         }
@@ -117,6 +123,35 @@ namespace Zetori.Replay
         {
             if (!Playing && Cursor >= Recording.Duration) Cursor = 0f;
             Playing = !Playing;
+        }
+
+        internal void JumpTo(ReplayHighlight highlight)
+        {
+            Seek(StartOf(highlight));
+            int index = puppets.FindIndex(p => p.Actor.Id == highlight.ActorId);
+            if (index >= 0) spectated = index;
+        }
+
+        internal void JumpToHighlight(int direction)
+        {
+            ReplayHighlight? target = direction > 0 ? NextHighlight() : PreviousHighlight();
+            if (target is ReplayHighlight highlight) JumpTo(highlight);
+        }
+
+        private static float StartOf(ReplayHighlight highlight) => Mathf.Max(0f, highlight.Time - HighlightLeadIn);
+
+        private ReplayHighlight? NextHighlight()
+        {
+            foreach (ReplayHighlight highlight in Highlights)
+                if (StartOf(highlight) > Cursor + HighlightStep) return highlight;
+            return null;
+        }
+
+        private ReplayHighlight? PreviousHighlight()
+        {
+            for (int i = Highlights.Count - 1; i >= 0; i--)
+                if (StartOf(Highlights[i]) < Cursor - HighlightRepeatWindow) return Highlights[i];
+            return null;
         }
 
         internal void Spectate(int index)

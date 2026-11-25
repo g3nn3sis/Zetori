@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: LicenseRef-Zetori-Source-Available
 // Unauthorized use, modification, or distribution is prohibited. See LICENSE.
 
+using System.Globalization;
+
 namespace Zetori.Replay
 {
     internal sealed class ReplayRecording
@@ -37,6 +39,20 @@ namespace Zetori.Replay
                 ReplayEventKind.TimeOfDay => "Time of day changed",
                 ReplayEventKind.Rain => e.Value != 0 ? "Rain started" : "Rain stopped",
                 ReplayEventKind.Marker => $"Marker {e.Value}",
+                ReplayEventKind.Signal => $"{name}: {RecordedSignals.Describe((RecordedSignal)e.Value)}",
+                _ => string.Empty
+            };
+        }
+
+        internal string Describe(ReplayHighlight highlight)
+        {
+            string name = Actor(highlight.ActorId)?.Name ?? "Player";
+            return highlight.Kind switch
+            {
+                HighlightKind.CloseEscape => $"Close escape: {name}, {(highlight.Value / 100f).ToString("0.0", CultureInfo.InvariantCulture)} m",
+                HighlightKind.LongRun => $"Long run: {name}, {highlight.Value} s",
+                HighlightKind.TagStreak => $"Tag streak: {name}, {highlight.Value} tags",
+                HighlightKind.Signal => $"Cheat signal: {name}, {RecordedSignals.Describe((RecordedSignal)highlight.Value)}",
                 _ => string.Empty
             };
         }

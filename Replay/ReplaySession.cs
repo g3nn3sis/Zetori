@@ -23,7 +23,7 @@ namespace Zetori.Replay
         private static ReplayPlayer? player;
         private static Task? saving;
         private static string? savingName;
-        private static Task<ReplayRecording>? loading;
+        private static Task<LoadedReplay>? loading;
         private static string? loadingName;
         private static string[] savedReplays = Array.Empty<string>();
         private static bool listDirty = true;
@@ -102,7 +102,7 @@ namespace Zetori.Replay
         {
             if (IsRecording || IsReplaying || IsLoading || name == savingName) return;
             loadingName = name;
-            loading = Task.Run(() => ReplayFile.Load(name));
+            loading = Task.Run(() => LoadedReplay.Load(name));
         }
 
         internal static void Delete(string name)
@@ -226,7 +226,7 @@ namespace Zetori.Replay
         private static void PollLoading()
         {
             if (loading == null || !loading.IsCompleted) return;
-            Task<ReplayRecording> finished = loading;
+            Task<LoadedReplay> finished = loading;
             string? name = loadingName;
             loading = null;
             loadingName = null;

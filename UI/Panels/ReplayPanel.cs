@@ -15,6 +15,7 @@ namespace Zetori.UI.Panels
         private const int RenameLength = 32;
 
         private Vector2 puppetScroll;
+        private Vector2 highlightScroll;
         private Vector2 savedScroll;
         private string? renaming;
         private string renameText = string.Empty;
@@ -111,6 +112,7 @@ namespace Zetori.UI.Panels
                 panel.Button("Next", () => replay.SpectateNext(1));
             });
             replay.RigLerp = panel.Slider("Rig Lerp", replay.RigLerp, ReplayPlayer.MinRigLerp, ReplayPlayer.MaxRigLerp);
+            DrawHighlights(panel, replay);
             panel.Label(CameraStatus(replay));
             IReadOnlyList<ReplayPuppet> puppets = replay.Puppets;
             puppetScroll = panel.ScrollArea(puppetScroll, Panel.ListHeight, puppets.Count, () =>
@@ -120,6 +122,26 @@ namespace Zetori.UI.Panels
                     int index = i;
                     panel.Button(puppets[i].Actor.Name, () => replay.Spectate(index), puppets[i].Visible && !replay.IsSpectating(puppets[i]));
                 }
+            });
+        }
+
+        private void DrawHighlights(IPanelSurface panel, ReplayPlayer replay)
+        {
+            IReadOnlyList<ReplayHighlight> highlights = replay.Highlights;
+            if (highlights.Count == 0)
+            {
+                panel.Label("No highlights found.");
+                return;
+            }
+            panel.HorizontalArea(() =>
+            {
+                panel.Button("Previous Highlight", () => replay.JumpToHighlight(-1));
+                panel.Button("Next Highlight", () => replay.JumpToHighlight(1));
+            });
+            highlightScroll = panel.ScrollArea(highlightScroll, Panel.ListHeight, highlights.Count, () =>
+            {
+                foreach (ReplayHighlight highlight in highlights)
+                    panel.Button($"{ReplayTimeline.Format(highlight.Time)} {replay.Recording.Describe(highlight)}", () => replay.JumpTo(highlight));
             });
         }
 

@@ -32,8 +32,10 @@ namespace Zetori.UI
         private const float MarkerWidth = 2f;
         private const float MarkerHeight = 8f;
         private const float VoiceHeight = 3f;
+        private const float HighlightWidth = 3f;
+        private const float HighlightHeight = 12f;
         private const float HoverRadius = 4f;
-        private const float TooltipWidth = 220f;
+        private const float TooltipWidth = 300f;
         private const float TooltipHeight = 20f;
         private const float TooltipGap = 2f;
         private const int FontSize = 12;
@@ -48,6 +50,7 @@ namespace Zetori.UI
         private static readonly Color LeaveColor = new Color(0.6f, 0.6f, 0.6f, 1f);
         private static readonly Color EnvironmentColor = new Color(0.55f, 0.7f, 1f, 1f);
         private static readonly Color BookmarkColor = new Color(1f, 0.85f, 0.2f, 1f);
+        private static readonly Color HighlightColor = new Color(1f, 0.35f, 0.8f, 1f);
 
         private readonly int scrubHint = "ZetoriReplayScrub".GetHashCode();
         private readonly int dragHint = "ZetoriReplayTimelineDrag".GetHashCode();
@@ -205,8 +208,15 @@ namespace Zetori.UI
 
             foreach (ReplayEvent replayEvent in recording.Events)
             {
+                if (!Marked(replayEvent)) continue;
                 float markerX = rail.x + rail.width * Progress(replayEvent.Time, recording);
                 Fill(new Rect(markerX - MarkerWidth * 0.5f, rail.y - MarkerHeight - 2f, MarkerWidth, MarkerHeight), MarkerColor(replayEvent.Kind));
+            }
+
+            foreach (ReplayHighlight highlight in replay.Highlights)
+            {
+                float highlightX = rail.x + rail.width * Progress(highlight.Time, recording);
+                Fill(new Rect(highlightX - HighlightWidth * 0.5f, rail.y - HighlightHeight - 2f, HighlightWidth, HighlightHeight), HighlightColor);
             }
 
             float knobX = rail.x + rail.width * progress;
@@ -217,20 +227,26 @@ namespace Zetori.UI
         {
             Vector2 mouse = Event.current.mousePosition;
             if (dragging || !track.Contains(mouse)) return;
-            ReplayRecording recording = replay.Recording;
-            float time = TimeAt(track, mouse.x, replay);
-            string text = Format(time);
-            foreach (ReplayEvent replayEvent in recording.Events)
-            {
-                float markerX = track.x + track.width * Progress(replayEvent.Time, recording);
-                if (Mathf.Abs(markerX - mouse.x) > HoverRadius) continue;
-                text = $"{Format(replayEvent.Time)}  {recording.Describe(replayEvent)}";
-                break;
-            }
+            string text = HoveredMark(track, mouse.x, replay) ?? Format(TimeAt(track, mouse.x, replay));
             float x = Mathf.Clamp(mouse.x - TooltipWidth * 0.5f, bar.x, bar.xMax - TooltipWidth);
             float y = NearestEdge(bar.y) == TimelineEdge.Top ? bar.yMax + TooltipGap : bar.y - TooltipGap - TooltipHeight;
             GUI.Label(new Rect(x, y, TooltipWidth, TooltipHeight), text, tooltipStyle);
         }
+
+        private static string? HoveredMark(Rect track, float mouseX, ReplayPlayer replay)
+        {
+            ReplayRecording recording = replay.Recording;
+            foreach (ReplayHighlight highlight in replay.Highlights)
+                if (Near(track, mouseX, highlight.Time, recording)) return $"{Format(highlight.Time)}  {recording.Describe(highlight)}";
+            foreach (ReplayEvent replayEvent in recording.Events)
+                if (Marked(replayEvent) && Near(track, mouseX, replayEvent.Time, recording)) return $"{Format(replayEvent.Time)}  {recording.Describe(replayEvent)}";
+            return null;
+        }
+
+        private static bool Near(Rect track, float mouseX, float time, ReplayRecording recording) =>
+            Mathf.Abs(track.x + track.width * Progress(time, recording) - mouseX) <= HoverRadius;
+
+        private static bool Marked(ReplayEvent replayEvent) => replayEvent.Kind != ReplayEventKind.Signal;
 
         private static float TimeAt(Rect track, float x, ReplayPlayer replay) =>
             Mathf.Clamp01((x - track.x) / track.width) * replay.Recording.Duration;

@@ -28,6 +28,7 @@ namespace Zetori.Replay
             internal VoiceTap? Tap;
             internal LocalVoiceTap? LocalTap;
             internal bool Tagged;
+            internal RecordedSignal Signals;
         }
 
         private readonly ReplayRecording recording = new ReplayRecording();
@@ -155,6 +156,7 @@ namespace Zetori.Replay
                 Cosmetics = new CosmeticCapture(rig, actor, joints),
                 Tap = voice != null ? voice.gameObject.AddComponent<VoiceTap>() : null,
                 Tagged = RigTagState.Of(rig) != ReplayTagState.None,
+                Signals = RecordedSignals.Of(CheatSignals.For(rig)),
             };
             bindings[key] = binding;
             return binding;
@@ -219,6 +221,7 @@ namespace Zetori.Replay
             binding.Actor.Frames.Add(frame);
             if (!rig.isOfflineVRRig && binding.Actor.Platform == 0) binding.Actor.Platform = NetworkedPlayerManager.GetPlatform(rig);
             DetectTag(binding, frame.Tag, now);
+            DetectSignals(binding, now);
         }
 
         private static void CaptureJoints(Binding binding, RigSkeleton skeleton, Transform root, Quaternion rootRotation, float rootScale, in ActorFrame frame)
@@ -286,6 +289,14 @@ namespace Zetori.Replay
             bool tagged = state != ReplayTagState.None;
             if (tagged && !binding.Tagged) recording.Events.Add(new ReplayEvent(now, ReplayEventKind.Tagged, binding.Actor.Id));
             binding.Tagged = tagged;
+        }
+
+        private void DetectSignals(Binding binding, float now)
+        {
+            RecordedSignal signals = RecordedSignals.Of(CheatSignals.For(binding.Rig));
+            RecordedSignal raised = signals & ~binding.Signals;
+            binding.Signals |= signals;
+            if (raised != RecordedSignal.None) recording.Events.Add(new ReplayEvent(now, ReplayEventKind.Signal, binding.Actor.Id, (int)raised));
         }
 
         private void DrainVoices()
