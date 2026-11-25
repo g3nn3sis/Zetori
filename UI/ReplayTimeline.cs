@@ -6,6 +6,7 @@ using Zetori.Base;
 using Zetori.GameCamera;
 using Zetori.Replay;
 using UnityEngine;
+using System.Globalization;
 using UnityEngine.InputSystem;
 
 namespace Zetori.UI
@@ -65,6 +66,8 @@ namespace Zetori.UI
             return $"{total / 60}:{total % 60:00}";
         }
 
+        internal static string FormatSpeed(float speed) => speed.ToString("0.##", CultureInfo.InvariantCulture) + "x";
+
         private static float DockY(TimelineEdge edge) =>
             edge == TimelineEdge.Top ? Margin : Mathf.Max(Margin, UiScale.Height - Margin - Height);
 
@@ -103,6 +106,8 @@ namespace Zetori.UI
             x += ButtonWidth + Spacing;
             GUI.Label(new Rect(x, bar.y, ClockWidth, Height), $"{Format(replay.Cursor)} / {Format(replay.Recording.Duration)}", clockStyle);
             x += ClockWidth + Spacing;
+            if (GUI.Button(new Rect(x, buttonY, ButtonWidth, ButtonHeight), FormatSpeed(replay.Speed), buttonStyle)) replay.CycleSpeed();
+            x += ButtonWidth + Spacing;
 
             float stopX = bar.xMax - Inset - ButtonWidth;
             if (GUI.Button(new Rect(stopX, buttonY, ButtonWidth, ButtonHeight), "Stop", buttonStyle))

@@ -243,6 +243,8 @@ namespace Zetori.Replay
         private static void ReadKeys(ReplayPlayer replay)
         {
             if (CasterConfig.KeyPressed(CasterConfig.ReplayPauseKey)) replay.TogglePlaying();
+            if (CasterConfig.KeyPressed(CasterConfig.FrameBackKey)) replay.StepFrame(-1);
+            else if (CasterConfig.KeyPressed(CasterConfig.FrameForwardKey)) replay.StepFrame(1);
             if (NetworkedPlayerManager.TryReadPlayerKey(out int otherIndex))
             {
                 if (otherIndex == NetworkedPlayerManager.LocalPlayerKey) replay.SpectateLocal();

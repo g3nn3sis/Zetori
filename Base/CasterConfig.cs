@@ -46,6 +46,8 @@ namespace Zetori.Base
         internal static ConfigEntry<Key> PreviousPlayerKey = null!;
         internal static ConfigEntry<Key> ReplayPauseKey = null!;
         internal static ConfigEntry<Key> ReplayTimelineKey = null!;
+        internal static ConfigEntry<Key> FrameBackKey = null!;
+        internal static ConfigEntry<Key> FrameForwardKey = null!;
         internal static ConfigEntry<TimelineEdge> ReplayTimelineEdge = null!;
         internal static ConfigEntry<bool> InstantReplay = null!;
         internal static ConfigEntry<float> ClipLength = null!;
@@ -204,6 +206,8 @@ namespace Zetori.Base
             OrbitResetKey = config.Bind("Camera", "Reset Orbit Key", Key.R, "Put the orbit camera back behind the spectated player.");
             ReplayPauseKey = config.Bind("Replay", "Pause Key", Key.P, "Pause and unpause the replay while in replay mode.");
             ReplayTimelineKey = config.Bind("Replay", "Timeline Key", Key.F1, "Show and hide the replay timeline while in replay mode.");
+            FrameBackKey = config.Bind("Replay", "Frame Back Key", Key.Comma, "Pause the replay and step back one recorded frame.");
+            FrameForwardKey = config.Bind("Replay", "Frame Forward Key", Key.Period, "Pause the replay and step forward one recorded frame.");
             ReplayTimelineEdge = config.Bind("Replay", "Timeline Position", TimelineEdge.Top, "Screen edge the replay timeline docks to: Top or Bottom. Drag the timeline to move it.");
             InstantReplay = config.Bind("Replay", "Instant Replay", false, "Keep the last moments of play in memory so Clip can save them as a replay at any time.");
             ClipLength = Range(config, "Replay", "Clip Length", 30f, MinimumClipLength, MaximumClipLength, "How many seconds Clip saves.");

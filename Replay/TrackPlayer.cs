@@ -23,8 +23,9 @@ namespace Zetori.Replay
 
         internal Transform Transform => source.transform;
 
-        internal void Update(VoiceTrack track, float time, bool audible)
+        internal void Update(VoiceTrack track, float time, bool audible, float pitch)
         {
+            if (source.pitch != pitch) source.pitch = pitch;
             VoiceSegment? segment = audible ? track.At(time) : null;
             if (segment == null)
             {

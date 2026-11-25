@@ -185,11 +185,11 @@ namespace Zetori.Replay
         private static Pose Approach(Pose current, Pose target, float follow) =>
             new Pose(Vector3.Lerp(current.position, target.position, follow), Quaternion.Slerp(current.rotation, target.rotation, follow));
 
-        internal void UpdateVoice(float time, bool playing)
+        internal void UpdateVoice(float time, bool playing, float pitch)
         {
             bool audible = playing && root.activeSelf;
-            voice.Update(Actor.Voice, time, audible);
-            try { cosmetics.UpdateSounds(time, audible); }
+            voice.Update(Actor.Voice, time, audible, pitch);
+            try { cosmetics.UpdateSounds(time, audible, pitch); }
             catch (Exception e) { Log.ExceptionOnce($"replay-cosmetic-sounds-{Actor.Id}", e, "Playing a replay player's cosmetic sounds failed"); }
         }
 

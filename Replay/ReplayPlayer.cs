@@ -14,6 +14,9 @@ namespace Zetori.Replay
     {
         internal const float MinRigLerp = 0.01f;
         internal const float MaxRigLerp = 1f;
+        internal const float NormalSpeed = 1f;
+
+        internal static readonly float[] Speeds = { 0.25f, 0.5f, NormalSpeed, 2f };
 
         private readonly List<ReplayPuppet> puppets;
         private readonly LiveWorldMask mask = new LiveWorldMask();
@@ -27,6 +30,7 @@ namespace Zetori.Replay
         internal float Cursor { get; private set; }
         internal bool Playing { get; set; } = true;
         internal CameraMode Camera { get; set; } = CameraMode.Spectator;
+        internal float Speed { get; set; } = NormalSpeed;
         internal bool Freecam => Camera == CameraMode.Freecam;
         internal IReadOnlyList<ReplayPuppet> Puppets => puppets;
         private float rigLerp;
@@ -74,7 +78,7 @@ namespace Zetori.Replay
         {
             if (Playing)
             {
-                Cursor += deltaTime;
+                Cursor += deltaTime * Speed;
                 if (Cursor >= Recording.Duration)
                 {
                     Cursor = Recording.Duration;
@@ -87,7 +91,7 @@ namespace Zetori.Replay
             foreach (ReplayPuppet puppet in puppets)
             {
                 puppet.Pose(Cursor, step, RigLerp, ArmExaggeration.Active && IsSpectating(puppet), Playing);
-                puppet.UpdateVoice(Cursor, Playing);
+                puppet.UpdateVoice(Cursor, Playing, Speed);
                 puppet.PlayHandTaps(Cursor - step, Cursor, Playing);
             }
             ApplyEnvironment();
@@ -95,6 +99,19 @@ namespace Zetori.Replay
         }
 
         internal void Seek(float time) => Cursor = Mathf.Clamp(time, 0f, Recording.Duration);
+
+        internal void CycleSpeed()
+        {
+            int current = Array.IndexOf(Speeds, Speed);
+            Speed = Speeds[(current + 1) % Speeds.Length];
+        }
+
+        internal void StepFrame(int direction)
+        {
+            Playing = false;
+            float frame = Mathf.Round(Cursor / ReplayRecording.SampleInterval) + direction;
+            Seek(frame * ReplayRecording.SampleInterval);
+        }
 
         internal void TogglePlaying()
         {

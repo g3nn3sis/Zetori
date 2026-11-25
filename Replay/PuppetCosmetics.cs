@@ -60,13 +60,13 @@ namespace Zetori.Replay
             HideUnshown();
         }
 
-        internal void UpdateSounds(float time, bool audible)
+        internal void UpdateSounds(float time, bool audible, float pitch)
         {
             foreach ((CosmeticSoundTrack sound, TrackPlayer player) in sounds)
             {
                 Transform? node = ShownNode(sound.Cosmetic, sound.Node);
                 player.Transform.position = node != null ? node.position : root.position;
-                player.Update(sound.Track, time, audible);
+                player.Update(sound.Track, time, audible, pitch);
             }
         }
 

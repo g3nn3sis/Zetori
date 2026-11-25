@@ -40,6 +40,8 @@ namespace Zetori.Base
             new KeyBind("No Clip", CasterConfig.NoClipKey),
             new KeyBind("Replay Pause", CasterConfig.ReplayPauseKey),
             new KeyBind("Replay Timeline", CasterConfig.ReplayTimelineKey),
+            new KeyBind("Frame Back", CasterConfig.FrameBackKey),
+            new KeyBind("Frame Forward", CasterConfig.FrameForwardKey),
             new KeyBind("Clip", CasterConfig.ClipKey),
             new KeyBind("Marker", CasterConfig.MarkerKey),
             new KeyBind("Photo", CasterConfig.PhotoKey),

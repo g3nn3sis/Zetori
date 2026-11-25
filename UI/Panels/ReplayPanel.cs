@@ -98,6 +98,7 @@ namespace Zetori.UI.Panels
                 panel.Button(replay.Playing ? "Pause" : "Play", replay.TogglePlaying);
                 panel.Button("Stop", ReplaySession.ExitReplay);
             });
+            DrawSpeed(panel, replay);
             panel.HorizontalArea(() =>
             {
                 panel.Button("Spectate", () => replay.Camera = CameraMode.Spectator, replay.Camera != CameraMode.Spectator);
@@ -119,6 +120,19 @@ namespace Zetori.UI.Panels
                     int index = i;
                     panel.Button(puppets[i].Actor.Name, () => replay.Spectate(index), puppets[i].Visible && !replay.IsSpectating(puppets[i]));
                 }
+            });
+        }
+
+        private static void DrawSpeed(IPanelSurface panel, ReplayPlayer replay)
+        {
+            panel.HorizontalArea(() =>
+            {
+                foreach (float speed in ReplayPlayer.Speeds) panel.Button(ReplayTimeline.FormatSpeed(speed), () => replay.Speed = speed, replay.Speed != speed);
+            });
+            panel.HorizontalArea(() =>
+            {
+                panel.Button("Frame Back", () => replay.StepFrame(-1));
+                panel.Button("Frame Forward", () => replay.StepFrame(1));
             });
         }
 
