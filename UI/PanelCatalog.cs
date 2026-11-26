@@ -13,7 +13,7 @@ namespace Zetori.UI
             new[] { PanelId.Main, PanelId.RecentPlayers, PanelId.Wasd, PanelId.FreecamCamera, PanelId.Replay },
             new[] { PanelId.Camera, PanelId.Capture, PanelId.Web, PanelId.MiniMap },
             new[] { PanelId.Nametag, PanelId.Leaderboard, PanelId.ClosestLava, PanelId.KillFeed, PanelId.CheatAlerts },
-            new[] { PanelId.Scoreboard, PanelId.Time, PanelId.MapLoader, PanelId.TagManager, PanelId.Stats },
+            new[] { PanelId.Scoreboard, PanelId.Time, PanelId.MapLoader, PanelId.TagManager },
             new[] { PanelId.Player, PanelId.PlayerSettings, PanelId.Keybinds, PanelId.Theme, PanelId.Presets }
         };
 

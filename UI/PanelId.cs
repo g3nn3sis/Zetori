@@ -28,8 +28,8 @@ namespace Zetori.UI
         TagManager,
         Capture,
         RecentPlayers,
-        Stats,
         CheatAlerts,
-        Count
+        Count,
+        Stats
     }
 }
