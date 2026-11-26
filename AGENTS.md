@@ -22,8 +22,14 @@ Start here, then follow the right door:
   consistent: four-space indent, one blank line between members, no trailing whitespace, single
   trailing newline. The vendored `External/` tree is exempt (left as upstream). See
   [CLAUDE.md](CLAUDE.md#code-standard).
+- **Every feature has its own folder** (`Cheats/`, `Hud/Overlays/`, `Replay/Render/`, …) holding all
+  of its code, Harmony patches included; the namespace mirrors the folder. Code several features of
+  one area share goes at the area's root, helpers no single feature owns go in `Shared/`, and panel
+  draw code stays in `UI/Panels/`. Reuse a shared helper instead of copying it. See
+  [CLAUDE.md](CLAUDE.md#where-code-goes).
 - A feature is just a class that subclasses `ObjectComponent` — it is auto-discovered by
-  reflection and attached to the persistent `_Zetori` object. No registry.
+  reflection and attached to the persistent `_Zetori` object. No registry; creation order is
+  pinned in `Base/ComponentOrder` so it never depends on file layout.
 - Settings live in `CasterConfig`; never rename an existing section/key. Don't edit
   `External/` (vendored). Keep per-frame code allocation-free.
 - **Git:** commit directly on `master` — no per-feature local branches merged back in. See

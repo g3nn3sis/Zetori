@@ -37,25 +37,76 @@ into `master`.
 
 ## Layout
 
+Every feature has its own folder. A feature's folder sits at the root, or inside the area it
+belongs to (`Replay/`, `GameCamera/`, `Player/`, `UI/`).
+
 ```
-Base/            Plugin bootstrap: BaseLoader, ObjectComponent, HarmonyPatches, CasterConfig, Log, PluginInfo
-Game/            On-screen/game features: NameTag, MiniMap, HudOverlay (Leaderboard, Scoreboard, ClosestLava, KillFeed), TimeManager, assets
-Player/          Local + networked player: controllers, rig list, platform detection
-GameCamera/      Spectator/free camera: CameraManager, wrapper, smoothing, Modes/
-Replay/          Replay recorder and playback: ReplaySession, recorder, puppets, voice capture
-UI/              IMGUI panel system: CoreUI, PanelOrchestrator, PanelLayout, PanelCatalog, Panel, theming, scaling
-UI/Panels/       What each panel draws, one class per column group (Main, View, Overlays, World, Setup, Replay)
-UI/InGame/       In-game VR panel: world-space surface, layout, finger input, keyboard, pages, model
-UI/Icons/        Panel icons: SVG reader, rasterizer (desktop textures), tessellator (in-game meshes)
-DiscordRichPresence/  Mod-side Discord integration
-Patches/         Harmony patches, including ObjectPatcher which creates the feature components
-External/        Vendored third-party source (DiscordRPC) — do not modify
-Resources/       Embedded icons (panel icons are SVG in Icons/Panels/), HUD asset bundle, FFmpeg binary for replay renders
-Tools/           Build scripts for bundled binaries (FFmpeg/build.sh, run in MSYS2 MINGW64)
+Base/                  Plugin bootstrap: BaseLoader, ObjectComponent, ObjectPatcher, ComponentOrder, HarmonyPatches, Log, PluginInfo, DataFolders, EmbeddedResources
+Base/Config/           CasterConfig, presets, key binds, the config file format and cleanup
+Shared/                Helpers no single feature owns: BinaryIO, DisplayNames, Smoothing
+Shared/Assets/         Embedded asset loading: AssetManager (icons, fonts), .zmdl models
+Shared/Vr/             VR controller input: VrHand, HandGrip (grab and carry), DoublePressDetector
+Player/                Local and networked players: rig list, local rig, platform, tag state, PlayerKey, Zetori users
+Player/Movement/       WASD flight, Teleport Here
+Player/Exaggeration/   Rig Exaggeration and its patch
+Player/Voice/          Microphone device, per-player volume
+Player/Moderation/     Mute and report through the game's scoreboard
+History/               Recent players, saved rooms, session stats
+Cheats/                Cheat alerts: on-screen feed, headset toast
+Cheats/Signals/        Cheat and mod signal detection, flagged players, the patches that feed them
+Hud/                   Canvas HUD framework: HudOverlay, slots, positions, HUD asset bundle
+Hud/Overlays/          Leaderboard, Scoreboard, Closest Lava, Kill Feed, MiniMap
+NameTags/              Nametags
+TagManager/            Tag Manager and its patches
+World/                 Time of day and weather
+GameCamera/            Spectator camera: CameraManager, CameraWrapper, CameraMode
+GameCamera/Modes/      One class per camera mode
+GameCamera/Photo/      Photos: capture, cutout and chroma-key backgrounds, player isolation, thirds grid
+GameCamera/Vr/         VR camera tablet
+GameCamera/Webs/       Camera webs: nodes, director, file format, on-screen markers
+Replay/                ReplaySession and the recording model the recorder and player share
+Replay/Recording/      Recorder and the hand-tap patch
+Replay/Playback/       Player, puppets, live-world mask, replay scoreboard and its patches
+Replay/Cosmetics/      Cosmetic capture, library, and puppet cosmetics and skins
+Replay/Voice/          Voice capture and voice tracks
+Replay/Storage/        Replay file format and packed values
+Replay/Render/         Video renders and the bundled FFmpeg
+Replay/Highlights/     Highlight detection
+Replay/CameraPaths/    Keyframed camera paths
+Replay/Timeline/       Replay timeline bar
+UI/                    IMGUI panel system: CoreUI, PanelOrchestrator, PanelLayout, PanelCatalog, Panel, theme, scaling, DisplayFormat
+UI/Panels/             What each panel draws, one class per column group (Main, View, Overlays, World, Setup, Replay)
+UI/InGame/             In-game VR panel: world-space surface, layout, finger input, keyboard, pages, model
+UI/Icons/              Panel icons: SVG reader, rasterizer (desktop textures), tessellator (in-game meshes)
+DiscordRichPresence/   Mod-side Discord integration
+External/              Vendored third-party source (DiscordRPC) — do not modify
+Resources/             Embedded icons (panel icons are SVG in Icons/Panels/), HUD asset bundle, FFmpeg binary for replay renders
+Tools/                 Build scripts for bundled binaries (FFmpeg/build.sh, run in MSYS2 MINGW64)
 ```
 
-Namespaces mirror folders: `Zetori.<Folder>` (e.g. `Zetori.Game`, `Zetori.UI.Panels`).
+Namespaces mirror folders: `Zetori.<Folder>.<Sub>` (e.g. `Zetori.Hud.Overlays`, `Zetori.UI.Panels`).
 There is no `Classes.` segment. One top-level type per file, named after the type.
+
+### Where code goes
+
+- **A feature's code lives in the feature's folder**: its components, data, file format, Harmony
+  patches and whatever it draws on screen. There is no shared `Patches/` folder; a patch sits
+  beside the feature it serves.
+- **A new feature gets a new folder** (a sub-folder when it belongs to an area such as `Replay/`
+  or `GameCamera/`). Name the folder after the feature, never after a type inside it: a
+  `Leaderboard/` folder makes the namespace `Leaderboard` shadow the `Leaderboard` class.
+- **Code several features of one area share goes at that area's root**: `Replay/` holds the
+  recording model the recorder and player both use; `UI/` holds `UiScale`, `Textures` and
+  `DisplayFormat` for the desktop and in-game panels.
+- **Helpers that several areas use and no single feature owns go in `Shared/`.** Before writing a
+  helper, look in `Shared/` and the area root, and reuse or extend what is there instead of
+  copying it into another class.
+- **A type stays with the feature that owns it** even when other features read it
+  (`CameraManager`, `ReplaySession`, `NetworkedPlayerManager`, `CasterConfig`, `UI.ColorSpace`).
+- **Panel draw code stays in `UI/Panels/`**; a feature folder holds no panel code.
+- **Moving a type changes its namespace.** Update every `using` and keep them exact, with no unused
+  `using Zetori.*`. Outside `Zetori.UI`, write `UI.ColorSpace`: `UnityEngine.ColorSpace` has the
+  same name.
 
 ## Code standard
 
@@ -64,8 +115,8 @@ through precise naming, small cohesive methods, and clear structure. If a piece 
 comment to be understood, rename it or extract it until it doesn't. The one exception is the
 three-line license header required at the top of every source file (copyright, SPDX identifier,
 usage notice); a new `.cs` file must carry it verbatim, matching the existing files. (This
-applies to the mod's own code under `Base, Game, Player, UI, GameCamera, DiscordRichPresence,
-Patches`; the vendored `External/` tree is left exactly as upstream ships it.)
+applies to all of the mod's own code, everything outside `External/`; the vendored `External/`
+tree is left exactly as upstream ships it.)
 
 Whitespace is consistent and deliberate: four-space indentation, braces on their own line, a
 single blank line between members (never two or more), no trailing whitespace, exactly one
@@ -73,7 +124,7 @@ newline at end of file. Keep related code grouped and ordered the same way acros
 
 ## Conventions
 
-- Block-scoped namespaces mirroring folders (`Zetori.<Folder>`).
+- Block-scoped namespaces mirroring folders (`Zetori.<Folder>.<Sub>`).
 - `internal` and `sealed` by default; `public` only when required.
 - Nullable reference types are **on**; honour the annotations.
 - Log through `Log`; per-frame failures use `Log.*Once`. Never an empty `catch`.
@@ -103,10 +154,13 @@ newline at end of file. Keep related code grouped and ordered the same way acros
 - A panel icon is an SVG on a 24-unit viewBox in `Resources/Icons/Panels/`, named after its `IconGlyph` member in lower case.
   `SvgReader` reads `path`, `circle`, `ellipse`, `rect`, `line`, `polyline`, `polygon` and `g` with `fill`, `stroke` and `stroke-width`;
   strokes always get round caps and joins. Desktop panels rasterize it to a texture, the in-game panel tessellates it into a mesh.
-- A canvas HUD overlay subclasses `HudOverlay` (`Active`, `Prefab`, `Bind`, `Refresh`); the base owns
-  building, showing, hiding, font and teardown.
+- A canvas HUD overlay subclasses `HudOverlay` in `Hud/` (`Active`, `Prefab`, `Bind`, `Refresh`); the
+  base owns building, showing, hiding, font and teardown. The overlay itself goes in `Hud/Overlays/`.
 - Features are auto-discovered by reflection — a new `ObjectComponent` subclass runs with no
   registration, so an incomplete one still loads. Guard with `enabled`.
+- The order the components are created in, and so the order their `Awake` runs, is pinned in
+  `Base/ComponentOrder`, so moving or renaming files never changes it. A component missing from
+  that list is created after the listed ones; add it to the list only where it must run earlier.
 
 ## Also see
 
