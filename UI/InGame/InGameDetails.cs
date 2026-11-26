@@ -2,15 +2,16 @@
 // SPDX-License-Identifier: LicenseRef-Zetori-Source-Available
 // Unauthorized use, modification, or distribution is prohibited. See LICENSE.
 
-using System.Globalization;
 using System.Text;
 using UnityEngine;
+using Zetori.Player;
 
 namespace Zetori.UI.InGame
 {
     internal static class InGameDetails
     {
         internal const string ValueColor = "FFFFFF";
+        internal const string Unknown = "Unknown";
         private const string ValueColumn = "<pos=38%>";
         private const float MinimumNameLuminance = 0.3f;
         private const float NameLift = 0.45f;
@@ -31,12 +32,10 @@ namespace Zetori.UI.InGame
 
         internal static string ColorCode(Color color) => $"{CodeOf(color.r)} {CodeOf(color.g)} {CodeOf(color.b)}";
 
-        internal static string Clock(float seconds)
+        internal static string PlatformText(int platform)
         {
-            var span = TimeSpan.FromSeconds(Math.Max(0f, seconds));
-            return span.TotalHours >= 1d
-                ? span.ToString(@"h\:mm\:ss", CultureInfo.InvariantCulture)
-                : span.ToString(@"m\:ss", CultureInfo.InvariantCulture);
+            string name = Platform.Name(platform);
+            return name.Length > 0 ? name : Unknown;
         }
 
         private static int CodeOf(float channel) => Mathf.RoundToInt(Mathf.Clamp01(channel) * ColorCodeSteps);

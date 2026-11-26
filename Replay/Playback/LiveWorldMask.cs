@@ -48,7 +48,7 @@ namespace Zetori.Replay.Playback
             nextScan = Time.unscaledTime + RescanInterval;
             renderers.Clear();
             sources.Clear();
-            VRRig? local = GorillaTagger.Instance != null ? GorillaTagger.Instance.offlineVRRig : null;
+            VRRig? local = NetworkedPlayerManager.LocalRig;
             if (local != null) Collect(local);
             foreach (VRRig rig in NetworkedPlayerManager.activeRigs ?? Array.Empty<VRRig>())
                 if (rig != null && rig != local) Collect(rig);

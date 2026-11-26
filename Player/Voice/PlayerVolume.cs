@@ -19,11 +19,11 @@ namespace Zetori.Player.Voice
 
         private float nextRefresh;
 
-        internal static float Of(VRRig rig) => KeyOf(rig) is string key && volumes.TryGetValue(key, out float volume) ? volume : Normal;
+        internal static float Of(VRRig rig) => PlayerKey.Of(rig) is string key && volumes.TryGetValue(key, out float volume) ? volume : Normal;
 
         internal static void Set(VRRig rig, float volume)
         {
-            if (rig.isOfflineVRRig || KeyOf(rig) is not string key) return;
+            if (rig.isOfflineVRRig || PlayerKey.Of(rig) is not string key) return;
             volume = Mathf.Clamp(volume, Minimum, Maximum);
             if (Mathf.Approximately(volume, Normal)) volumes.Remove(key);
             else volumes[key] = volume;
@@ -53,13 +53,6 @@ namespace Zetori.Player.Voice
                 gain = voice.gameObject.AddComponent<VoiceGain>();
             }
             gain.Gain = volume;
-        }
-
-        private static string? KeyOf(VRRig rig)
-        {
-            NetPlayer? player = rig.Creator;
-            if (player == null) return null;
-            return string.IsNullOrEmpty(player.UserId) ? $"actor:{player.ActorNumber}" : player.UserId;
         }
     }
 }

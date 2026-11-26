@@ -38,12 +38,10 @@ namespace Zetori.GameCamera.Vr
         private const float FilmingTurnRate = 6f;
 
         private readonly DoublePressDetector summonPress = new DoublePressDetector(SummonWindow);
-        private readonly VrHand leftHand = new VrHand(true);
-        private readonly VrHand rightHand = new VrHand(false);
+        private readonly HandGrip grip = new HandGrip();
         private readonly VrCameraView view = new VrCameraView();
         private readonly VrCameraCosmetics cosmetics = new VrCameraCosmetics();
         private VrCameraModel? model;
-        private VrHand? holder;
         private bool deployed;
         private bool arrivalSummonHandled;
         private float trackingStartedAt = TrackingNotStarted;
@@ -51,8 +49,6 @@ namespace Zetori.GameCamera.Vr
         private float riseProgress = 1f;
         private Vector3 riseStart;
         private Vector3 riseEnd;
-        private Vector3 holdPosition;
-        private Quaternion holdRotation = Quaternion.identity;
         private AudioListener? headsetListener;
         private bool listenerSearched;
 
@@ -98,8 +94,7 @@ namespace Zetori.GameCamera.Vr
             float scale = player.scale;
             float now = Time.unscaledTime;
             float deltaTime = Time.unscaledDeltaTime;
-            leftHand.Sync(tagger.leftHandTransform, tagger.leftHandTriggerCollider.transform, input.leftGrab);
-            rightHand.Sync(tagger.rightHandTransform, tagger.rightHandTriggerCollider.transform, input.rightGrab);
+            grip.Sync(tagger, input);
             Pose head = HeadView.Eyes(tagger.offlineVRRig);
 
             if (summonPress.Update(input.rightControllerPrimaryButton, now)) ToggleTablet(tagger, output, head, scale);
@@ -124,7 +119,7 @@ namespace Zetori.GameCamera.Vr
             cosmetics.Restore();
             deployed = false;
             arrivalSummonHandled = false;
-            holder = null;
+            grip.Release();
             FinishRise();
             view.Invalidate();
             if (model != null) StepFade(model, false, Time.unscaledDeltaTime);
@@ -159,7 +154,7 @@ namespace Zetori.GameCamera.Vr
         private void Dismiss(GorillaTagger tagger)
         {
             deployed = false;
-            holder = null;
+            grip.Release();
             view.Invalidate();
             tagger.StartVibration(false, HapticStrength, HapticSeconds);
         }
@@ -177,7 +172,7 @@ namespace Zetori.GameCamera.Vr
             }
             camera.SetCosmeticsShown(CosmeticsShown);
             bool visible = TabletVisible;
-            if (!visible) holder = null;
+            if (!visible) grip.Release();
             if (visible) AdvanceRise(camera, deltaTime);
             if (visible) FilmSubject(camera, deltaTime);
             MoveFollower(camera, head, scale, deltaTime);
@@ -212,7 +207,7 @@ namespace Zetori.GameCamera.Vr
         {
             model ??= VrCameraModel.Create(output.Camera);
             deployed = true;
-            holder = null;
+            grip.Release();
             if (Mode == VrCameraMode.Follower) Mode = VrCameraMode.Handheld;
             Vector3 position = head.position
                 + VrCameraShots.FlatForward(head.rotation) * (SummonDistance * scale)
@@ -231,7 +226,7 @@ namespace Zetori.GameCamera.Vr
             model ??= VrCameraModel.Create(output.Camera);
             arrivalSummonHandled = true;
             deployed = true;
-            holder = null;
+            grip.Release();
             if (Mode != VrCameraMode.Handheld) Mode = VrCameraMode.Handheld;
             riseProgress = 1f;
             riseEnd = spot.position;
@@ -243,7 +238,7 @@ namespace Zetori.GameCamera.Vr
         private void FilmSubject(VrCameraModel camera, float deltaTime)
         {
             VRRig? subject = VrCameraDirector.Subject;
-            if (subject == null || holder != null || Mode != VrCameraMode.Handheld || !TabletRisen) return;
+            if (subject == null || grip.Holder != null || Mode != VrCameraMode.Handheld || !TabletRisen) return;
             Transform root = camera.Root;
             Transform lens = camera.Lens;
             Quaternion lensOffset = Quaternion.Inverse(root.rotation) * lens.rotation;
@@ -254,29 +249,8 @@ namespace Zetori.GameCamera.Vr
 
         private void UpdateGrab(GorillaTagger tagger, VrCameraModel camera)
         {
-            if (holder != null && !holder.Gripping)
-            {
-                VrHand otherHand = holder == leftHand ? rightHand : leftHand;
-                holder = null;
-                if (otherHand.Gripping) TryHold(tagger, camera, otherHand);
-            }
-            if (rightHand.GripStarted) TryHold(tagger, camera, rightHand);
-            if (leftHand.GripStarted) TryHold(tagger, camera, leftHand);
-            if (holder == null) return;
-            Transform palm = holder.Palm;
-            camera.Root.SetPositionAndRotation(palm.position + palm.rotation * holdPosition, palm.rotation * holdRotation);
-        }
-
-        private void TryHold(GorillaTagger tagger, VrCameraModel camera, VrHand hand)
-        {
-            if (holder != null) return;
-            Transform palm = hand.Palm;
-            if (!camera.WithinGrabReach(palm.position)) return;
-            Quaternion inversePalm = Quaternion.Inverse(palm.rotation);
-            holdPosition = inversePalm * (camera.Root.position - palm.position);
-            holdRotation = inversePalm * camera.Root.rotation;
-            holder = hand;
-            tagger.StartVibration(hand.IsLeft, HapticStrength, HapticSeconds);
+            VrHand? tookHold = grip.Hold(camera);
+            if (tookHold != null) tagger.StartVibration(tookHold.IsLeft, HapticStrength, HapticSeconds);
         }
 
         private void UpdateButtons(GorillaTagger tagger, VrCameraModel camera, float now)
@@ -305,8 +279,8 @@ namespace Zetori.GameCamera.Vr
         {
             VrHand? nearest = null;
             float proximity = float.PositiveInfinity;
-            ConsiderFinger(leftHand, button, ref nearest, ref proximity);
-            ConsiderFinger(rightHand, button, ref nearest, ref proximity);
+            ConsiderFinger(grip.Left, button, ref nearest, ref proximity);
+            ConsiderFinger(grip.Right, button, ref nearest, ref proximity);
             bool pressed = button.Update(proximity, now);
             if (pressed && nearest != null) tagger.StartVibration(nearest.IsLeft, HapticStrength, HapticSeconds);
             return pressed;
@@ -314,7 +288,7 @@ namespace Zetori.GameCamera.Vr
 
         private void ConsiderFinger(VrHand hand, VrCameraButton button, ref VrHand? nearest, ref float proximity)
         {
-            if (hand == holder) return;
+            if (hand == grip.Holder) return;
             float candidate = button.Proximity(hand.Finger.position);
             if (candidate >= proximity) return;
             proximity = candidate;
@@ -350,7 +324,7 @@ namespace Zetori.GameCamera.Vr
             Transform lens = model.Lens;
             var lensPose = new Pose(lens.position, lens.rotation);
             if (mode == VrCameraMode.Follower) view.Step(lensPose, 0f, 0f, scale, deltaTime);
-            else view.Step(lensPose, HandheldMoveRate, HandheldTurnRate, scale, deltaTime, holder != null ? playSpace : null);
+            else view.Step(lensPose, HandheldMoveRate, HandheldTurnRate, scale, deltaTime, grip.Holder != null ? playSpace : null);
         }
 
         public void Dispose()

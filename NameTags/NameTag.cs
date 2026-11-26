@@ -35,8 +35,6 @@ namespace Zetori.NameTags
         private const float IconLift = 0.003f;
         private const float LeftSide = -1f;
         private const float RightSide = 1f;
-        private const int FpsGoodThreshold = 60;
-        private const int FpsWarnThreshold = 55;
         private static readonly Color LavaColor = new Color32(255, 20, 0, 255);
 
         private readonly struct TagInfo
@@ -284,8 +282,8 @@ namespace Zetori.NameTags
 
         private static string FpsColor(int fps)
         {
-            if (fps >= FpsGoodThreshold) return "green";
-            if (fps >= FpsWarnThreshold) return "yellow";
+            if (fps >= FrameRateThresholds.Good) return "green";
+            if (fps >= FrameRateThresholds.Warning) return "yellow";
             return "red";
         }
 

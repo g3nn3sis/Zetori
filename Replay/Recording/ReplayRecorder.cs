@@ -127,13 +127,7 @@ namespace Zetori.Replay.Recording
             foreach (string key in departed) Release(key, now, announce: true);
         }
 
-        private static string? KeyOf(VRRig rig)
-        {
-            if (rig.isOfflineVRRig) return LocalKey;
-            if (rig.Creator == null) return null;
-            string userId = rig.Creator.UserId ?? string.Empty;
-            return userId.Length > 0 ? userId : $"actor:{rig.Creator.ActorNumber}";
-        }
+        private static string? KeyOf(VRRig rig) => rig.isOfflineVRRig ? LocalKey : PlayerKey.Of(rig);
 
         private Binding? Bind(VRRig rig, string key, float now)
         {

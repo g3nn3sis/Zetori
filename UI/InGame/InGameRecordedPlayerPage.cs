@@ -5,7 +5,6 @@
 using System.Globalization;
 using System.Text;
 using UnityEngine;
-using Zetori.Player;
 using Zetori.Replay;
 using Zetori.Replay.Playback;
 
@@ -21,7 +20,6 @@ namespace Zetori.UI.InGame
         private const string Note = "Recorded player. Ping, cheat signals, volume, mute and report are for live players only.";
         private const string SpectateLabel = "Spectate";
         private const string SpectatingLabel = "Spectating";
-        private const string Unknown = "Unknown";
         private const string Yes = "Yes";
         private const string No = "No";
 
@@ -109,8 +107,8 @@ namespace Zetori.UI.InGame
             string nameHex = ColorUtility.ToHtmlStringRGB(InGameDetails.Legible(actor.Color));
             builder.Clear();
             AddDetail("Name", $"<noparse>{actor.Name}</noparse>", nameHex);
-            AddDetail("Platform", PlatformText(actor.Platform));
-            AddDetail("FPS", frame.Fps > 0 ? frame.Fps.ToString(CultureInfo.InvariantCulture) : Unknown);
+            AddDetail("Platform", InGameDetails.PlatformText(actor.Platform));
+            AddDetail("FPS", frame.Fps > 0 ? frame.Fps.ToString(CultureInfo.InvariantCulture) : InGameDetails.Unknown);
             AddDetail("Color", InGameDetails.ColorCode(actor.Color), nameHex);
             AddDetail("Status", TagText(frame.Tag));
             AddDetail("Distance", DistanceText(source, target));
@@ -120,12 +118,6 @@ namespace Zetori.UI.InGame
         }
 
         private void AddDetail(string label, string value, string hex = InGameDetails.ValueColor) => InGameDetails.Append(builder, label, value, hex);
-
-        private static string PlatformText(int platform)
-        {
-            string name = Platform.Name(platform);
-            return name.Length > 0 ? name : Unknown;
-        }
 
         private static string TagText(ReplayTagState state) => state switch
         {
@@ -139,14 +131,14 @@ namespace Zetori.UI.InGame
             if (target.Actor.IsLocal) return "Recorder";
             foreach (ReplayPuppet other in source.Puppets)
                 if (other.Actor.IsLocal && other.Visible)
-                    return $"{Vector3.Distance(other.Body.position, target.Body.position).ToString("0.0", CultureInfo.InvariantCulture)} m";
-            return Unknown;
+                    return $"{DisplayFormat.Decimal(Vector3.Distance(other.Body.position, target.Body.position))} m";
+            return InGameDetails.Unknown;
         }
 
         private static string SpanText(ReplayActor actor)
         {
-            if (actor.Frames.Count == 0) return Unknown;
-            return $"{InGameDetails.Clock(actor.Frames[0].Time)} to {InGameDetails.Clock(actor.Frames[actor.Frames.Count - 1].Time)}";
+            if (actor.Frames.Count == 0) return InGameDetails.Unknown;
+            return $"{DisplayFormat.Clock(actor.Frames[0].Time)} to {DisplayFormat.Clock(actor.Frames[actor.Frames.Count - 1].Time)}";
         }
 
         public void Dispose() => mirror.Dispose();

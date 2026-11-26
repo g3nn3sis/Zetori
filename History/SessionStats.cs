@@ -5,6 +5,7 @@
 using Photon.Pun;
 using UnityEngine;
 using Zetori.Base;
+using Zetori.Player;
 using Zetori.TagManager;
 
 namespace Zetori.History
@@ -74,7 +75,7 @@ namespace Zetori.History
 
         private void TrackMovement(float deltaTime)
         {
-            VRRig? local = GorillaTagger.Instance != null ? GorillaTagger.Instance.offlineVRRig : null;
+            VRRig? local = NetworkedPlayerManager.LocalRig;
             if (local == null) return;
             Vector3 position = local.transform.position;
             if (lastPosition is Vector3 previous)
@@ -97,7 +98,7 @@ namespace Zetori.History
 
         private void TrackTags(float deltaTime)
         {
-            VRRig? local = GorillaTagger.Instance != null ? GorillaTagger.Instance.offlineVRRig : null;
+            VRRig? local = NetworkedPlayerManager.LocalRig;
             if (local == null) return;
             bool tagged = TagManagerControl.IsTagged(local);
             if (tagged && wasTagged == false) BecomeTagged();

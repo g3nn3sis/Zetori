@@ -32,8 +32,7 @@ namespace Zetori.UI.InGame
         private const float SummonSeconds = 0.05f;
 
         private readonly DoublePressDetector summonPress = new DoublePressDetector(SummonWindow);
-        private readonly VrHand leftHand = new VrHand(true);
-        private readonly VrHand rightHand = new VrHand(false);
+        private readonly HandGrip grip = new HandGrip();
         private readonly InGamePointer[] pointers =
         {
             new InGamePointer(true, InGamePlane.Panel),
@@ -47,9 +46,6 @@ namespace Zetori.UI.InGame
         private InGameModel? model;
         private InGameVisuals? visuals;
         private InGameHands? hands;
-        private VrHand? holder;
-        private Vector3 holdPosition;
-        private Quaternion holdRotation = Quaternion.identity;
         private bool open;
         private float openness;
 
@@ -79,8 +75,7 @@ namespace Zetori.UI.InGame
             if (tagger == null || player == null || input == null || tagger.offlineVRRig == null) return;
 
             float now = Time.unscaledTime;
-            leftHand.Sync(tagger.leftHandTransform, tagger.leftHandTriggerCollider.transform, input.leftGrab);
-            rightHand.Sync(tagger.rightHandTransform, tagger.rightHandTriggerCollider.transform, input.rightGrab);
+            grip.Sync(tagger, input);
             UpdateHands(player, now);
             if (summonPress.Update(input.leftControllerPrimaryButton, now)) Toggle(tagger, player);
             if (model == null || visuals == null) return;
@@ -93,7 +88,7 @@ namespace Zetori.UI.InGame
             }
             model.Show();
             if (Interactive) UpdateGrab(tagger, model);
-            else holder = null;
+            else grip.Release();
             model.SetScale(player.scale * Size * Pop(openness));
             Color32 accent = ColorSpace.Current.Color;
             model.SetAccent(accent);
@@ -108,7 +103,7 @@ namespace Zetori.UI.InGame
                 return;
             }
             hands ??= new InGameHands();
-            hands.Show(leftHand, rightHand, player.scale, ColorSpace.Current.Color, now);
+            hands.Show(grip.Left, grip.Right, player.scale, ColorSpace.Current.Color, now);
         }
 
         private void UpdateContent(GorillaTagger tagger, InGameModel panel, InGameVisuals drawn, Color32 accent, float now)
@@ -128,10 +123,10 @@ namespace Zetori.UI.InGame
 
         private void Point(GorillaTagger tagger, InGameModel panel, InGamePointer pointer, float now)
         {
-            VrHand hand = pointer.IsLeft ? leftHand : rightHand;
+            VrHand hand = pointer.IsLeft ? grip.Left : grip.Right;
             Transform plane = pointer.Plane == InGamePlane.Keyboard ? panel.Keyboard : panel.Root;
             Vector3 local = plane.InverseTransformPoint(hand.Finger.position);
-            InGamePress press = pointer.Update(local, hand == holder, surface, layout, now);
+            InGamePress press = pointer.Update(local, hand == grip.Holder, surface, layout, now);
             if (press == InGamePress.None || !CasterConfig.InGamePanelHaptics.Value) return;
             if (press == InGamePress.Hold) tagger.StartVibration(hand.IsLeft, HoldStrength, HoldSeconds);
             else tagger.StartVibration(hand.IsLeft, TapStrength, TapSeconds);
@@ -166,7 +161,7 @@ namespace Zetori.UI.InGame
             model.Root.SetPositionAndRotation(position, VrCameraShots.LookAt(head.position, position, head.rotation));
             if (!open) openness = 0f;
             open = true;
-            holder = null;
+            grip.Release();
         }
 
         private void Recenter()
@@ -180,7 +175,7 @@ namespace Zetori.UI.InGame
         private void Close()
         {
             open = false;
-            holder = null;
+            grip.Release();
             surface.StopEditing();
         }
 
@@ -188,38 +183,15 @@ namespace Zetori.UI.InGame
         {
             open = false;
             openness = 0f;
-            holder = null;
+            grip.Release();
             model?.Hide();
             pages.Conceal();
         }
 
         private void UpdateGrab(GorillaTagger tagger, InGameModel panel)
         {
-            if (holder != null && !holder.Gripping) Release(tagger, panel);
-            if (rightHand.GripStarted) TryHold(tagger, panel, rightHand);
-            if (leftHand.GripStarted) TryHold(tagger, panel, leftHand);
-            if (holder == null) return;
-            Transform palm = holder.Palm;
-            panel.Root.SetPositionAndRotation(palm.position + palm.rotation * holdPosition, palm.rotation * holdRotation);
-        }
-
-        private void Release(GorillaTagger tagger, InGameModel panel)
-        {
-            VrHand otherHand = holder == leftHand ? rightHand : leftHand;
-            holder = null;
-            if (otherHand.Gripping) TryHold(tagger, panel, otherHand);
-        }
-
-        private void TryHold(GorillaTagger tagger, InGameModel panel, VrHand hand)
-        {
-            if (holder != null) return;
-            Transform palm = hand.Palm;
-            if (!panel.WithinGrabReach(palm.position)) return;
-            Quaternion inversePalm = Quaternion.Inverse(palm.rotation);
-            holdPosition = inversePalm * (panel.Root.position - palm.position);
-            holdRotation = inversePalm * panel.Root.rotation;
-            holder = hand;
-            if (CasterConfig.InGamePanelHaptics.Value) tagger.StartVibration(hand.IsLeft, TapStrength, TapSeconds);
+            VrHand? tookHold = grip.Hold(panel);
+            if (tookHold != null && CasterConfig.InGamePanelHaptics.Value) tagger.StartVibration(tookHold.IsLeft, TapStrength, TapSeconds);
         }
 
         private static float Pop(float progress)

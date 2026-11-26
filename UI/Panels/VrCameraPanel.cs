@@ -6,6 +6,7 @@ using UnityEngine;
 using Zetori.Base.Config;
 using Zetori.GameCamera;
 using Zetori.GameCamera.Vr;
+using Zetori.Player;
 using Zetori.Shared;
 using Zetori.TagManager;
 
@@ -44,7 +45,7 @@ namespace Zetori.UI.Panels
             panel.Label($"Filming: {(subject != null ? TagManagerControl.NameOf(subject.Creator) : "Nobody")}");
             panel.HorizontalArea(() =>
             {
-                panel.Button("Film Me", FilmLocal, !VrCameraDirector.IsFilming(LocalRig));
+                panel.Button("Film Me", FilmLocal, !VrCameraDirector.IsFilming(NetworkedPlayerManager.LocalRig));
                 panel.Button("Stop Filming", VrCameraDirector.StopFilming, subject != null);
             });
             panel.Label("A Hand shot tablet you let go of turns to keep the filmed player in frame. Film other players from their player page.");
@@ -71,11 +72,9 @@ namespace Zetori.UI.Panels
             }
         }
 
-        private static VRRig? LocalRig => GorillaTagger.Instance != null ? GorillaTagger.Instance.offlineVRRig : null;
-
         private static void FilmLocal()
         {
-            VRRig? local = LocalRig;
+            VRRig? local = NetworkedPlayerManager.LocalRig;
             if (local != null) VrCameraDirector.Film(local);
         }
 

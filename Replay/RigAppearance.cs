@@ -53,7 +53,7 @@ namespace Zetori.Replay
 
         internal static RigAppearance? Resolve(RigSkeleton skeleton, Color color)
         {
-            VRRig? template = GorillaTagger.Instance != null ? GorillaTagger.Instance.offlineVRRig : null;
+            VRRig? template = NetworkedPlayerManager.LocalRig;
             if (template == null) return null;
             SkinnedMeshRenderer? body = FindBody(template, skeleton);
             if (body == null) return null;

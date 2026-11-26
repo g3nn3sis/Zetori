@@ -9,10 +9,11 @@ using UnityEngine.Rendering;
 using Zetori.Base;
 using Zetori.Hud;
 using Zetori.Shared.Assets;
+using Zetori.Shared.Vr;
 
 namespace Zetori.GameCamera.Vr
 {
-    internal sealed class VrCameraModel : IDisposable
+    internal sealed class VrCameraModel : IDisposable, IGrabbable
     {
         private const string ModelName = "VR Camera";
         private const string MeshResource = "Zetori.Models.vr_camera.zmdl";
@@ -84,7 +85,7 @@ namespace Zetori.GameCamera.Vr
         private int opaqueRenderQueue;
         private string opaqueRenderType = string.Empty;
 
-        internal Transform Root => root.transform;
+        public Transform Root => root.transform;
         internal Transform Lens { get; private set; } = null!;
         internal VrCameraButton[] ModeButtons { get; private set; } = Array.Empty<VrCameraButton>();
         internal VrCameraButton FieldOfViewDown { get; private set; } = null!;
@@ -140,7 +141,7 @@ namespace Zetori.GameCamera.Vr
             previewCamera.enabled = false;
         }
 
-        internal bool WithinGrabReach(Vector3 hand)
+        public bool WithinGrabReach(Vector3 hand)
         {
             Vector3 local = root.transform.InverseTransformPoint(hand);
             float across = Mathf.Abs(local.x) - BarOffset;

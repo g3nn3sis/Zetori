@@ -31,7 +31,7 @@ namespace Zetori.Shared.Assets
 
         private static ModelPart ReadPart(BinaryReader reader, string meshName)
         {
-            Vector3 pivot = ReadVector3(reader);
+            Vector3 pivot = BinaryIO.ReadVector3(reader);
             int vertexCount = reader.ReadInt32();
             int indexCount = reader.ReadInt32();
             var positions = new Vector3[vertexCount];
@@ -39,8 +39,8 @@ namespace Zetori.Shared.Assets
             var uvs = new Vector2[vertexCount];
             for (int i = 0; i < vertexCount; i++)
             {
-                positions[i] = ReadVector3(reader);
-                normals[i] = ReadVector3(reader);
+                positions[i] = BinaryIO.ReadVector3(reader);
+                normals[i] = BinaryIO.ReadVector3(reader);
                 uvs[i] = new Vector2(reader.ReadSingle(), reader.ReadSingle());
             }
             var indices = new int[indexCount];
@@ -49,8 +49,5 @@ namespace Zetori.Shared.Assets
             mesh.RecalculateBounds();
             return new ModelPart(pivot, mesh);
         }
-
-        private static Vector3 ReadVector3(BinaryReader reader) =>
-            new Vector3(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
     }
 }

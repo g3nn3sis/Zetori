@@ -22,8 +22,6 @@ namespace Zetori.Hud.Overlays
         private static readonly Color FpsGoodColor = new Color(0.3f, 0.9f, 0.3f);
         private static readonly Color FpsWarnColor = new Color(0.95f, 0.85f, 0.3f);
         private static readonly Color FpsBadColor = new Color(0.95f, 0.3f, 0.3f);
-        private const int FpsGoodThreshold = 60;
-        private const int FpsWarnThreshold = 55;
         private static readonly string[] KeyLabels = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
 
         private sealed class Row
@@ -152,8 +150,8 @@ namespace Zetori.Hud.Overlays
 
         private static Color FpsColor(int fps)
         {
-            if (fps >= FpsGoodThreshold) return FpsGoodColor;
-            if (fps >= FpsWarnThreshold) return FpsWarnColor;
+            if (fps >= FrameRateThresholds.Good) return FpsGoodColor;
+            if (fps >= FrameRateThresholds.Warning) return FpsWarnColor;
             return FpsBadColor;
         }
     }

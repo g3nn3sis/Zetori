@@ -31,7 +31,6 @@ namespace Zetori.UI.InGame
         private const string SpectatingLabel = "Spectating";
         private const string FilmLabel = "Film";
         private const string FilmingLabel = "Filming";
-        private const string Unknown = "Unknown";
         private const string Yes = "Yes";
         private const string No = "No";
 
@@ -168,12 +167,12 @@ namespace Zetori.UI.InGame
             string nameHex = ColorUtility.ToHtmlStringRGB(NameColor(target));
             builder.Clear();
             AddDetail("Name", $"<noparse>{TagManagerControl.NameOf(player)}</noparse>", nameHex);
-            AddDetail("Platform", PlatformText(target));
+            AddDetail("Platform", InGameDetails.PlatformText(NetworkedPlayerManager.GetPlatform(target)));
             AddDetail("FPS", FrameRateText(target));
             AddDetail("Ping", PingText());
             AddDetail("Color", InGameDetails.ColorCode(color), nameHex);
             AddDetail("Status", TagManagerControl.IsTagged(target) ? "Tagged" : "Not tagged");
-            AddDetail("Speed", $"{Decimal(target.LatestVelocity().magnitude)} m/s");
+            AddDetail("Speed", $"{DisplayFormat.Decimal(target.LatestVelocity().magnitude)} m/s");
             AddDetail("Distance", DistanceText(target));
             AddDetail("Voice", VoiceText(target));
             AddDetail("In Room", DurationText(Time.time - player.JoinedTime));
@@ -183,12 +182,6 @@ namespace Zetori.UI.InGame
         }
 
         private void AddDetail(string label, string value, string hex = InGameDetails.ValueColor) => InGameDetails.Append(builder, label, value, hex);
-
-        private static string PlatformText(VRRig target)
-        {
-            string name = Platform.Name(NetworkedPlayerManager.GetPlatform(target));
-            return name.Length > 0 ? name : Unknown;
-        }
 
         private string FrameRateText(VRRig target)
         {
@@ -201,14 +194,14 @@ namespace Zetori.UI.InGame
         private string PingText()
         {
             int ping = container != null ? container.PlayerStats.Ping : 0;
-            return ping > 0 ? $"{ping} ms" : Unknown;
+            return ping > 0 ? $"{ping} ms" : InGameDetails.Unknown;
         }
 
         private static string DistanceText(VRRig target)
         {
             if (target.isOfflineVRRig) return "You";
-            VRRig? local = GorillaTagger.Instance != null ? GorillaTagger.Instance.offlineVRRig : null;
-            return local != null ? $"{Decimal(Vector3.Distance(local.transform.position, target.transform.position))} m" : Unknown;
+            VRRig? local = NetworkedPlayerManager.LocalRig;
+            return local != null ? $"{DisplayFormat.Decimal(Vector3.Distance(local.transform.position, target.transform.position))} m" : InGameDetails.Unknown;
         }
 
         private string VoiceText(VRRig target)
@@ -217,9 +210,7 @@ namespace Zetori.UI.InGame
             return target.SpeakingLoudness > TalkingLoudness ? "Talking" : "Quiet";
         }
 
-        private static string DurationText(float seconds) => seconds > 0f ? InGameDetails.Clock(seconds) : Unknown;
-
-        private static string Decimal(float value) => value.ToString("0.0", CultureInfo.InvariantCulture);
+        private static string DurationText(float seconds) => seconds > 0f ? DisplayFormat.Clock(seconds) : InGameDetails.Unknown;
 
         private static Color NameColor(VRRig target) => InGameDetails.Legible(target.playerColor);
 

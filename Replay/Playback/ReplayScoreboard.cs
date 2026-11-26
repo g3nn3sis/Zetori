@@ -3,6 +3,7 @@
 // Unauthorized use, modification, or distribution is prohibited. See LICENSE.
 
 using Zetori.Base;
+using Zetori.Player;
 using System.Text;
 using UnityEngine;
 using UnityEngine.UI;
@@ -142,7 +143,7 @@ namespace Zetori.Replay.Playback
 
         private static void Paint(Image swatch, Color color, int material)
         {
-            VRRig? template = GorillaTagger.Instance != null ? GorillaTagger.Instance.offlineVRRig : null;
+            VRRig? template = NetworkedPlayerManager.LocalRig;
             if (template == null) return;
             Material[] tagMaterials = template.materialsToChangeTo;
             swatch.material = material > 0 && material < tagMaterials.Length ? tagMaterials[material] : template.scoreboardMaterial;

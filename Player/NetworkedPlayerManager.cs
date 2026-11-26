@@ -108,14 +108,14 @@ namespace Zetori.Player
         {
             get
             {
-                VRRig? local = GorillaTagger.Instance != null ? GorillaTagger.Instance.offlineVRRig : null;
+                VRRig? local = LocalRig;
                 return local != null ? local.lerpValueBody * bodyLerping : RawLerp;
             }
         }
 
         private static void ApplyBodyLerping()
         {
-            VRRig? local = GorillaTagger.Instance != null ? GorillaTagger.Instance.offlineVRRig : null;
+            VRRig? local = LocalRig;
             if (local == null || activeRigs == null) return;
             foreach (VRRig rig in activeRigs)
             {
@@ -125,7 +125,7 @@ namespace Zetori.Player
             }
         }
 
-        private static VRRig? LocalRig => GorillaTagger.Instance != null ? GorillaTagger.Instance.offlineVRRig : null;
+        internal static VRRig? LocalRig => GorillaTagger.Instance != null ? GorillaTagger.Instance.offlineVRRig : null;
 
         private static void SelectLocalPlayer()
         {

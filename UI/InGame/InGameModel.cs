@@ -7,10 +7,11 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using Zetori.Base;
 using Zetori.Shared.Assets;
+using Zetori.Shared.Vr;
 
 namespace Zetori.UI.InGame
 {
-    internal sealed class InGameModel : IDisposable
+    internal sealed class InGameModel : IDisposable, IGrabbable
     {
         private const string ModelName = "In-Game Panel";
         private const string MeshResource = "Zetori.Models.in_game_panel.zmdl";
@@ -35,7 +36,7 @@ namespace Zetori.UI.InGame
         private Color32? shownAccent;
         private bool hiddenFromView;
 
-        internal Transform Root => root.transform;
+        public Transform Root => root.transform;
         internal Transform Content { get; }
         internal Transform Keyboard { get; }
         internal Mesh Quad { get; }
@@ -124,7 +125,7 @@ namespace Zetori.UI.InGame
             if (root.activeSelf) root.SetActive(false);
         }
 
-        internal bool WithinGrabReach(Vector3 hand)
+        public bool WithinGrabReach(Vector3 hand)
         {
             Vector3 local = root.transform.InverseTransformPoint(hand);
             float along = Mathf.Max(0f, Mathf.Abs(local.y) - HandleHalfLength);
