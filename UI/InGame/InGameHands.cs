@@ -4,7 +4,7 @@
 
 using UnityEngine;
 using UnityEngine.Rendering;
-using Zetori.GameCamera.Vr;
+using Zetori.Shared.Vr;
 
 namespace Zetori.UI.InGame
 {
@@ -52,7 +52,7 @@ namespace Zetori.UI.InGame
             rightBone = Part(PrimitiveType.Cylinder, boneMaterial);
         }
 
-        internal void Show(VrCameraHand left, VrCameraHand right, float scale, Color accent, float time)
+        internal void Show(VrHand left, VrHand right, float scale, Color accent, float time)
         {
             if (!root.activeSelf) root.SetActive(true);
             float pulse = 1f - PulseDepth * (0.5f + 0.5f * Mathf.Sin(time * PulseSpeed));
@@ -77,7 +77,7 @@ namespace Zetori.UI.InGame
             foreach (Renderer renderer in renderers) renderer.forceRenderingOff = hidden;
         }
 
-        private static void Place(Transform palm, Transform tip, Transform bone, VrCameraHand hand, float scale)
+        private static void Place(Transform palm, Transform tip, Transform bone, VrHand hand, float scale)
         {
             Vector3 palmPosition = hand.Palm.position;
             Vector3 tipPosition = hand.Finger.position;

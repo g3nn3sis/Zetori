@@ -5,8 +5,9 @@
 using GorillaLocomotion;
 using UnityEngine;
 using UnityEngine.XR;
-using Zetori.Base;
+using Zetori.Base.Config;
 using Zetori.GameCamera.Modes;
+using Zetori.Shared.Vr;
 
 namespace Zetori.GameCamera.Vr
 {
@@ -37,12 +38,12 @@ namespace Zetori.GameCamera.Vr
         private const float FilmingTurnRate = 6f;
 
         private readonly DoublePressDetector summonPress = new DoublePressDetector(SummonWindow);
-        private readonly VrCameraHand leftHand = new VrCameraHand(true);
-        private readonly VrCameraHand rightHand = new VrCameraHand(false);
+        private readonly VrHand leftHand = new VrHand(true);
+        private readonly VrHand rightHand = new VrHand(false);
         private readonly VrCameraView view = new VrCameraView();
         private readonly VrCameraCosmetics cosmetics = new VrCameraCosmetics();
         private VrCameraModel? model;
-        private VrCameraHand? holder;
+        private VrHand? holder;
         private bool deployed;
         private bool arrivalSummonHandled;
         private float trackingStartedAt = TrackingNotStarted;
@@ -255,7 +256,7 @@ namespace Zetori.GameCamera.Vr
         {
             if (holder != null && !holder.Gripping)
             {
-                VrCameraHand otherHand = holder == leftHand ? rightHand : leftHand;
+                VrHand otherHand = holder == leftHand ? rightHand : leftHand;
                 holder = null;
                 if (otherHand.Gripping) TryHold(tagger, camera, otherHand);
             }
@@ -266,7 +267,7 @@ namespace Zetori.GameCamera.Vr
             camera.Root.SetPositionAndRotation(palm.position + palm.rotation * holdPosition, palm.rotation * holdRotation);
         }
 
-        private void TryHold(GorillaTagger tagger, VrCameraModel camera, VrCameraHand hand)
+        private void TryHold(GorillaTagger tagger, VrCameraModel camera, VrHand hand)
         {
             if (holder != null) return;
             Transform palm = hand.Palm;
@@ -302,7 +303,7 @@ namespace Zetori.GameCamera.Vr
 
         private bool Pressed(GorillaTagger tagger, VrCameraButton button, float now)
         {
-            VrCameraHand? nearest = null;
+            VrHand? nearest = null;
             float proximity = float.PositiveInfinity;
             ConsiderFinger(leftHand, button, ref nearest, ref proximity);
             ConsiderFinger(rightHand, button, ref nearest, ref proximity);
@@ -311,7 +312,7 @@ namespace Zetori.GameCamera.Vr
             return pressed;
         }
 
-        private void ConsiderFinger(VrCameraHand hand, VrCameraButton button, ref VrCameraHand? nearest, ref float proximity)
+        private void ConsiderFinger(VrHand hand, VrCameraButton button, ref VrHand? nearest, ref float proximity)
         {
             if (hand == holder) return;
             float candidate = button.Proximity(hand.Finger.position);

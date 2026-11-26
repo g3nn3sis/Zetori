@@ -4,7 +4,7 @@
 
 using TMPro;
 using UnityEngine;
-using Zetori.Game;
+using Zetori.Hud;
 using Zetori.UI.Icons;
 
 namespace Zetori.UI.InGame

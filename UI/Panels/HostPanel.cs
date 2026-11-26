@@ -3,8 +3,8 @@
 // Unauthorized use, modification, or distribution is prohibited. See LICENSE.
 
 using Photon.Pun;
-using Zetori.Base;
-using Zetori.Game;
+using Zetori.Base.Config;
+using Zetori.Hud.Overlays;
 
 namespace Zetori.UI.Panels
 {

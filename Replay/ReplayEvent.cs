@@ -4,8 +4,6 @@
 
 namespace Zetori.Replay
 {
-    internal enum ReplayEventKind { Joined, Left, Tagged, TimeOfDay, Rain, Marker, Signal }
-
     internal readonly struct ReplayEvent
     {
         internal float Time { get; }

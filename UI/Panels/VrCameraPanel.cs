@@ -3,10 +3,11 @@
 // Unauthorized use, modification, or distribution is prohibited. See LICENSE.
 
 using UnityEngine;
-using Zetori.Base;
-using Zetori.Game;
+using Zetori.Base.Config;
 using Zetori.GameCamera;
 using Zetori.GameCamera.Vr;
+using Zetori.Shared;
+using Zetori.TagManager;
 
 namespace Zetori.UI.Panels
 {

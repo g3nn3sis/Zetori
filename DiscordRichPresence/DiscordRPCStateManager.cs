@@ -3,9 +3,12 @@
 // Unauthorized use, modification, or distribution is prohibited. See LICENSE.
 
 using Zetori.Base;
+using Zetori.Base.Config;
 using Zetori.GameCamera;
 using Zetori.Replay;
-using Zetori.UI;
+using Zetori.Replay.Playback;
+using Zetori.Replay.Timeline;
+using Zetori.Shared;
 using DiscordRPC;
 using GorillaGameModes;
 using Photon.Pun;

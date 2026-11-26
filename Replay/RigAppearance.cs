@@ -4,6 +4,7 @@
 
 using Zetori.Base;
 using Zetori.Player;
+using Zetori.Replay.Voice;
 using HarmonyLib;
 using System.Reflection;
 using UnityEngine;

@@ -3,9 +3,10 @@
 // Unauthorized use, modification, or distribution is prohibited. See LICENSE.
 
 using UnityEngine;
-using Zetori.Base;
-using Zetori.GameCamera;
+using Zetori.Base.Config;
+using Zetori.GameCamera.Photo;
 using Zetori.Replay;
+using Zetori.Replay.Timeline;
 
 namespace Zetori.UI.Panels
 {

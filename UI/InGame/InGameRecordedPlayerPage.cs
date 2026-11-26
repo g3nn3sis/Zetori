@@ -7,6 +7,7 @@ using System.Text;
 using UnityEngine;
 using Zetori.Player;
 using Zetori.Replay;
+using Zetori.Replay.Playback;
 
 namespace Zetori.UI.InGame
 {

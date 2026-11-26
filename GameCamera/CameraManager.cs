@@ -3,10 +3,13 @@
 // Unauthorized use, modification, or distribution is prohibited. See LICENSE.
 
 using Zetori.Base;
+using Zetori.Base.Config;
 using Zetori.GameCamera.Modes;
 using Zetori.GameCamera.Vr;
 using Zetori.Player;
+using Zetori.Player.Movement;
 using Zetori.Replay;
+using Zetori.Replay.Playback;
 using UnityEngine;
 
 namespace Zetori.GameCamera

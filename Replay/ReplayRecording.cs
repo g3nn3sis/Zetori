@@ -3,6 +3,7 @@
 // Unauthorized use, modification, or distribution is prohibited. See LICENSE.
 
 using System.Globalization;
+using Zetori.Replay.Highlights;
 
 namespace Zetori.Replay
 {

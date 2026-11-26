@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: LicenseRef-Zetori-Source-Available
 // Unauthorized use, modification, or distribution is prohibited. See LICENSE.
 
-using Zetori.Base;
+using Zetori.Base.Config;
 using Zetori.GameCamera.Webs;
+using Zetori.Shared;
 using UnityEngine;
 
 namespace Zetori.GameCamera.Modes

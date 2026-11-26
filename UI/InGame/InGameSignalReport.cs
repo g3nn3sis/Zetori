@@ -5,7 +5,7 @@
 using System.Globalization;
 using System.Text;
 using UnityEngine;
-using Zetori.Player;
+using Zetori.Cheats.Signals;
 
 namespace Zetori.UI.InGame
 {

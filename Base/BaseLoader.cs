@@ -3,6 +3,7 @@
 // Unauthorized use, modification, or distribution is prohibited. See LICENSE.
 
 using BepInEx;
+using Zetori.Base.Config;
 
 namespace Zetori.Base
 {

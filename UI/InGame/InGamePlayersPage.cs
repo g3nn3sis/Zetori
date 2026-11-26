@@ -3,9 +3,12 @@
 // Unauthorized use, modification, or distribution is prohibited. See LICENSE.
 
 using UnityEngine;
-using Zetori.Game;
+using Zetori.Cheats.Signals;
 using Zetori.Player;
+using Zetori.Player.Moderation;
 using Zetori.Replay;
+using Zetori.Replay.Playback;
+using Zetori.TagManager;
 using Zetori.UI.Panels;
 
 namespace Zetori.UI.InGame

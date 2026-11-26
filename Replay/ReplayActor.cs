@@ -4,6 +4,9 @@
 
 using System.IO;
 using UnityEngine;
+using Zetori.Replay.Cosmetics;
+using Zetori.Replay.Voice;
+using Zetori.Shared;
 
 namespace Zetori.Replay
 {
@@ -78,14 +81,14 @@ namespace Zetori.Replay
 
         internal void ReadCosmetics(BinaryReader reader)
         {
-            int count = ReplayIO.ReadCount(reader);
+            int count = BinaryIO.ReadCount(reader);
             for (int i = 0; i < count; i++)
             {
                 RecordedCosmetic cosmetic = RecordedCosmetic.Read(reader);
                 cosmeticIndices[cosmetic.Key] = cosmetics.Count;
                 cosmetics.Add(cosmetic);
             }
-            int skinCount = ReplayIO.ReadCount(reader);
+            int skinCount = BinaryIO.ReadCount(reader);
             if (skinCount > short.MaxValue) throw new InvalidDataException("Too many skins.");
             for (int i = 0; i < skinCount; i++) skins.Add(RecordedSkin.Read(reader));
         }
@@ -98,7 +101,7 @@ namespace Zetori.Replay
 
         internal void ReadSounds(BinaryReader reader)
         {
-            int count = ReplayIO.ReadCount(reader);
+            int count = BinaryIO.ReadCount(reader);
             for (int i = 0; i < count; i++) sounds.Add(CosmeticSoundTrack.Read(reader, cosmetics));
         }
 
@@ -110,7 +113,7 @@ namespace Zetori.Replay
 
         internal void ReadHandTaps(BinaryReader reader)
         {
-            int count = ReplayIO.ReadCount(reader);
+            int count = BinaryIO.ReadCount(reader);
             HandTaps.Capacity = count;
             for (int i = 0; i < count; i++) HandTaps.Add(HandTap.Read(reader));
         }

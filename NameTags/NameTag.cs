@@ -1,0 +1,324 @@
+// Copyright (c) 2026 Zetori contributors
+// SPDX-License-Identifier: LicenseRef-Zetori-Source-Available
+// Unauthorized use, modification, or distribution is prohibited. See LICENSE.
+
+using Zetori.Base;
+using Zetori.Base.Config;
+using Zetori.GameCamera;
+using Zetori.GameCamera.Modes;
+using Zetori.Player;
+using Zetori.Replay;
+using Zetori.Replay.Playback;
+using Zetori.Shared.Assets;
+using Photon.Pun;
+using TMPro;
+using UnityEngine;
+
+namespace Zetori.NameTags
+{
+    internal sealed class NameTag : ObjectComponent
+    {
+        internal static new bool enabled { get => CasterConfig.NameTags.Value; set => CasterConfig.NameTags.Value = value; }
+        internal static bool usePlayerColor { get => CasterConfig.NameTagPlayerColor.Value; set => CasterConfig.NameTagPlayerColor.Value = value; }
+        internal static bool hzDisplay { get => CasterConfig.NameTagFps.Value; set => CasterConfig.NameTagFps.Value = value; }
+        internal static bool platformIndicator { get => CasterConfig.NameTagPlatform.Value; set => CasterConfig.NameTagPlatform.Value = value; }
+        internal static bool zetoriIndicator { get => CasterConfig.NameTagZetori.Value; set => CasterConfig.NameTagZetori.Value = value; }
+        internal static int currentFontIndex { get => CasterConfig.NameTagFont.Value; set => CasterConfig.NameTagFont.Value = value; }
+        internal static float size { get => CasterConfig.NameTagSize.Value; set => CasterConfig.NameTagSize.Value = value; }
+
+        private const float NameHeight = 0.4f;
+        private const float FpsHeight = 0.55f;
+        private const float NameFontSize = 2.5f;
+        private const float FpsFontSize = 0.7f;
+        private const float IconSize = 0.25f;
+        private const float IconGap = 0.05f;
+        private const float IconLift = 0.003f;
+        private const float LeftSide = -1f;
+        private const float RightSide = 1f;
+        private const int FpsGoodThreshold = 60;
+        private const int FpsWarnThreshold = 55;
+        private static readonly Color LavaColor = new Color32(255, 20, 0, 255);
+
+        private readonly struct TagInfo
+        {
+            internal readonly bool Visible;
+            internal readonly string Name;
+            internal readonly Color Color;
+            internal readonly int Fps;
+            internal readonly int Platform;
+            internal readonly bool ZetoriUser;
+
+            internal TagInfo(bool visible, string name, Color color, int fps, int platform, bool zetoriUser)
+            {
+                Visible = visible;
+                Name = name;
+                Color = color;
+                Fps = fps;
+                Platform = platform;
+                ZetoriUser = zetoriUser;
+            }
+        }
+
+        private sealed class Tag
+        {
+            internal readonly GameObject Root;
+            private readonly Transform rootTransform;
+            internal readonly TextMeshPro Name;
+            internal readonly TextMeshPro Fps;
+            internal readonly SpriteRenderer PlatformIcon;
+            internal readonly SpriteRenderer ZetoriIcon;
+            internal string NameText = string.Empty;
+            internal int FpsValue = -1;
+            internal TMP_FontAsset? Font;
+            internal Sprite? PlatformSprite;
+            internal Sprite? ZetoriSprite;
+            internal bool Seen;
+            private float scale = 1f;
+
+            internal Tag(Transform anchor)
+            {
+                Root = new GameObject($"_nametag {anchor.GetInstanceID()}");
+                rootTransform = Root.transform;
+                rootTransform.SetParent(anchor, false);
+                tagRoots.Add(rootTransform);
+                Name = CreateText(rootTransform, "name", NameHeight, NameFontSize);
+                Fps = CreateText(rootTransform, "fps", FpsHeight, FpsFontSize);
+                PlatformIcon = CreateIcon(Name.transform, "platform");
+                ZetoriIcon = CreateIcon(Name.transform, "zetori");
+            }
+
+            internal void Destroy()
+            {
+                tagRoots.Remove(rootTransform);
+                if (Root != null) UnityEngine.Object.Destroy(Root);
+            }
+
+            internal void Resize(float tagScale)
+            {
+                if (scale == tagScale) return;
+                scale = tagScale;
+                rootTransform.localScale = Vector3.one * tagScale;
+            }
+
+            private static TextMeshPro CreateText(Transform parent, string name, float height, float fontSize)
+            {
+                var go = new GameObject(name);
+                go.transform.SetParent(parent, false);
+                go.transform.localPosition = Vector3.up * height;
+                var text = go.AddComponent<TextMeshPro>();
+                text.fontSize = fontSize;
+                text.alignment = TextAlignmentOptions.Center;
+                text.richText = true;
+                return text;
+            }
+
+            private static SpriteRenderer CreateIcon(Transform parent, string name)
+            {
+                var go = new GameObject(name);
+                go.transform.SetParent(parent, false);
+                go.transform.localScale = Vector3.one * IconSize;
+                var icon = go.AddComponent<SpriteRenderer>();
+                icon.enabled = false;
+                return icon;
+            }
+        }
+
+        private static readonly HashSet<Transform> tagRoots = new HashSet<Transform>();
+
+        private readonly Dictionary<UnityEngine.Object, Tag> tags = new Dictionary<UnityEngine.Object, Tag>();
+        private readonly List<UnityEngine.Object> removed = new List<UnityEngine.Object>();
+
+        private static TMP_FontAsset? CurrentFont
+        {
+            get
+            {
+                TMP_FontAsset[] fonts = AssetManager.discoveredFonts;
+                if (fonts.Length == 0) return null;
+                return fonts[Mathf.Clamp(currentFontIndex, 0, fonts.Length - 1)];
+            }
+        }
+
+        internal static bool IsTagPart(Transform part)
+        {
+            for (Transform current = part; current != null; current = current.parent)
+                if (tagRoots.Contains(current)) return true;
+            return false;
+        }
+
+        internal void LateUpdate()
+        {
+            Camera? view = CameraManager.camera?.Camera;
+            ReplayPlayer? replay = ReplaySession.Player;
+            if (!enabled || view == null || (replay == null && !PhotonNetwork.InRoom))
+            {
+                Clear();
+                return;
+            }
+            try
+            {
+                Quaternion facing = Quaternion.LookRotation(view.transform.forward);
+                TMP_FontAsset? font = CurrentFont;
+                foreach (Tag tag in tags.Values) tag.Seen = false;
+                if (replay != null) ShowReplay(replay, facing, font);
+                else ShowLive(facing, font);
+                RemoveUnseen();
+            }
+            catch (Exception e) { Log.ExceptionOnce("nametag-update", e, "Updating nametags failed"); }
+        }
+
+        private void ShowLive(Quaternion facing, TMP_FontAsset? font)
+        {
+            foreach (VRRig rig in NetworkedPlayerManager.activeRigs ?? Array.Empty<VRRig>())
+            {
+                if (rig == null || rig.isOfflineVRRig || rig.Creator == null) continue;
+                Show(rig, rig.transform, LiveInfo(rig), facing, font);
+            }
+        }
+
+        private void ShowReplay(ReplayPlayer replay, Quaternion facing, TMP_FontAsset? font)
+        {
+            foreach (ReplayPuppet puppet in replay.Puppets)
+            {
+                if (puppet.Actor.IsLocal) continue;
+                Show(puppet.Body, puppet.Body, ReplayInfo(replay, puppet), facing, font);
+            }
+        }
+
+        private void Show(UnityEngine.Object key, Transform anchor, TagInfo info, Quaternion facing, TMP_FontAsset? font)
+        {
+            if (!tags.TryGetValue(key, out Tag? tag) || tag == null)
+            {
+                tag = new Tag(anchor);
+                tags[key] = tag;
+            }
+            tag.Seen = true;
+            UpdateTag(tag, info, facing, font);
+        }
+
+        private static TagInfo LiveInfo(VRRig rig)
+        {
+            bool visible = !(CameraManager.mode == CameraMode.Spectator && NetworkedPlayerManager.selectedPlayer == rig && SpectatorCamera.IsFirstPerson);
+            if (!visible) return default;
+            return new TagInfo(
+                true,
+                rig.Creator.NickName ?? string.Empty,
+                NameColor(RigTagState.Of(rig), rig.playerColor),
+                hzDisplay ? Mathf.RoundToInt(NetworkedPlayerManager.GetFPS(rig)) : 0,
+                platformIndicator ? NetworkedPlayerManager.GetPlatform(rig) : 0,
+                zetoriIndicator && ZetoriUsers.IsUser(rig));
+        }
+
+        private static TagInfo ReplayInfo(ReplayPlayer replay, ReplayPuppet puppet)
+        {
+            bool visible = puppet.Visible && !(replay.IsSpectating(puppet) && SpectatorCamera.IsFirstPerson);
+            if (!visible) return default;
+            ActorFrame frame = puppet.Current;
+            return new TagInfo(
+                true,
+                puppet.Actor.Name,
+                NameColor(frame.Tag, puppet.Actor.Color),
+                frame.Fps,
+                platformIndicator ? puppet.Actor.Platform : 0,
+                false);
+        }
+
+        private static void UpdateTag(Tag tag, TagInfo info, Quaternion facing, TMP_FontAsset? font)
+        {
+            if (tag.Root.activeSelf != info.Visible) tag.Root.SetActive(info.Visible);
+            if (!info.Visible) return;
+            tag.Root.transform.rotation = facing;
+            tag.Resize(size);
+
+            bool layoutChanged = false;
+            if (font != null && tag.Font != font)
+            {
+                tag.Font = font;
+                tag.Name.font = font;
+                tag.Fps.font = font;
+                layoutChanged = true;
+            }
+            if (tag.NameText != info.Name)
+            {
+                tag.NameText = info.Name;
+                tag.Name.text = info.Name;
+                layoutChanged = true;
+            }
+            tag.Name.color = info.Color;
+
+            bool showFps = hzDisplay;
+            if (tag.Fps.gameObject.activeSelf != showFps) tag.Fps.gameObject.SetActive(showFps);
+            if (showFps && info.Fps != tag.FpsValue)
+            {
+                tag.FpsValue = info.Fps;
+                tag.Fps.text = $"<color={FpsColor(info.Fps)}>{info.Fps}</color> FPS";
+            }
+
+            Sprite? platformIcon = info.Platform == 1 ? AssetManager.smallMetaSprite : info.Platform == 2 ? AssetManager.smallSteamSprite : null;
+            Sprite? zetoriIcon = info.ZetoriUser ? AssetManager.smallZetoriSprite : null;
+            layoutChanged |= SetIcon(tag.PlatformIcon, ref tag.PlatformSprite, platformIcon);
+            layoutChanged |= SetIcon(tag.ZetoriIcon, ref tag.ZetoriSprite, zetoriIcon);
+            if (layoutChanged && (platformIcon != null || zetoriIcon != null)) PlaceIcons(tag, platformIcon, zetoriIcon);
+        }
+
+        private static bool SetIcon(SpriteRenderer renderer, ref Sprite? current, Sprite? icon)
+        {
+            if (current == icon) return false;
+            current = icon;
+            renderer.sprite = icon;
+            renderer.enabled = icon != null;
+            return true;
+        }
+
+        private static void PlaceIcons(Tag tag, Sprite? platformIcon, Sprite? zetoriIcon)
+        {
+            float nameHalfWidth = tag.Name.GetPreferredValues(tag.NameText).x / 2f;
+            if (platformIcon != null) tag.PlatformIcon.transform.localPosition = BesideName(nameHalfWidth, platformIcon, LeftSide);
+            if (zetoriIcon != null) tag.ZetoriIcon.transform.localPosition = BesideName(nameHalfWidth, zetoriIcon, RightSide);
+        }
+
+        private static Vector3 BesideName(float nameHalfWidth, Sprite icon, float side)
+        {
+            float iconHalfWidth = icon.bounds.extents.x * IconSize;
+            return new Vector3(side * (nameHalfWidth + IconGap + iconHalfWidth), IconLift, 0f);
+        }
+
+        private static string FpsColor(int fps)
+        {
+            if (fps >= FpsGoodThreshold) return "green";
+            if (fps >= FpsWarnThreshold) return "yellow";
+            return "red";
+        }
+
+        private static Color NameColor(ReplayTagState state, Color playerColor) => state switch
+        {
+            ReplayTagState.Lava => LavaColor,
+            ReplayTagState.Rock => Color.red,
+            _ => usePlayerColor ? playerColor : Color.white
+        };
+
+        private void RemoveUnseen()
+        {
+            foreach (KeyValuePair<UnityEngine.Object, Tag> pair in tags)
+                if (!pair.Value.Seen || pair.Key == null) removed.Add(pair.Key!);
+            foreach (UnityEngine.Object key in removed)
+            {
+                tags[key].Destroy();
+                tags.Remove(key);
+            }
+            removed.Clear();
+        }
+
+        private void Clear()
+        {
+            if (tags.Count == 0) return;
+            foreach (Tag tag in tags.Values) tag.Destroy();
+            tags.Clear();
+        }
+
+        protected override void OnDestroy()
+        {
+            Clear();
+            base.OnDestroy();
+        }
+    }
+}

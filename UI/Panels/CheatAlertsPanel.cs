@@ -3,9 +3,9 @@
 // Unauthorized use, modification, or distribution is prohibited. See LICENSE.
 
 using BepInEx.Configuration;
-using Zetori.Base;
-using Zetori.Game;
-using Zetori.Player;
+using Zetori.Base.Config;
+using Zetori.Cheats;
+using Zetori.Cheats.Signals;
 
 namespace Zetori.UI.Panels
 {

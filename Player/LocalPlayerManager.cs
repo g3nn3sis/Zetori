@@ -3,6 +3,7 @@
 // Unauthorized use, modification, or distribution is prohibited. See LICENSE.
 
 using Zetori.Base;
+using Zetori.Base.Config;
 using GorillaNetworking;
 using Photon.Pun;
 using UnityEngine;

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: LicenseRef-Zetori-Source-Available
 // Unauthorized use, modification, or distribution is prohibited. See LICENSE.
 
-using Zetori.Game;
+using Zetori.Hud;
 
 namespace Zetori.UI.Panels
 {

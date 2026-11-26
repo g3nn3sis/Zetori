@@ -3,7 +3,7 @@
 // Unauthorized use, modification, or distribution is prohibited. See LICENSE.
 
 using System.Globalization;
-using Zetori.Player;
+using Zetori.History;
 
 namespace Zetori.UI.Panels
 {

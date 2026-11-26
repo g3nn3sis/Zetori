@@ -3,8 +3,10 @@
 // Unauthorized use, modification, or distribution is prohibited. See LICENSE.
 
 using BepInEx.Configuration;
-using Zetori.Base;
-using Zetori.Game;
+using Zetori.Base.Config;
+using Zetori.Hud;
+using Zetori.Hud.Overlays;
+using Zetori.NameTags;
 
 namespace Zetori.UI.Panels
 {

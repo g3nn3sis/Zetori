@@ -4,6 +4,7 @@
 
 using GorillaNetworking;
 using UnityEngine;
+using Zetori.History;
 using Zetori.Player;
 
 namespace Zetori.UI.Panels

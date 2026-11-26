@@ -6,6 +6,9 @@ using HarmonyLib;
 using System.IO;
 using System.Reflection;
 using UnityEngine;
+using Zetori.Replay.Storage;
+using Zetori.Replay.Voice;
+using Zetori.Shared;
 
 namespace Zetori.Replay
 {
@@ -139,13 +142,13 @@ namespace Zetori.Replay
             {
                 writer.Write(JointNames[i]);
                 writer.Write(Parents[i]);
-                ReplayIO.Write(writer, RestPositions[i]);
+                BinaryIO.Write(writer, RestPositions[i]);
                 writer.Write(RestScales[i]);
             }
             writer.Write(RootBone);
             writer.Write(Layer);
-            ReplayIO.Write(writer, BodyBounds.center);
-            ReplayIO.Write(writer, BodyBounds.size);
+            BinaryIO.Write(writer, BodyBounds.center);
+            BinaryIO.Write(writer, BodyBounds.size);
             writer.Write(FaceJoint);
             writer.Write(HeadJoint);
             writer.Write(HeadMeshVisible);
@@ -156,8 +159,8 @@ namespace Zetori.Replay
         internal static RigSkeleton Read(BinaryReader reader)
         {
             string bodyMeshName = reader.ReadString();
-            int boneCount = ReplayIO.ReadCount(reader);
-            int count = ReplayIO.ReadCount(reader);
+            int boneCount = BinaryIO.ReadCount(reader);
+            int count = BinaryIO.ReadCount(reader);
             if (boneCount > count) throw new InvalidDataException("More bones than joints.");
             var names = new string[count];
             var parents = new int[count];
@@ -167,12 +170,12 @@ namespace Zetori.Replay
             {
                 names[i] = reader.ReadString();
                 parents[i] = ReadJoint(reader, count, RootParent);
-                restPositions[i] = ReplayIO.ReadVector3(reader);
+                restPositions[i] = BinaryIO.ReadVector3(reader);
                 restScales[i] = reader.ReadSingle();
             }
             int rootBone = ReadJoint(reader, count, RootParent);
             int layer = reader.ReadInt32();
-            var bounds = new Bounds(ReplayIO.ReadVector3(reader), ReplayIO.ReadVector3(reader));
+            var bounds = new Bounds(BinaryIO.ReadVector3(reader), BinaryIO.ReadVector3(reader));
             int faceJoint = ReadJoint(reader, count, NoJoint);
             int headJoint = ReadJoint(reader, count, NoJoint);
             bool headMeshVisible = reader.ReadBoolean();

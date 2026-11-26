@@ -4,7 +4,7 @@
 
 using UnityEngine;
 using UnityEngine.Rendering;
-using Zetori.Game;
+using Zetori.NameTags;
 
 namespace Zetori.UI.InGame
 {

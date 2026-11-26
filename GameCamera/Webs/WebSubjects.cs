@@ -4,6 +4,7 @@
 
 using Zetori.Player;
 using Zetori.Replay;
+using Zetori.Replay.Playback;
 using UnityEngine;
 
 namespace Zetori.GameCamera.Webs

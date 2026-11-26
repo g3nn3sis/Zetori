@@ -4,6 +4,7 @@
 
 using System.IO;
 using UnityEngine;
+using Zetori.Replay.Storage;
 
 namespace Zetori.Replay
 {

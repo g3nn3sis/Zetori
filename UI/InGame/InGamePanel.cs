@@ -5,11 +5,14 @@
 using GorillaLocomotion;
 using UnityEngine;
 using UnityEngine.Rendering;
-using Zetori.Base;
+using Zetori.Base.Config;
 using Zetori.GameCamera;
 using Zetori.GameCamera.Modes;
+using Zetori.GameCamera.Photo;
 using Zetori.GameCamera.Vr;
 using Zetori.Replay;
+using Zetori.Replay.Render;
+using Zetori.Shared.Vr;
 
 namespace Zetori.UI.InGame
 {
@@ -29,8 +32,8 @@ namespace Zetori.UI.InGame
         private const float SummonSeconds = 0.05f;
 
         private readonly DoublePressDetector summonPress = new DoublePressDetector(SummonWindow);
-        private readonly VrCameraHand leftHand = new VrCameraHand(true);
-        private readonly VrCameraHand rightHand = new VrCameraHand(false);
+        private readonly VrHand leftHand = new VrHand(true);
+        private readonly VrHand rightHand = new VrHand(false);
         private readonly InGamePointer[] pointers =
         {
             new InGamePointer(true, InGamePlane.Panel),
@@ -44,7 +47,7 @@ namespace Zetori.UI.InGame
         private InGameModel? model;
         private InGameVisuals? visuals;
         private InGameHands? hands;
-        private VrCameraHand? holder;
+        private VrHand? holder;
         private Vector3 holdPosition;
         private Quaternion holdRotation = Quaternion.identity;
         private bool open;
@@ -125,7 +128,7 @@ namespace Zetori.UI.InGame
 
         private void Point(GorillaTagger tagger, InGameModel panel, InGamePointer pointer, float now)
         {
-            VrCameraHand hand = pointer.IsLeft ? leftHand : rightHand;
+            VrHand hand = pointer.IsLeft ? leftHand : rightHand;
             Transform plane = pointer.Plane == InGamePlane.Keyboard ? panel.Keyboard : panel.Root;
             Vector3 local = plane.InverseTransformPoint(hand.Finger.position);
             InGamePress press = pointer.Update(local, hand == holder, surface, layout, now);
@@ -202,12 +205,12 @@ namespace Zetori.UI.InGame
 
         private void Release(GorillaTagger tagger, InGameModel panel)
         {
-            VrCameraHand otherHand = holder == leftHand ? rightHand : leftHand;
+            VrHand otherHand = holder == leftHand ? rightHand : leftHand;
             holder = null;
             if (otherHand.Gripping) TryHold(tagger, panel, otherHand);
         }
 
-        private void TryHold(GorillaTagger tagger, InGameModel panel, VrCameraHand hand)
+        private void TryHold(GorillaTagger tagger, InGameModel panel, VrHand hand)
         {
             if (holder != null) return;
             Transform palm = hand.Palm;

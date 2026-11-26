@@ -2,6 +2,10 @@
 // SPDX-License-Identifier: LicenseRef-Zetori-Source-Available
 // Unauthorized use, modification, or distribution is prohibited. See LICENSE.
 
+using Zetori.Replay.CameraPaths;
+using Zetori.Replay.Highlights;
+using Zetori.Replay.Storage;
+
 namespace Zetori.Replay
 {
     internal sealed class LoadedReplay

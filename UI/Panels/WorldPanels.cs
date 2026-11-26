@@ -3,7 +3,8 @@
 // Unauthorized use, modification, or distribution is prohibited. See LICENSE.
 
 using Zetori.Base;
-using Zetori.Game;
+using Zetori.Shared;
+using Zetori.World;
 using UnityEngine;
 
 namespace Zetori.UI.Panels

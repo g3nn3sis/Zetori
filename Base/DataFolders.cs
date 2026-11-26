@@ -4,6 +4,7 @@
 
 using BepInEx;
 using System.IO;
+using Zetori.Base.Config;
 
 namespace Zetori.Base
 {

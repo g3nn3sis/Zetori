@@ -6,7 +6,7 @@ using System.IO;
 using UnityEngine;
 using UnityEngine.Rendering;
 using Zetori.Base;
-using Zetori.Game;
+using Zetori.Shared.Assets;
 
 namespace Zetori.UI.InGame
 {

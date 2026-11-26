@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: LicenseRef-Zetori-Source-Available
 // Unauthorized use, modification, or distribution is prohibited. See LICENSE.
 
+using Zetori.History;
 using Zetori.Player;
 using GorillaNetworking;
 using Photon.Pun;

@@ -2,10 +2,15 @@
 // SPDX-License-Identifier: LicenseRef-Zetori-Source-Available
 // Unauthorized use, modification, or distribution is prohibited. See LICENSE.
 
-using Zetori.Base;
+using Zetori.Base.Config;
 using Zetori.GameCamera;
 using Zetori.GameCamera.Vr;
 using Zetori.Replay;
+using Zetori.Replay.CameraPaths;
+using Zetori.Replay.Highlights;
+using Zetori.Replay.Playback;
+using Zetori.Replay.Render;
+using Zetori.Replay.Timeline;
 using UnityEngine;
 
 namespace Zetori.UI.Panels

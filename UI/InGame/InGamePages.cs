@@ -6,6 +6,7 @@ using Photon.Pun;
 using UnityEngine;
 using Zetori.Base;
 using Zetori.Replay;
+using Zetori.Replay.Playback;
 using Zetori.UI.Icons;
 using Zetori.UI.Panels;
 

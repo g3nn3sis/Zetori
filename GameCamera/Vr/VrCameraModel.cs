@@ -7,7 +7,8 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.Rendering;
 using Zetori.Base;
-using Zetori.Game;
+using Zetori.Hud;
+using Zetori.Shared.Assets;
 
 namespace Zetori.GameCamera.Vr
 {

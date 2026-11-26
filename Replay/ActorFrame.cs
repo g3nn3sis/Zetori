@@ -4,6 +4,9 @@
 
 using System.IO;
 using UnityEngine;
+using Zetori.Replay.Cosmetics;
+using Zetori.Replay.Storage;
+using Zetori.Shared;
 
 namespace Zetori.Replay
 {
@@ -30,13 +33,13 @@ namespace Zetori.Replay
         internal void Write(BinaryWriter writer, ReplayActor actor)
         {
             writer.Write(Time);
-            ReplayIO.Write(writer, Position);
+            BinaryIO.Write(writer, Position);
             Rotation.Write(writer);
-            ReplayIO.Write(writer, RawPosition);
+            BinaryIO.Write(writer, RawPosition);
             RawRotation.Write(writer);
             foreach (LimbSample limb in Limbs) limb.Write(writer);
             writer.Write(Scale);
-            ReplayIO.Write(writer, EyePosition);
+            BinaryIO.Write(writer, EyePosition);
             EyeRotation.Write(writer);
             foreach (PackedRotation joint in Joints) joint.Write(writer);
             foreach (PackedPosition position in JointPositions) position.Write(writer);
@@ -65,7 +68,7 @@ namespace Zetori.Replay
 
         private static CosmeticPose[] ReadCosmetics(BinaryReader reader, ReplayActor actor, List<CosmeticNodeChange> scratch)
         {
-            int count = ReplayIO.ReadCount(reader);
+            int count = BinaryIO.ReadCount(reader);
             if (count == 0) return Array.Empty<CosmeticPose>();
             var cosmetics = new CosmeticPose[count];
             for (int i = 0; i < count; i++) cosmetics[i] = CosmeticPose.Read(reader, actor.Cosmetics, actor.Skeleton.JointCount, scratch);
@@ -78,13 +81,13 @@ namespace Zetori.Replay
             var frame = new ActorFrame
             {
                 Time = reader.ReadSingle(),
-                Position = ReplayIO.ReadVector3(reader),
+                Position = BinaryIO.ReadVector3(reader),
                 Rotation = PackedRotation.Read(reader),
-                RawPosition = ReplayIO.ReadVector3(reader),
+                RawPosition = BinaryIO.ReadVector3(reader),
                 RawRotation = PackedRotation.Read(reader),
                 Limbs = ReadLimbs(reader),
                 Scale = reader.ReadSingle(),
-                EyePosition = ReplayIO.ReadVector3(reader),
+                EyePosition = BinaryIO.ReadVector3(reader),
                 EyeRotation = PackedRotation.Read(reader),
                 Joints = new PackedRotation[skeleton.JointCount],
                 JointPositions = new PackedPosition[skeleton.JointCount],

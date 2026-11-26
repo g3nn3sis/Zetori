@@ -3,8 +3,9 @@
 // Unauthorized use, modification, or distribution is prohibited. See LICENSE.
 
 using BepInEx.Configuration;
-using Zetori.Base;
+using Zetori.Base.Config;
 using Zetori.Replay;
+using Zetori.Replay.Timeline;
 using Zetori.UI.Panels;
 using UnityEngine;
 
