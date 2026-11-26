@@ -11,7 +11,7 @@ namespace Zetori.UI.InGame
 {
     internal static class InGameSignalReport
     {
-        internal const int Lines = 15;
+        internal const int Lines = 24;
         private const int ShownModKeys = 3;
         private const int ReasonLength = 36;
         private const string Ellipsis = "...";
@@ -19,7 +19,7 @@ namespace Zetori.UI.InGame
         private const string RaisedColor = "FF8C1A";
         private const string ClearColor = "8CE08C";
         private const string Caveat =
-            "Hints, not proof. Game reports are the game's own cheat checks, run on your headset. Lag, launchers, ropes, gliders and water can raise the speed, teleport, hover and tag signals. The game caps arm reach at 1 m. Quest tweaks are headset settings changed with developer tools; only Quest headsets report them.";
+            "Hints, not proof. Game reports are the game's own cheat checks, run on your headset. Lag, launchers, ropes, gliders and water can raise the speed, teleport, hover and tag signals; bad connections can raise lag tricks, and doors or moving platforms can raise through walls. The game caps arm reach at 1 m. Quest tweaks are headset settings changed with developer tools; only Quest headsets report them.";
 
         private static readonly (SystemProperties Flag, string Name)[] OverrideNames =
         {
@@ -65,6 +65,15 @@ namespace Zetori.UI.InGame
             Line(builder, "Tag bursts", BurstText(record.TagBursts), record.BurstTagging);
             Line(builder, "Gravity", GravityText(record.Flight), record.LowGravity);
             Line(builder, "Network", NetworkText(record.Messages), record.Spamming);
+            Line(builder, "Walls", WallText(record.WallPasses), record.ThroughWalls);
+            Line(builder, "Under the map", SecondsText(record.UnderMap, "below the floor"), record.OutOfBounds);
+            Line(builder, "Head turning", HeadText(record.Head), record.SpinningHead);
+            Line(builder, "Hand taps", CountText(record.FakeTaps, "away from any surface", "fake tap", "fake taps"), record.FakeTapping);
+            Line(builder, "Colour and name", IdentityText(record), record.IdentitySpam);
+            Line(builder, "Projectiles", BurstText(record.Projectiles, "launch", "launches"), record.ProjectileSpam);
+            Line(builder, "Master client", record.TookMaster ? "Made themselves master" : "No", record.TookMaster);
+            Line(builder, "Properties", CountText(record.Tampering, "changed without being master", "change", "changes"), record.Tampered);
+            Line(builder, "Timing", TimingText(record.Timing), record.LagTricks);
             Line(builder, "Flagged before", PastText(record), record.FlaggedBefore);
             return builder.ToString();
         }
@@ -127,7 +136,8 @@ namespace Zetori.UI.InGame
         private static string ReachText(SignalRecord record)
         {
             string longest = $"{record.LongestReach.ToString("0.00", CultureInfo.InvariantCulture)} m";
-            return record.ReachSeconds > 0f ? $"{longest}, past {DisplayFormat.Decimal(SignalRecord.LongReach)} m for {DisplayFormat.Decimal(record.ReachSeconds)} s" : longest;
+            string text = record.ReachSeconds > 0f ? $"{longest}, past {DisplayFormat.Decimal(SignalRecord.LongReach)} m for {DisplayFormat.Decimal(record.ReachSeconds)} s" : longest;
+            return record.LongAirReachSeconds > 0f ? $"{text}, past {DisplayFormat.Decimal(SignalRecord.AirReach)} m in the air for {DisplayFormat.Decimal(record.LongAirReachSeconds)} s" : text;
         }
 
         private static string HandText(HandMotion hands)
@@ -168,6 +178,49 @@ namespace Zetori.UI.InGame
             if (messages.SpamSeconds == 0) return top;
             string seconds = messages.SpamSeconds == 1 ? "1 s" : $"{messages.SpamSeconds} s";
             return $"{top}, {seconds} far above the room";
+        }
+
+        private static string WallText(TalliedSignal passes)
+        {
+            int count = Mathf.RoundToInt(passes.Total);
+            if (count == 0) return "None";
+            return count == 1 ? "Passed through 1 wall" : $"Passed through {count} walls";
+        }
+
+        private static string SecondsText(TalliedSignal seconds, string what) =>
+            seconds.Total > 0f ? $"{DisplayFormat.Decimal(seconds.Total)} s {what}" : "No";
+
+        private static string CountText(TalliedSignal tally, string what, string one, string many)
+        {
+            int count = Mathf.RoundToInt(tally.Total);
+            if (count == 0) return "None";
+            return count == 1 ? $"1 {one} {what}" : $"{count} {many} {what}";
+        }
+
+        private static string HeadText(HeadSpin head)
+        {
+            string fastest = $"Fastest {Whole(head.FastestTurn)} deg/s";
+            return head.SpinSeconds > 0f ? $"{fastest}, past {Whole(HeadSpin.SpinDegrees / HeadSpin.Window)} for {DisplayFormat.Decimal(head.SpinSeconds)} s" : fastest;
+        }
+
+        private static string IdentityText(SignalRecord record)
+        {
+            string colour = record.ColorChanges.Bursts == 0 ? "Colour normal" : $"Colour bursts {record.ColorChanges.Bursts}, up to {record.ColorChanges.Busiest} in {DisplayFormat.Decimal(record.ColorChanges.Window)} s";
+            int names = Mathf.RoundToInt(record.NameChanges.Total);
+            return names == 0 ? colour : $"{colour}, {names} name {(names == 1 ? "change" : "changes")}";
+        }
+
+        private static string BurstText(RateBurst bursts, string one, string many)
+        {
+            if (bursts.Events == 0) return "None seen";
+            string events = bursts.Events == 1 ? $"1 {one}" : $"{bursts.Events} {many}";
+            return $"{events}, up to {bursts.Busiest} in {DisplayFormat.Decimal(bursts.Window)} s";
+        }
+
+        private static string TimingText(SyncTiming timing)
+        {
+            if (timing.Gaps == 0 && timing.Backwards == 0 && timing.SkewedSeconds == 0) return "Normal";
+            return $"{timing.Gaps} stall jumps, {timing.Backwards} backwards, {timing.SkewedSeconds} s out of step";
         }
 
         private static string PastText(SignalRecord record)

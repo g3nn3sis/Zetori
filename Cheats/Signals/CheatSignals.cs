@@ -33,6 +33,15 @@ namespace Zetori.Cheats.Signals
         private const float MinimumScale = 0.01f;
         private const float DuplicateTagWindow = 0.5f;
         private const int MaximumNameLength = 12;
+        private const float AirReachMaximumSpeed = 6f;
+        private const float WallMinimumMove = 0.3f;
+        private const float WallMaximumMove = 6f;
+        private const float WallThickness = 0.2f;
+        private const float MapProbeHeight = 150f;
+        private const float MapProbeDepth = 100f;
+        private const float TapSurfaceRadius = 0.5f;
+        private const float TapPlayerRadius = 1f;
+        private const int MinimumTimingPeers = 2;
         private const string GameModeKey = "gameMode";
         private const string ModdedMarker = "MODDED";
         private const string NotMasterClaim = "when they weren't the master client";
@@ -60,12 +69,14 @@ namespace Zetori.Cheats.Signals
         private static readonly AccessTools.FieldRef<VRRig, bool>? CosmeticsReady = ReadyAccessor();
         private static readonly Dictionary<int, SignalRecord> records = new Dictionary<int, SignalRecord>();
         private static readonly Dictionary<int, int> counts = new Dictionary<int, int>();
-        private static readonly Dictionary<int, int> rates = new Dictionary<int, int>();
-        private static readonly List<int> others = new List<int>();
+        private static readonly Dictionary<int, float> rates = new Dictionary<int, float>();
+        private static readonly Dictionary<int, float> offsets = new Dictionary<int, float>();
+        private static readonly List<float> others = new List<float>();
 
         private static string room = string.Empty;
         private static float roomJoined;
         private static (int Tagged, int Tagging, float Time) lastTag = (-1, -1, float.NegativeInfinity);
+        private static long syncs;
 
         private float nextSample;
         private float lastSample;
@@ -98,6 +109,9 @@ namespace Zetori.Cheats.Signals
             float now = Time.unscaledTime;
             float scale = ScaleOf(rig);
             SignalRecord record = RecordOf(rig.Creator.ActorNumber);
+            record.Timing.ObserveSync(now, serverTime, PhotonNetwork.Time, rig.syncPos, scale, ++syncs, flaggedTeleport);
+            if (record.LastSync is Vector3 previous && !flaggedTeleport && !Carried(rig, record, now) && PassesThroughWall(previous, rig.syncPos, scale))
+                record.WallPasses.Add(now, 1f);
             record.ObservePosition(rig.syncPos, now, scale, flaggedTeleport);
             bool touched = record.TakeTouch(grounded, rig.LastTouchedGroundAtNetworkTime) || flaggedTeleport;
             record.ObserveFlight(serverTime, rig.syncPos.y, touched, now, scale);
@@ -121,6 +135,23 @@ namespace Zetori.Cheats.Signals
             return true;
         }
 
+        internal static void ObserveHandTap(VRRig rig, bool isLeftHand, bool onStilt)
+        {
+            if (onStilt || !IsRemote(rig)) return;
+            float scale = ScaleOf(rig);
+            Vector3 hand = PositionOf(isLeftHand ? rig.leftHand : rig.rightHand, rig.transform.position);
+            if (NearSurface(hand, TapSurfaceRadius * scale) || NearOtherPlayer(rig, hand, TapPlayerRadius * scale)) return;
+            RecordOf(rig.Creator.ActorNumber).FakeTaps.Add(Time.unscaledTime, 1f);
+        }
+
+        internal static void ObserveProjectile(int actor) => RemoteRecord(actor)?.Projectiles.Observe(Time.unscaledTime);
+
+        internal static void ObserveColorChange(int actor) => RemoteRecord(actor)?.ColorChanges.Observe(Time.unscaledTime);
+
+        internal static void ObserveMasterClaim(int actor) => RemoteRecord(actor)?.MasterTakeovers.Add(Time.unscaledTime, 1f);
+
+        internal static void ObserveTampering(int actor) => RemoteRecord(actor)?.Tampering.Add(Time.unscaledTime, 1f);
+
         internal static void ObserveReport(string? userId, string? reason)
         {
             if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(reason) || PhotonNetwork.CurrentRoom == null) return;
@@ -141,11 +172,14 @@ namespace Zetori.Cheats.Signals
             base.Awake();
             try { NetworkTraffic.Listen(); }
             catch (Exception e) { Log.Exception(e, "Listening for players' network messages failed; the network spam signal is off."); }
+            try { PropertyChanges.Listen(); }
+            catch (Exception e) { Log.Exception(e, "Listening for room property changes failed; the master and property signals are off."); }
         }
 
         protected override void OnDestroy()
         {
             NetworkTraffic.Stop();
+            PropertyChanges.Stop();
             base.OnDestroy();
         }
 
@@ -162,6 +196,7 @@ namespace Zetori.Cheats.Signals
                     lastTraffic = now;
                     nextTraffic = now + TrafficInterval;
                     ReadTraffic(now, window);
+                    ReadTiming(now);
                 }
                 if (now >= nextSample)
                 {
@@ -207,8 +242,12 @@ namespace Zetori.Cheats.Signals
                 Vector3 right = PositionOf(rig.rightHand, body);
                 bool contact = Touching(body, BodyContactRadius * scale, layers) || Touching(left, HandContactRadius * scale, layers) || Touching(right, HandContactRadius * scale, layers);
                 SignalRecord record = RecordOf(rig.Creator.ActorNumber);
-                record.Observe(deltaTime, velocity.magnitude / scale, IsHovering(body, velocity, scale, layers, contact), GroundedReach(rig, scale, layers) / scale);
+                float speed = velocity.magnitude / scale;
+                float airReach = speed < AirReachMaximumSpeed && !record.AssistedAt(now) ? Reach(rig, scale, layers, false) / scale : 0f;
+                record.Observe(deltaTime, speed, IsHovering(body, velocity, scale, layers, contact), Reach(rig, scale, layers, true) / scale, airReach);
                 record.ObserveSurroundings(now, MovementAssists.Assists(rig), IsClear(body, left, right, scale, layers, water));
+                if (rig.head?.rigTarget is Transform head) record.Head.Observe(now, head.rotation);
+                if (!record.AssistedAt(now) && IsUnderMap(body, scale, layers)) record.UnderMap.Add(now, deltaTime);
             }
         }
 
@@ -225,19 +264,30 @@ namespace Zetori.Cheats.Signals
             }
             float tick = PhotonNetwork.SerializationRate;
             int master = PhotonNetwork.CurrentRoom?.MasterClientId ?? -1;
-            foreach (KeyValuePair<int, int> entry in rates)
+            foreach (KeyValuePair<int, float> entry in rates)
             {
-                float spamRate = Mathf.Max(SpamRatio * BaselineWithout(entry.Key, tick), SpamTicks * tick);
-                records[entry.Key].ObserveTraffic(entry.Value, entry.Key == master ? spamRate * MasterAllowance : spamRate);
+                float spamRate = Mathf.Max(SpamRatio * (MedianWithout(rates, entry.Key) ?? tick), SpamTicks * tick);
+                records[entry.Key].ObserveTraffic(Mathf.RoundToInt(entry.Value), entry.Key == master ? spamRate * MasterAllowance : spamRate);
             }
         }
 
-        private static float BaselineWithout(int actor, float fallback)
+        private static void ReadTiming(float now)
+        {
+            if (now - roomJoined < TrafficJoinGrace) return;
+            offsets.Clear();
+            foreach (KeyValuePair<int, SignalRecord> entry in records)
+                if (entry.Value.Timing.Fresh(now)) offsets[entry.Key] = entry.Value.Timing.Offset;
+            if (offsets.Count <= MinimumTimingPeers) return;
+            foreach (KeyValuePair<int, float> entry in offsets)
+                if (MedianWithout(offsets, entry.Key) is float roomOffset) records[entry.Key].Timing.ObserveRoomOffset(now, roomOffset);
+        }
+
+        private static float? MedianWithout(Dictionary<int, float> values, int actor)
         {
             others.Clear();
-            foreach (KeyValuePair<int, int> entry in rates)
+            foreach (KeyValuePair<int, float> entry in values)
                 if (entry.Key != actor) others.Add(entry.Value);
-            if (others.Count == 0) return fallback;
+            if (others.Count == 0) return null;
             others.Sort();
             int middle = others.Count / 2;
             return others.Count % 2 == 1 ? others[middle] : (others[middle - 1] + others[middle]) * 0.5f;
@@ -252,6 +302,7 @@ namespace Zetori.Cheats.Signals
                 string userId = rig.Creator.UserId ?? string.Empty;
                 if (!record.PastChecked && userId.Length > 0) record.ObservePast(FlaggedPlayers.Find(userId));
                 record.ObserveProfile(ModKeys(rig.Creator.ActorNumber), NameIssueOf(rig.Creator.NickName), QuestOverrides(rig));
+                record.ObserveName(Time.unscaledTime, rig.Creator.NickName ?? string.Empty);
                 if (UnownedCosmetics(rig) is int unowned) record.ObserveCosmetics(unowned);
                 if (!ModdedLobby) FlaggedPlayers.Remember(userId, rig.Creator.NickName ?? string.Empty, record.Raised & ~ProfileSignals);
             }
@@ -265,6 +316,13 @@ namespace Zetori.Cheats.Signals
             record = new SignalRecord(Time.unscaledTime);
             records[actor] = record;
             return record;
+        }
+
+        private static SignalRecord? RemoteRecord(int actor)
+        {
+            if (actor <= 0 || room.Length == 0) return null;
+            Photon.Realtime.Player? player = PhotonNetwork.CurrentRoom?.GetPlayer(actor);
+            return player == null || player.IsLocal ? null : RecordOf(actor);
         }
 
         private static bool TryRig(NetPlayer player, out VRRig rig)
@@ -295,14 +353,46 @@ namespace Zetori.Cheats.Signals
         private static bool Touching(Vector3 point, float radius, int layers) =>
             Physics.CheckSphere(point, radius, layers, QueryTriggerInteraction.Ignore);
 
-        private static float GroundedReach(VRRig rig, float scale, int layers)
+        private static float Reach(VRRig rig, float scale, int layers, bool grounded)
         {
             Vector3 head = PositionOf(rig.head, rig.transform.position);
-            return Mathf.Max(HandReach(head, PositionOf(rig.leftHand, head), scale, layers), HandReach(head, PositionOf(rig.rightHand, head), scale, layers));
+            return Mathf.Max(HandReach(head, PositionOf(rig.leftHand, head), scale, layers, grounded), HandReach(head, PositionOf(rig.rightHand, head), scale, layers, grounded));
         }
 
-        private static float HandReach(Vector3 head, Vector3 hand, float scale, int layers) =>
-            Touching(hand, HandContactRadius * scale, layers) ? Vector3.Distance(head, hand) : 0f;
+        private static float HandReach(Vector3 head, Vector3 hand, float scale, int layers, bool grounded) =>
+            Touching(hand, HandContactRadius * scale, layers) == grounded ? Vector3.Distance(head, hand) : 0f;
+
+        private static bool Carried(VRRig rig, SignalRecord record, float now) =>
+            record.AssistedAt(now) || rig.mountedMovingSurfaceId != -1 || rig.portalShenanigansBit;
+
+        private static bool PassesThroughWall(Vector3 from, Vector3 to, float scale)
+        {
+            float distance = Vector3.Distance(from, to);
+            if (distance < WallMinimumMove * scale || distance > WallMaximumMove * scale) return false;
+            int layers = GTPlayer.LocomotionEnabledLayers;
+            if (!Physics.Linecast(from, to, out RaycastHit entry, layers, QueryTriggerInteraction.Ignore)) return false;
+            if (!Physics.Linecast(to, from, out RaycastHit exit, layers, QueryTriggerInteraction.Ignore)) return false;
+            if (entry.rigidbody != null || exit.rigidbody != null) return false;
+            return Vector3.Distance(entry.point, exit.point) >= WallThickness * scale;
+        }
+
+        private static bool IsUnderMap(Vector3 body, float scale, int layers) =>
+            Physics.Raycast(body + Vector3.up * MapProbeHeight, Vector3.down, MapProbeHeight - BodyClearRadius * scale, layers, QueryTriggerInteraction.Ignore)
+            && !Physics.Raycast(body, Vector3.down, MapProbeDepth, layers, QueryTriggerInteraction.Ignore);
+
+        private static bool NearSurface(Vector3 point, float radius)
+        {
+            int water = GTPlayer.Instance != null ? GTPlayer.Instance.waterLayer.value : 0;
+            return Touching(point, radius, GTPlayer.LocomotionEnabledLayers)
+                || (water != 0 && Physics.CheckSphere(point, radius, water, QueryTriggerInteraction.Collide));
+        }
+
+        private static bool NearOtherPlayer(VRRig tapping, Vector3 hand, float radius)
+        {
+            foreach (VRRig rig in VRRigCache.ActiveRigs)
+                if (rig != null && rig != tapping && Vector3.Distance(rig.transform.position, hand) < radius) return true;
+            return false;
+        }
 
         private static float TagDistance(VRRig tagger, VRRig target)
         {

@@ -129,6 +129,15 @@ namespace Zetori.Base.Config
         internal static ConfigEntry<bool> CheatAlertLowGravity = null!;
         internal static ConfigEntry<bool> CheatAlertTagBursts = null!;
         internal static ConfigEntry<bool> CheatAlertFlaggedBefore = null!;
+        internal static ConfigEntry<bool> CheatAlertThroughWalls = null!;
+        internal static ConfigEntry<bool> CheatAlertUnderMap = null!;
+        internal static ConfigEntry<bool> CheatAlertHeadSpin = null!;
+        internal static ConfigEntry<bool> CheatAlertFakeTaps = null!;
+        internal static ConfigEntry<bool> CheatAlertIdentitySpam = null!;
+        internal static ConfigEntry<bool> CheatAlertProjectileSpam = null!;
+        internal static ConfigEntry<bool> CheatAlertMasterTheft = null!;
+        internal static ConfigEntry<bool> CheatAlertPropertyTampering = null!;
+        internal static ConfigEntry<bool> CheatAlertLagTricks = null!;
 
         internal static ConfigEntry<int> HudFont = null!;
 
@@ -308,13 +317,22 @@ namespace Zetori.Base.Config
             CheatAlertSpeed = config.Bind("Cheat Alerts", "Too Fast", true, "Alert when a player moves faster than the game allows.");
             CheatAlertTeleports = config.Bind("Cheat Alerts", "Teleporting", true, "Alert when a player jumps across the map.");
             CheatAlertHovering = config.Bind("Cheat Alerts", "Hovering", true, "Alert when a player stays in the air without falling.");
-            CheatAlertArmReach = config.Bind("Cheat Alerts", "Long Arms", true, "Alert when a player's hands reach further than the game allows.");
+            CheatAlertArmReach = config.Bind("Cheat Alerts", "Long Arms", true, "Alert when a player's hands reach further than the game allows, holding on or in the air.");
             CheatAlertTagReach = config.Bind("Cheat Alerts", "Far Tags", true, "Alert when a player tags others from too far away.");
             CheatAlertHandMotion = config.Bind("Cheat Alerts", "Inhuman Hands", true, "Alert when a player's hands move faster, jerk harder or fling further than a real arm can, as a hand prediction cheat makes them.");
             CheatAlertNetworkSpam = config.Bind("Cheat Alerts", "Network Spam", true, "Alert when a player sends network messages many times faster than everyone else in the room, as lag, crash and sound spam cheats do.");
             CheatAlertLowGravity = config.Bind("Cheat Alerts", "Low Gravity", true, "Alert when a player in open air falls much slower than gravity pulls, or rises, as fly and low gravity cheats make them.");
             CheatAlertTagBursts = config.Bind("Cheat Alerts", "Tag Bursts", true, "Alert when a player tags several players in the same half second, as tag all cheats do.");
             CheatAlertFlaggedBefore = config.Bind("Cheat Alerts", "Flagged Before", true, "Alert when a player joins who raised cheat signals in an earlier room.");
+            CheatAlertThroughWalls = config.Bind("Cheat Alerts", "Through Walls", true, "Alert when a player passes through solid walls, as noclip cheats let them.");
+            CheatAlertUnderMap = config.Bind("Cheat Alerts", "Under The Map", true, "Alert when a player stays below the map's floor.");
+            CheatAlertHeadSpin = config.Bind("Cheat Alerts", "Spinning Head", true, "Alert when a player's head turns faster than a person can, as spin cheats make it.");
+            CheatAlertFakeTaps = config.Bind("Cheat Alerts", "Fake Taps", true, "Alert when a player plays hand tap sounds with their hand away from any surface, as tap spam cheats do.");
+            CheatAlertIdentitySpam = config.Bind("Cheat Alerts", "Colour Name Spam", true, "Alert when a player changes colour many times a second or keeps changing name, as rainbow and name changer cheats do.");
+            CheatAlertProjectileSpam = config.Bind("Cheat Alerts", "Projectile Spam", true, "Alert when a player launches projectiles faster than the game allows.");
+            CheatAlertMasterTheft = config.Bind("Cheat Alerts", "Took Master", true, "Alert when a player makes themselves master client, which the game never does.");
+            CheatAlertPropertyTampering = config.Bind("Cheat Alerts", "Property Tampering", true, "Alert when a player who is not master client changes the room's or another player's properties.");
+            CheatAlertLagTricks = config.Bind("Cheat Alerts", "Lag Tricks", true, "Alert when a player's updates stop and jump while everyone else's keep coming, run backwards in time or arrive far out of step with the room, as lag switches do.");
             HideRoomCodes = config.Bind("Streamer", "Hide Room Codes", false, "Show Hidden instead of room codes in every panel, the in-game panel and its keyboard, so they never appear on stream or in a recording.");
 
             HudFont = config.Bind("HUD", "Font Index", 0, new ConfigDescription("Index into the fonts found in the game, shared by the leaderboard and closest-lava overlays.", new AcceptableValueRange<int>(0, 255)));

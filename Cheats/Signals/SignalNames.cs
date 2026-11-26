@@ -22,6 +22,15 @@ namespace Zetori.Cheats.Signals
             (SignalKind.NetworkSpam, "Network spam"),
             (SignalKind.LowGravity, "Low gravity"),
             (SignalKind.TagBurst, "Tag burst"),
+            (SignalKind.ThroughWalls, "Through walls"),
+            (SignalKind.OutOfBounds, "Under the map"),
+            (SignalKind.HeadSpin, "Spinning head"),
+            (SignalKind.FakeTaps, "Fake taps"),
+            (SignalKind.IdentitySpam, "Colour/name spam"),
+            (SignalKind.ProjectileSpam, "Projectile spam"),
+            (SignalKind.MasterTheft, "Took master"),
+            (SignalKind.PropertyTampering, "Property tampering"),
+            (SignalKind.Timing, "Lag tricks"),
             (SignalKind.FlaggedBefore, "Flagged before")
         };
 

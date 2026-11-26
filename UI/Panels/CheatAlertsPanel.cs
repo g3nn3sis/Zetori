@@ -42,6 +42,15 @@ namespace Zetori.UI.Panels
             CasterConfig.CheatAlertNetworkSpam.Value = panel.Toggle("Network Spam", CasterConfig.CheatAlertNetworkSpam.Value);
             CasterConfig.CheatAlertLowGravity.Value = panel.Toggle("Low Gravity", CasterConfig.CheatAlertLowGravity.Value);
             CasterConfig.CheatAlertTagBursts.Value = panel.Toggle("Tag Bursts", CasterConfig.CheatAlertTagBursts.Value);
+            CasterConfig.CheatAlertThroughWalls.Value = panel.Toggle("Through Walls", CasterConfig.CheatAlertThroughWalls.Value);
+            CasterConfig.CheatAlertUnderMap.Value = panel.Toggle("Under The Map", CasterConfig.CheatAlertUnderMap.Value);
+            CasterConfig.CheatAlertHeadSpin.Value = panel.Toggle("Spinning Head", CasterConfig.CheatAlertHeadSpin.Value);
+            CasterConfig.CheatAlertFakeTaps.Value = panel.Toggle("Fake Taps", CasterConfig.CheatAlertFakeTaps.Value);
+            CasterConfig.CheatAlertIdentitySpam.Value = panel.Toggle("Colour/Name Spam", CasterConfig.CheatAlertIdentitySpam.Value);
+            CasterConfig.CheatAlertProjectileSpam.Value = panel.Toggle("Projectile Spam", CasterConfig.CheatAlertProjectileSpam.Value);
+            CasterConfig.CheatAlertMasterTheft.Value = panel.Toggle("Took Master", CasterConfig.CheatAlertMasterTheft.Value);
+            CasterConfig.CheatAlertPropertyTampering.Value = panel.Toggle("Property Tampering", CasterConfig.CheatAlertPropertyTampering.Value);
+            CasterConfig.CheatAlertLagTricks.Value = panel.Toggle("Lag Tricks", CasterConfig.CheatAlertLagTricks.Value);
             CasterConfig.CheatAlertFlaggedBefore.Value = panel.Toggle("Flagged Before", CasterConfig.CheatAlertFlaggedBefore.Value);
             panel.Button("Forget Flagged Players", FlaggedPlayers.Clear, FlaggedPlayers.Count > 0);
         }

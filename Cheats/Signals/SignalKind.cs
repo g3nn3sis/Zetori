@@ -22,6 +22,15 @@ namespace Zetori.Cheats.Signals
         NetworkSpam = 1 << 11,
         LowGravity = 1 << 12,
         TagBurst = 1 << 13,
-        FlaggedBefore = 1 << 14
+        FlaggedBefore = 1 << 14,
+        ThroughWalls = 1 << 15,
+        OutOfBounds = 1 << 16,
+        HeadSpin = 1 << 17,
+        FakeTaps = 1 << 18,
+        IdentitySpam = 1 << 19,
+        ProjectileSpam = 1 << 20,
+        MasterTheft = 1 << 21,
+        PropertyTampering = 1 << 22,
+        Timing = 1 << 23
     }
 }

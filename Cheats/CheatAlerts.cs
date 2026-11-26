@@ -83,6 +83,15 @@ namespace Zetori.Cheats
             SignalKind.LowGravity => CasterConfig.CheatAlertLowGravity,
             SignalKind.TagBurst => CasterConfig.CheatAlertTagBursts,
             SignalKind.FlaggedBefore => CasterConfig.CheatAlertFlaggedBefore,
+            SignalKind.ThroughWalls => CasterConfig.CheatAlertThroughWalls,
+            SignalKind.OutOfBounds => CasterConfig.CheatAlertUnderMap,
+            SignalKind.HeadSpin => CasterConfig.CheatAlertHeadSpin,
+            SignalKind.FakeTaps => CasterConfig.CheatAlertFakeTaps,
+            SignalKind.IdentitySpam => CasterConfig.CheatAlertIdentitySpam,
+            SignalKind.ProjectileSpam => CasterConfig.CheatAlertProjectileSpam,
+            SignalKind.MasterTheft => CasterConfig.CheatAlertMasterTheft,
+            SignalKind.PropertyTampering => CasterConfig.CheatAlertPropertyTampering,
+            SignalKind.Timing => CasterConfig.CheatAlertLagTricks,
             _ => CasterConfig.CheatAlertTagReach
         };
 
