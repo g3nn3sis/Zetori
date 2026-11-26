@@ -10,13 +10,12 @@ namespace Zetori.Cheats.Signals
     {
         internal const float FastSpeed = 14f;
         internal const float FastSeconds = 1.5f;
-        internal const float HoverSeconds = 3f;
         internal const float VanillaReach = 1f;
         internal const float LongReach = 1.3f;
         internal const float LongReachSeconds = 1f;
         internal const float AirReach = 1.6f;
         internal const float AirReachSeconds = 1.5f;
-        internal const float FarTagDistance = 4f;
+        internal const float FarTagDistance = 2.5f;
         internal const float RoleMargin = 1.5f;
         private const float FastPushesToFlag = 5f;
         private const float PushFadeSeconds = 30f;
@@ -32,12 +31,11 @@ namespace Zetori.Cheats.Signals
         private const float MinimumElapsed = 0.001f;
         private const float AssistGrace = 3f;
         private const float ClearGrace = 0.3f;
+        private const float MapSettleSeconds = 1f;
         private const float WallFadeSeconds = 60f;
         private const float WallPassesToFlag = 3f;
         private const float UnderMapFadeSeconds = 30f;
         private const float UnderMapSecondsToFlag = 3f;
-        private const float TapFadeSeconds = 30f;
-        private const float FakeTapsToFlag = 8f;
         private const float ColorWindow = 2f;
         private const int ColorChangesPerBurst = 8;
         private const int ColorBurstsToFlag = 2;
@@ -55,13 +53,13 @@ namespace Zetori.Cheats.Signals
         private Vector3? lastSync;
         private float lastSyncTime;
         private float fastRun;
-        private float hoverRun;
         private float lastTouched = float.NaN;
         private float lastPushCheck = float.NaN;
         private int? updatesSincePush;
         private float pushScore;
         private float assistedUntil = float.PositiveInfinity;
         private float obstructedUntil = float.PositiveInfinity;
+        private float mapLoadedSince = float.NaN;
         private int unownedChecks;
         private SignalKind announced;
         private string? lastName;
@@ -77,7 +75,6 @@ namespace Zetori.Cheats.Signals
         internal float LimitAtFastest { get; private set; }
         internal bool FastPushing { get; private set; }
         internal int Teleports { get; private set; }
-        internal float LongestHover { get; private set; }
         internal float LongestReach { get; private set; }
         internal float ReachSeconds { get; private set; }
         internal float LongestAirReach { get; private set; }
@@ -96,7 +93,6 @@ namespace Zetori.Cheats.Signals
         internal TalliedSignal WallPasses { get; } = new TalliedSignal(WallFadeSeconds, WallPassesToFlag);
         internal TalliedSignal UnderMap { get; } = new TalliedSignal(UnderMapFadeSeconds, UnderMapSecondsToFlag);
         internal HeadSpin Head { get; } = new HeadSpin();
-        internal TalliedSignal FakeTaps { get; } = new TalliedSignal(TapFadeSeconds, FakeTapsToFlag);
         internal RateBurst ColorChanges { get; } = new RateBurst(ColorWindow, ColorChangesPerBurst, ColorBurstsToFlag);
         internal TalliedSignal NameChanges { get; } = new TalliedSignal(NameFadeSeconds, NameChangesToFlag);
         internal RateBurst Projectiles { get; } = new RateBurst(ProjectileWindow, ProjectilesPerBurst, ProjectileBurstsToFlag);
@@ -109,7 +105,6 @@ namespace Zetori.Cheats.Signals
 
         internal bool Fast => LongestFast >= FastSeconds || FastPushing;
         internal bool Teleporting => Teleports >= TeleportsToFlag;
-        internal bool Hovering => LongestHover >= HoverSeconds;
         internal bool LongArms => ReachSeconds >= LongReachSeconds || LongAirReachSeconds >= AirReachSeconds;
         internal bool FarTagging => FarTags >= FarTagsToFlag;
         internal bool InhumanHands => Hands.Inhuman;
@@ -120,7 +115,6 @@ namespace Zetori.Cheats.Signals
         internal bool ThroughWalls => WallPasses.Raised;
         internal bool OutOfBounds => UnderMap.Raised;
         internal bool SpinningHead => Head.Spinning;
-        internal bool FakeTapping => FakeTaps.Raised;
         internal bool IdentitySpam => ColorChanges.Bursting || NameChanges.Raised;
         internal bool ProjectileSpam => Projectiles.Bursting;
         internal bool TookMaster => MasterTakeovers.Raised;
@@ -136,24 +130,22 @@ namespace Zetori.Cheats.Signals
 
         internal SignalKind Raised =>
             Kind(Reported, SignalKind.GameReport) | Kind(Modded, SignalKind.ModData) | Kind(OddName, SignalKind.Name) | Kind(Tweaked, SignalKind.QuestTweaks)
-            | Kind(Unowned, SignalKind.Cosmetics) | Kind(Fast, SignalKind.Speed) | Kind(Teleporting, SignalKind.Teleports) | Kind(Hovering, SignalKind.Hovering)
+            | Kind(Unowned, SignalKind.Cosmetics) | Kind(Fast, SignalKind.Speed) | Kind(Teleporting, SignalKind.Teleports)
             | Kind(LongArms, SignalKind.ArmReach) | Kind(FarTagging, SignalKind.TagReach) | Kind(InhumanHands, SignalKind.HandMotion)
             | Kind(Spamming, SignalKind.NetworkSpam) | Kind(LowGravity, SignalKind.LowGravity) | Kind(BurstTagging, SignalKind.TagBurst)
             | Kind(FlaggedBefore, SignalKind.FlaggedBefore) | Kind(ThroughWalls, SignalKind.ThroughWalls) | Kind(OutOfBounds, SignalKind.OutOfBounds)
-            | Kind(SpinningHead, SignalKind.HeadSpin) | Kind(FakeTapping, SignalKind.FakeTaps) | Kind(IdentitySpam, SignalKind.IdentitySpam)
+            | Kind(SpinningHead, SignalKind.HeadSpin) | Kind(IdentitySpam, SignalKind.IdentitySpam)
             | Kind(ProjectileSpam, SignalKind.ProjectileSpam) | Kind(TookMaster, SignalKind.MasterTheft) | Kind(Tampered, SignalKind.PropertyTampering)
             | Kind(LagTricks, SignalKind.Timing);
 
         internal int Count => CountOf(Raised);
 
-        internal void Observe(float deltaTime, float speed, bool hovering, float reach, float airReach)
+        internal void Observe(float deltaTime, float speed, float reach, float airReach)
         {
             Watched += deltaTime;
             TopSpeed = Mathf.Max(TopSpeed, speed);
             fastRun = speed >= FastSpeed ? fastRun + deltaTime : 0f;
             LongestFast = Mathf.Max(LongestFast, fastRun);
-            hoverRun = hovering ? hoverRun + deltaTime : 0f;
-            LongestHover = Mathf.Max(LongestHover, hoverRun);
             LongestReach = Mathf.Max(LongestReach, reach);
             if (reach >= LongReach) ReachSeconds += deltaTime;
             LongestAirReach = Mathf.Max(LongestAirReach, airReach);
@@ -204,6 +196,14 @@ namespace Zetori.Cheats.Signals
         }
 
         internal bool AssistedAt(float now) => now < assistedUntil;
+
+        internal void ObserveMap(float now, bool loaded)
+        {
+            if (!loaded) mapLoadedSince = float.NaN;
+            else if (float.IsNaN(mapLoadedSince)) mapLoadedSince = now;
+        }
+
+        internal bool MapLoadedAt(float now) => !float.IsNaN(mapLoadedSince) && now - mapLoadedSince >= MapSettleSeconds;
 
         internal void ObservePosition(Vector3 synced, float now, float scale, bool flaggedTeleport)
         {

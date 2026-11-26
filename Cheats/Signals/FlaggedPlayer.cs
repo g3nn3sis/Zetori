@@ -36,9 +36,18 @@ namespace Zetori.Cheats.Signals
         {
             string[] fields = line.Split(Separator);
             if (fields.Length != FieldCount || fields[0].Length == 0) return null;
-            if (!Enum.TryParse(fields[2], out SignalKind signals) || signals == SignalKind.None) return null;
+            SignalKind signals = ParseSignals(fields[2]);
+            if (signals == SignalKind.None) return null;
             if (!DateTime.TryParse(fields[3], CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out DateTime flagged)) return null;
             return new FlaggedPlayer(fields[0], fields[1], signals, flagged.ToLocalTime());
+        }
+
+        private static SignalKind ParseSignals(string field)
+        {
+            SignalKind signals = SignalKind.None;
+            foreach (string name in field.Split(','))
+                if (Enum.TryParse(name.Trim(), out SignalKind kind)) signals |= kind;
+            return signals;
         }
     }
 }

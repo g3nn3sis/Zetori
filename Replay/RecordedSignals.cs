@@ -27,7 +27,6 @@ namespace Zetori.Replay
             RecordedSignal signals = RecordedSignal.None;
             if (record.Fast) signals |= RecordedSignal.Speed;
             if (record.Teleporting) signals |= RecordedSignal.Teleports;
-            if (record.Hovering) signals |= RecordedSignal.Hovering;
             if (record.LongArms) signals |= RecordedSignal.ArmReach;
             if (record.FarTagging) signals |= RecordedSignal.TagReach;
             if (record.InhumanHands) signals |= RecordedSignal.HandMotion;

@@ -11,7 +11,7 @@ namespace Zetori.UI.InGame
 {
     internal static class InGameSignalReport
     {
-        internal const int Lines = 24;
+        internal const int Lines = 22;
         private const int ShownModKeys = 3;
         private const int ReasonLength = 36;
         private const string Ellipsis = "...";
@@ -19,7 +19,7 @@ namespace Zetori.UI.InGame
         private const string RaisedColor = "FF8C1A";
         private const string ClearColor = "8CE08C";
         private const string Caveat =
-            "Hints, not proof. Game reports are the game's own cheat checks, run on your headset. Lag, launchers, ropes, gliders and water can raise the speed, teleport, hover and tag signals; bad connections can raise lag tricks, and doors or moving platforms can raise through walls. The game caps arm reach at 1 m. Quest tweaks are headset settings changed with developer tools; only Quest headsets report them.";
+            "Hints, not proof. Game reports are the game's own cheat checks, run on your headset. Lag, launchers, ropes and gliders can raise the speed, teleport and tag signals; bad connections can raise lag tricks, and doors or moving platforms can raise through walls. The game caps arm reach at 1 m. Quest tweaks are headset settings changed with developer tools; only Quest headsets report them.";
 
         private static readonly (SystemProperties Flag, string Name)[] OverrideNames =
         {
@@ -58,7 +58,6 @@ namespace Zetori.UI.InGame
             Line(builder, "Cosmetics", CosmeticsText(record), record.Unowned);
             Line(builder, "Speed", SpeedText(record), record.Fast);
             Line(builder, "Teleports", record.Teleports.ToString(CultureInfo.InvariantCulture), record.Teleporting);
-            Line(builder, "Hovering", record.LongestHover >= 1f ? $"Longest {DisplayFormat.Decimal(record.LongestHover)} s off the ground" : "No", record.Hovering);
             Line(builder, "Arm reach", ReachText(record), record.LongArms);
             Line(builder, "Hand motion", HandText(record.Hands), record.InhumanHands);
             Line(builder, "Tag reach", TagText(record), record.FarTagging);
@@ -68,7 +67,6 @@ namespace Zetori.UI.InGame
             Line(builder, "Walls", WallText(record.WallPasses), record.ThroughWalls);
             Line(builder, "Under the map", SecondsText(record.UnderMap, "below the floor"), record.OutOfBounds);
             Line(builder, "Head turning", HeadText(record.Head), record.SpinningHead);
-            Line(builder, "Hand taps", CountText(record.FakeTaps, "away from any surface", "fake tap", "fake taps"), record.FakeTapping);
             Line(builder, "Colour and name", IdentityText(record), record.IdentitySpam);
             Line(builder, "Projectiles", BurstText(record.Projectiles, "launch", "launches"), record.ProjectileSpam);
             Line(builder, "Master client", record.TookMaster ? "Made themselves master" : "No", record.TookMaster);

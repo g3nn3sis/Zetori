@@ -35,7 +35,6 @@ namespace Zetori.UI.Panels
             CasterConfig.CheatAlertCosmetics.Value = panel.Toggle("Unowned Cosmetics", CasterConfig.CheatAlertCosmetics.Value);
             CasterConfig.CheatAlertSpeed.Value = panel.Toggle("Too Fast", CasterConfig.CheatAlertSpeed.Value);
             CasterConfig.CheatAlertTeleports.Value = panel.Toggle("Teleporting", CasterConfig.CheatAlertTeleports.Value);
-            CasterConfig.CheatAlertHovering.Value = panel.Toggle("Hovering", CasterConfig.CheatAlertHovering.Value);
             CasterConfig.CheatAlertArmReach.Value = panel.Toggle("Long Arms", CasterConfig.CheatAlertArmReach.Value);
             CasterConfig.CheatAlertTagReach.Value = panel.Toggle("Far Tags", CasterConfig.CheatAlertTagReach.Value);
             CasterConfig.CheatAlertHandMotion.Value = panel.Toggle("Inhuman Hands", CasterConfig.CheatAlertHandMotion.Value);
@@ -45,7 +44,6 @@ namespace Zetori.UI.Panels
             CasterConfig.CheatAlertThroughWalls.Value = panel.Toggle("Through Walls", CasterConfig.CheatAlertThroughWalls.Value);
             CasterConfig.CheatAlertUnderMap.Value = panel.Toggle("Under The Map", CasterConfig.CheatAlertUnderMap.Value);
             CasterConfig.CheatAlertHeadSpin.Value = panel.Toggle("Spinning Head", CasterConfig.CheatAlertHeadSpin.Value);
-            CasterConfig.CheatAlertFakeTaps.Value = panel.Toggle("Fake Taps", CasterConfig.CheatAlertFakeTaps.Value);
             CasterConfig.CheatAlertIdentitySpam.Value = panel.Toggle("Colour/Name Spam", CasterConfig.CheatAlertIdentitySpam.Value);
             CasterConfig.CheatAlertProjectileSpam.Value = panel.Toggle("Projectile Spam", CasterConfig.CheatAlertProjectileSpam.Value);
             CasterConfig.CheatAlertMasterTheft.Value = panel.Toggle("Took Master", CasterConfig.CheatAlertMasterTheft.Value);

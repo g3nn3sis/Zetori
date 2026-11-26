@@ -18,10 +18,7 @@ namespace Zetori.Cheats.Signals
         private const float SampleInterval = 0.05f;
         private const float MaximumStep = 0.25f;
         private const float ProfileInterval = 2f;
-        private const float HoverHeight = 2.5f;
-        private const float HoverFallSpeed = -0.5f;
         private const float HandContactRadius = 0.2f;
-        private const float BodyContactRadius = 0.45f;
         private const float HandClearRadius = 0.3f;
         private const float BodyClearRadius = 0.8f;
         private const float TrafficInterval = 1f;
@@ -32,6 +29,8 @@ namespace Zetori.Cheats.Signals
         private const float MasterAllowance = 2f;
         private const float MinimumScale = 0.01f;
         private const float DuplicateTagWindow = 0.5f;
+        private const float TagLookback = 1f;
+        private const float TagSkew = 0.25f;
         private const int MaximumNameLength = 12;
         private const float AirReachMaximumSpeed = 6f;
         private const float WallMinimumMove = 0.3f;
@@ -39,8 +38,6 @@ namespace Zetori.Cheats.Signals
         private const float WallThickness = 0.2f;
         private const float MapProbeHeight = 150f;
         private const float MapProbeDepth = 100f;
-        private const float TapSurfaceRadius = 0.5f;
-        private const float TapPlayerRadius = 1f;
         private const int MinimumTimingPeers = 2;
         private const string GameModeKey = "gameMode";
         private const string ModdedMarker = "MODDED";
@@ -68,6 +65,7 @@ namespace Zetori.Cheats.Signals
 
         private static readonly AccessTools.FieldRef<VRRig, bool>? CosmeticsReady = ReadyAccessor();
         private static readonly Dictionary<int, SignalRecord> records = new Dictionary<int, SignalRecord>();
+        private static readonly Dictionary<int, RigTrail> trails = new Dictionary<int, RigTrail>();
         private static readonly Dictionary<int, int> counts = new Dictionary<int, int>();
         private static readonly Dictionary<int, float> rates = new Dictionary<int, float>();
         private static readonly Dictionary<int, float> offsets = new Dictionary<int, float>();
@@ -100,7 +98,7 @@ namespace Zetori.Cheats.Signals
             lastTag = (tagged.ActorNumber, tagging.ActorNumber, now);
             if (tagging.IsLocal) SessionStats.CountTag();
             if (!TryRig(tagging, out VRRig tagger) || !TryRig(tagged, out VRRig target) || tagger.isOfflineVRRig) return;
-            RecordOf(tagging.ActorNumber).ObserveTag(now, TagDistance(tagger, target) / ScaleOf(tagger));
+            RecordOf(tagging.ActorNumber).ObserveTag(now, TagDistance(tagger, target, now) / Mathf.Max(ScaleOf(tagger), ScaleOf(target)));
         }
 
         internal static void ObserveSync(VRRig rig, bool flaggedTeleport, double serverTime, bool grounded)
@@ -110,7 +108,7 @@ namespace Zetori.Cheats.Signals
             float scale = ScaleOf(rig);
             SignalRecord record = RecordOf(rig.Creator.ActorNumber);
             record.Timing.ObserveSync(now, serverTime, PhotonNetwork.Time, rig.syncPos, scale, ++syncs, flaggedTeleport);
-            if (record.LastSync is Vector3 previous && !flaggedTeleport && !Carried(rig, record, now) && PassesThroughWall(previous, rig.syncPos, scale))
+            if (record.LastSync is Vector3 previous && !flaggedTeleport && record.MapLoadedAt(now) && !Carried(rig, record, now) && PassesThroughWall(previous, rig.syncPos, scale))
                 record.WallPasses.Add(now, 1f);
             record.ObservePosition(rig.syncPos, now, scale, flaggedTeleport);
             bool touched = record.TakeTouch(grounded, rig.LastTouchedGroundAtNetworkTime) || flaggedTeleport;
@@ -133,15 +131,6 @@ namespace Zetori.Cheats.Signals
             Transform parent = target.parent != null ? target.parent : root;
             offset = rig.syncRotation * root.InverseTransformPoint(parent.TransformPoint(map.syncPos));
             return true;
-        }
-
-        internal static void ObserveHandTap(VRRig rig, bool isLeftHand, bool onStilt)
-        {
-            if (onStilt || !IsRemote(rig)) return;
-            float scale = ScaleOf(rig);
-            Vector3 hand = PositionOf(isLeftHand ? rig.leftHand : rig.rightHand, rig.transform.position);
-            if (NearSurface(hand, TapSurfaceRadius * scale) || NearOtherPlayer(rig, hand, TapPlayerRadius * scale)) return;
-            RecordOf(rig.Creator.ActorNumber).FakeTaps.Add(Time.unscaledTime, 1f);
         }
 
         internal static void ObserveProjectile(int actor) => RemoteRecord(actor)?.Projectiles.Observe(Time.unscaledTime);
@@ -222,6 +211,7 @@ namespace Zetori.Cheats.Signals
                 room = current;
                 roomJoined = Time.unscaledTime;
                 records.Clear();
+                trails.Clear();
                 NetworkTraffic.TakeCounts(counts);
             }
             return current.Length > 0;
@@ -234,20 +224,23 @@ namespace Zetori.Cheats.Signals
             int water = GTPlayer.Instance != null ? GTPlayer.Instance.waterLayer.value : 0;
             foreach (VRRig rig in VRRigCache.ActiveRigs)
             {
+                if (rig == null || rig.Creator == null) continue;
+                Track(rig, now);
                 if (!IsRemote(rig)) continue;
                 float scale = ScaleOf(rig);
                 Vector3 velocity = rig.LatestVelocity();
                 Vector3 body = rig.transform.position;
                 Vector3 left = PositionOf(rig.leftHand, body);
                 Vector3 right = PositionOf(rig.rightHand, body);
-                bool contact = Touching(body, BodyContactRadius * scale, layers) || Touching(left, HandContactRadius * scale, layers) || Touching(right, HandContactRadius * scale, layers);
                 SignalRecord record = RecordOf(rig.Creator.ActorNumber);
+                record.ObserveMap(now, LoadedMap.Around(rig, layers));
+                bool mapLoaded = record.MapLoadedAt(now);
                 float speed = velocity.magnitude / scale;
                 float airReach = speed < AirReachMaximumSpeed && !record.AssistedAt(now) ? Reach(rig, scale, layers, false) / scale : 0f;
-                record.Observe(deltaTime, speed, IsHovering(body, velocity, scale, layers, contact), Reach(rig, scale, layers, true) / scale, airReach);
-                record.ObserveSurroundings(now, MovementAssists.Assists(rig), IsClear(body, left, right, scale, layers, water));
+                record.Observe(deltaTime, speed, Reach(rig, scale, layers, true) / scale, airReach);
+                record.ObserveSurroundings(now, MovementAssists.Assists(rig), mapLoaded && IsClear(body, left, right, scale, layers, water));
                 if (rig.head?.rigTarget is Transform head) record.Head.Observe(now, head.rotation);
-                if (!record.AssistedAt(now) && IsUnderMap(body, scale, layers)) record.UnderMap.Add(now, deltaTime);
+                if (mapLoaded && !record.AssistedAt(now) && IsUnderMap(body, scale, layers)) record.UnderMap.Add(now, deltaTime);
             }
         }
 
@@ -339,9 +332,6 @@ namespace Zetori.Cheats.Signals
 
         private static float ScaleOf(VRRig rig) => Mathf.Max(MinimumScale, rig.scaleFactor);
 
-        private static bool IsHovering(Vector3 body, Vector3 velocity, float scale, int layers, bool contact) =>
-            velocity.y >= HoverFallSpeed * scale && !contact && !Physics.Raycast(body, Vector3.down, HoverHeight * scale, layers, QueryTriggerInteraction.Ignore);
-
         private static bool IsClear(Vector3 body, Vector3 left, Vector3 right, float scale, int layers, int water) =>
             !Touching(body, BodyClearRadius * scale, layers)
             && !Touching(left, HandClearRadius * scale, layers)
@@ -380,28 +370,20 @@ namespace Zetori.Cheats.Signals
             Physics.Raycast(body + Vector3.up * MapProbeHeight, Vector3.down, MapProbeHeight - BodyClearRadius * scale, layers, QueryTriggerInteraction.Ignore)
             && !Physics.Raycast(body, Vector3.down, MapProbeDepth, layers, QueryTriggerInteraction.Ignore);
 
-        private static bool NearSurface(Vector3 point, float radius)
-        {
-            int water = GTPlayer.Instance != null ? GTPlayer.Instance.waterLayer.value : 0;
-            return Touching(point, radius, GTPlayer.LocomotionEnabledLayers)
-                || (water != 0 && Physics.CheckSphere(point, radius, water, QueryTriggerInteraction.Collide));
-        }
+        private static float TagDistance(VRRig tagger, VRRig target, float now) =>
+            Track(tagger, now).ClosestHandTo(Track(target, now), now - TagLookback, TagSkew);
 
-        private static bool NearOtherPlayer(VRRig tapping, Vector3 hand, float radius)
+        private static RigTrail Track(VRRig rig, float now)
         {
-            foreach (VRRig rig in VRRigCache.ActiveRigs)
-                if (rig != null && rig != tapping && Vector3.Distance(rig.transform.position, hand) < radius) return true;
-            return false;
-        }
-
-        private static float TagDistance(VRRig tagger, VRRig target)
-        {
-            Vector3 body = target.transform.position;
-            Vector3 head = PositionOf(target.head, body);
-            float closest = float.PositiveInfinity;
-            foreach (Vector3 hand in new[] { PositionOf(tagger.leftHand, tagger.transform.position), PositionOf(tagger.rightHand, tagger.transform.position) })
-                closest = Mathf.Min(closest, Vector3.Distance(hand, body), Vector3.Distance(hand, head));
-            return closest;
+            int actor = rig.Creator.ActorNumber;
+            if (!trails.TryGetValue(actor, out RigTrail trail))
+            {
+                trail = new RigTrail();
+                trails[actor] = trail;
+            }
+            Vector3 body = rig.transform.position;
+            trail.Add(now, body, PositionOf(rig.head, body), PositionOf(rig.leftHand, body), PositionOf(rig.rightHand, body));
+            return trail;
         }
 
         private static Vector3 PositionOf(VRMap? map, Vector3 fallback) =>
