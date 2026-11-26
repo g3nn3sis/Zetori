@@ -23,5 +23,6 @@ namespace Zetori.Base
         internal static string Tools => Path.Combine(Root, "Tools");
         internal static string DefaultConfig => Path.Combine(Configs, DefaultConfigName + ConfigExtension);
         internal static string PresetDefaults => Path.Combine(Root, "PresetDefaults.txt");
+        internal static string TipsSeen => Path.Combine(Root, "TipsSeen.txt");
     }
 }

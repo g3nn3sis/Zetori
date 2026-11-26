@@ -25,6 +25,11 @@ namespace Zetori.UI.InGame
         private const string PlayersTitle = "Players";
         private const string HomeLabel = "Home";
         private const string BackLabel = "Back";
+        private const string PanelTitle = "Panel";
+        private const string PlayersTip = "Everyone in the room: spectate, mute or report them, and see their cheat signals.";
+        private const string VrCameraTip = "Stream from the camera tablet, pick its shot and set its field of view.";
+        private const string HostTip = "Run your own matches: the scoreboard, match timer and Tag Manager.";
+        private const string PanelTip = "Size, haptics and placement of this panel.";
         private const string Offline = "Not in a room";
         private const float TitleWeight = 3f;
         private const float BrandWeight = 4f;
@@ -33,6 +38,20 @@ namespace Zetori.UI.InGame
 
         private static readonly string BrandName = PluginInfo.Name.ToUpperInvariant();
         private static readonly PanelId[] FeaturedPanels = { PanelId.Main, PanelId.Capture, PanelId.Stats };
+
+        private readonly struct HomeGroup
+        {
+            internal readonly string Title;
+            internal readonly int First;
+            internal readonly int End;
+
+            internal HomeGroup(string title, int first, int end)
+            {
+                Title = title;
+                First = first;
+                End = end;
+            }
+        }
 
         private readonly struct Section
         {
@@ -59,7 +78,7 @@ namespace Zetori.UI.InGame
         private readonly Action[] openSection;
         private readonly string[] featuredDetails = new string[FeaturedCount];
         private readonly Action[] featuredRows;
-        private readonly Action[] gridRows;
+        private readonly Action[] homeRows;
         private readonly Action headerRow;
         private readonly Action goHome;
         private readonly Action backToPlayers;
@@ -79,7 +98,8 @@ namespace Zetori.UI.InGame
             playerPage = new InGamePlayerPage(surface);
             recordedPlayerPage = new InGameRecordedPlayerPage(surface);
             var players = new InGamePlayersPage(surface, OpenPlayer, OpenRecordedPlayer);
-            sections = BuildSections(new PanelContent(owner), _ => players.Draw(), recenter, close);
+            var groups = new List<HomeGroup>();
+            sections = BuildSections(new PanelContent(owner), _ => players.Draw(), recenter, close, groups);
             playersSection = Array.FindIndex(sections, section => section.Title == PlayersTitle);
             openSection = new Action[sections.Length];
             for (int i = 0; i < sections.Length; i++)
@@ -94,12 +114,7 @@ namespace Zetori.UI.InGame
                 int first = row * FeaturedColumns;
                 featuredRows[row] = () => DrawFeaturedRow(first);
             }
-            gridRows = new Action[(sections.Length - FeaturedCount + GridColumns - 1) / GridColumns];
-            for (int row = 0; row < gridRows.Length; row++)
-            {
-                int first = FeaturedCount + row * GridColumns;
-                gridRows[row] = () => DrawGridRow(first);
-            }
+            homeRows = BuildHomeRows(groups);
             goHome = () => requestedPage = Home;
             backToPlayers = () => requestedPage = playersSection;
             headerRow = DrawHeaderRow;
@@ -171,26 +186,51 @@ namespace Zetori.UI.InGame
             catch (Exception e) { Log.ExceptionOnce($"in-game-panel-{section.Title}", e, $"Drawing the in-game {section.Title} page failed"); }
         }
 
-        private static Section[] BuildSections(PanelContent content, Action<IPanelSurface> drawPlayers, Action recenter, Action close)
+        private static Section[] BuildSections(PanelContent content, Action<IPanelSurface> drawPlayers, Action recenter, Action close, List<HomeGroup> groups)
         {
             var list = new List<Section>
             {
-                new Section(RoomTitle, PanelCatalog.Icon(PanelId.Main), content.For(PanelId.Main), RoomSummary),
-                new Section(PlayersTitle, IconGlyph.People, drawPlayers, PlayersSummary),
-                new Section("VR Camera", IconGlyph.Camcorder, VrCameraPanel.Draw, VrCameraPanel.Summary),
+                new Section(RoomTitle, PanelCatalog.Icon(PanelId.Main), content.Described(PanelId.Main), RoomSummary),
+                new Section(PlayersTitle, IconGlyph.People, PanelContent.WithTip(PlayersTip, drawPlayers), PlayersSummary),
+                new Section("VR Camera", IconGlyph.Camcorder, PanelContent.WithTip(VrCameraTip, VrCameraPanel.Draw), VrCameraPanel.Summary),
                 Featured(content, PanelId.Capture, CapturePanel.Summary),
                 Featured(content, PanelId.Stats, StatsPanel.Summary),
-                new Section("Host", IconGlyph.Crown, new HostPanel().Draw, HostPanel.Summary)
+                new Section("Host", IconGlyph.Crown, PanelContent.WithTip(HostTip, new HostPanel().Draw), HostPanel.Summary)
             };
-            foreach (PanelId[] column in PanelCatalog.Columns)
-                foreach (PanelId id in column)
-                    if (!Array.Exists(FeaturedPanels, featured => featured == id)) list.Add(new Section(PanelCatalog.Title(id), PanelCatalog.Icon(id), content.For(id)));
-            list.Add(new Section("Panel", IconGlyph.Panel, new InGameSettingsPanel(recenter, close).Draw));
+            foreach (PanelGroup group in PanelCatalog.Groups)
+            {
+                int first = list.Count;
+                foreach (PanelId id in group.Panels)
+                    if (!Array.Exists(FeaturedPanels, featured => featured == id)) list.Add(new Section(PanelCatalog.Title(id), PanelCatalog.Icon(id), content.Described(id)));
+                groups.Add(new HomeGroup(group.Title, first, list.Count));
+            }
+            list.Add(new Section(PanelTitle, IconGlyph.Panel, PanelContent.WithTip(PanelTip, new InGameSettingsPanel(recenter, close).Draw)));
+            HomeGroup last = groups[groups.Count - 1];
+            groups[groups.Count - 1] = new HomeGroup(last.Title, last.First, list.Count);
             return list.ToArray();
         }
 
         private static Section Featured(PanelContent content, PanelId id, Func<string> describe) =>
-            new Section(PanelCatalog.Title(id), PanelCatalog.Icon(id), content.For(id), describe);
+            new Section(PanelCatalog.Title(id), PanelCatalog.Icon(id), content.Described(id), describe);
+
+        private Action[] BuildHomeRows(List<HomeGroup> groups)
+        {
+            var rows = new List<Action>();
+            foreach (HomeGroup group in groups)
+            {
+                if (group.End <= group.First) continue;
+                string title = group.Title;
+                rows.Add(() => surface.Label(title));
+                for (int first = group.First; first < group.End; first += GridColumns)
+                {
+                    int rowFirst = first;
+                    int end = group.End;
+                    Action row = () => DrawGridRow(rowFirst, end);
+                    rows.Add(() => surface.HorizontalArea(row));
+                }
+            }
+            return rows.ToArray();
+        }
 
         private void DrawHeaderRow()
         {
@@ -218,7 +258,7 @@ namespace Zetori.UI.InGame
         private void DrawHome()
         {
             foreach (Action row in featuredRows) surface.HorizontalArea(row);
-            foreach (Action row in gridRows) surface.HorizontalArea(row);
+            foreach (Action row in homeRows) row();
         }
 
         private void DrawFeaturedRow(int first)
@@ -230,11 +270,11 @@ namespace Zetori.UI.InGame
             }
         }
 
-        private void DrawGridRow(int first)
+        private void DrawGridRow(int first, int end)
         {
             for (int i = first; i < first + GridColumns; i++)
             {
-                if (i < sections.Length) surface.Tile(sections[i].Title, sections[i].Icon, openSection[i]);
+                if (i < end) surface.Tile(sections[i].Title, sections[i].Icon, openSection[i]);
                 else surface.Spacer();
             }
         }

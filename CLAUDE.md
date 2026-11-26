@@ -54,7 +54,7 @@ Player/Moderation/     Mute and report through the game's scoreboard
 History/               Recent players, saved rooms, session stats
 Cheats/                Cheat alerts: on-screen feed, headset toast
 Cheats/Signals/        Cheat and mod signal detection, flagged players, the patches that feed them
-Hud/                   Canvas HUD framework: HudOverlay, slots, positions, HUD asset bundle
+Hud/                   Canvas HUD framework: HudOverlay, slots, positions, HUD asset bundle, headset-only text
 Hud/Overlays/          Leaderboard, Scoreboard, Closest Lava, Kill Feed, MiniMap
 NameTags/              Nametags
 TagManager/            Tag Manager and its patches
@@ -77,6 +77,7 @@ Replay/Timeline/       Replay timeline bar
 UI/                    IMGUI panel system: CoreUI, PanelOrchestrator, PanelLayout, PanelCatalog, Panel, theme, scaling, DisplayFormat
 UI/Panels/             What each panel draws, one class per column group (Main, View, Overlays, World, Setup, Replay)
 UI/InGame/             In-game VR panel: world-space surface, layout, finger input, keyboard, pages, model
+UI/Tips/               First-run tips: headset reminder to open the in-game panel, tips already seen
 UI/Icons/              Panel icons: SVG reader, rasterizer (desktop textures), tessellator (in-game meshes)
 DiscordRichPresence/   Mod-side Discord integration
 External/              Vendored third-party source (DiscordRPC) — do not modify
@@ -146,7 +147,7 @@ newline at end of file. Keep related code grouped and ordered the same way acros
 - Input uses the new Input System via `CasterConfig.KeyPressed/KeyHeld`, not legacy `Input`.
 - Every panel is a collapsible title bar (`Panel`); there is no switch list and no section headers
   inside panels. With `CasterConfig.SnapPanels` on (the default), panels sit in a column slot (`PanelLayout`, pure logic with no Unity types so
-  it can be exercised outside the game) and never overlap; dragging one reorders the slots live. With it off, panels stay where they are dropped and may overlap. A new panel needs a `PanelId`, a title, an icon and default column in `PanelCatalog`, and a draw
+  it can be exercised outside the game) and never overlap; dragging one reorders the slots live. With it off, panels stay where they are dropped and may overlap. A new panel needs a `PanelId`, a title, a one-line description, an icon and a group in `PanelCatalog` (the groups are the desktop default columns and the in-game home sections), and a draw
   method wired in `PanelContent.For`. Never rename a `PanelId` member — it is the saved `Layout` key.
 - Panel content draws against `IPanelSurface`, implemented by the desktop `Panel` and the in-game VR
   `InGameSurface`, so every desktop panel also appears on the in-game panel's home page. Draw methods

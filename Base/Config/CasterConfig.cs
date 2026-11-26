@@ -205,6 +205,7 @@ namespace Zetori.Base.Config
 
         internal static ConfigEntry<float> UiScale = null!;
         internal static ConfigEntry<bool> SnapPanels = null!;
+        internal static ConfigEntry<bool> ShowTips = null!;
         internal static ConfigEntry<Key> MenuKey = null!;
         internal static ConfigEntry<bool> AutoSave = null!;
 
@@ -387,9 +388,10 @@ namespace Zetori.Base.Config
             UncapFps = config.Bind("Game", "Uncap FPS", false, "Remove the game's frame rate cap so the spectator view renders as fast as possible.");
             DisableAfkKick = config.Bind("Game", "Disable AFK Kick", true, "Stop the game from kicking you for being idle while spectating.");
 
-            Theme = config.Bind("Interface", "Theme Name", "Red", "Name of a theme from the UI Control panel's list.");
+            Theme = config.Bind("Interface", "Theme Name", "Red", "Name of a theme from the Interface panel's list.");
             UiScale = Range(config, "Interface", "UI Scale", MinimumUiScale, MinimumUiScale, MaximumUiScale, "Multiplier on top of automatic resolution scaling.");
             SnapPanels = config.Bind("Interface", "Snap Panels", true, "Stack panels into columns from the top of the screen. When off, panels stay where they are dropped.");
+            ShowTips = config.Bind("Interface", "Show Tips", true, "Show a line at the top of each panel saying what it does, and remind you in the headset how to open the in-game panel until you have opened it.");
             MenuKey = config.Bind("Interface", "Menu Key", Key.Escape, "Key that shows and hides the panels.");
             AutoSave = config.Bind("Interface", "Autosave", true, "Save setting changes automatically. When off, save with the Presets panel's Save Settings button or by saving a preset.");
 

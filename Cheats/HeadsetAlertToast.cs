@@ -5,7 +5,6 @@
 using GorillaLocomotion;
 using TMPro;
 using UnityEngine;
-using UnityEngine.Rendering;
 using Zetori.Base;
 using Zetori.Base.Config;
 using Zetori.GameCamera.Vr;
@@ -23,18 +22,12 @@ namespace Zetori.Cheats
 
         private static readonly Vector2 RowSize = new Vector2(1.2f, RowPitch);
 
-        private readonly List<TextMeshPro> rows = new List<TextMeshPro>();
-        private readonly List<Renderer> renderers = new List<Renderer>();
-
-        private Transform? root;
-        private Camera? headset;
-        private TMP_FontAsset? appliedFont;
-        private Material? overlay;
+        private HeadsetText? text;
 
         protected override void Awake()
         {
             base.Awake();
-            RenderPipelineManager.beginCameraRendering += OnBeginCameraRendering;
+            text = new HeadsetText($"_{PluginInfo.Name} Headset Alerts", "Alert", RowSize, RowPitch, FontSize);
         }
 
         internal void LateUpdate()
@@ -45,48 +38,27 @@ namespace Zetori.Cheats
 
         private void Show()
         {
+            if (text == null) return;
             GTPlayer? player = GTPlayer.Instance;
-            headset = player != null ? player.mainCamera : null;
+            Camera? headset = player != null ? player.mainCamera : null;
+            text.Headset = headset;
             IReadOnlyList<CheatAlert> alerts = CheatAlerts.Active;
             if (headset == null || alerts.Count == 0 || !CheatAlerts.Enabled || !CasterConfig.CheatAlertsInHeadset.Value || !VrCameraRig.HeadsetActive || ReplaySession.IsReplaying)
             {
-                Hide();
+                text.Hide();
                 return;
             }
-            Transform parent = RootUnder(headset.transform);
-            Place(parent);
-            ApplyFont();
+            Place(text.RootUnder(headset.transform));
+            text.ApplyFont();
             float now = Time.unscaledTime;
             for (int i = 0; i < alerts.Count; i++)
             {
-                TextMeshPro row = RowAt(i, parent);
+                TextMeshPro row = text.RowAt(i);
                 if (row.text != alerts[i].Text) row.text = alerts[i].Text;
                 row.alpha = alerts[i].Opacity(now);
             }
-            for (int i = alerts.Count; i < rows.Count; i++)
-                if (rows[i].gameObject.activeSelf) rows[i].gameObject.SetActive(false);
-            if (!parent.gameObject.activeSelf) parent.gameObject.SetActive(true);
-        }
-
-        private void Hide()
-        {
-            if (root != null && root.gameObject.activeSelf) root.gameObject.SetActive(false);
-        }
-
-        private Transform RootUnder(Transform head)
-        {
-            if (root == null)
-            {
-                rows.Clear();
-                renderers.Clear();
-                root = new GameObject($"_{PluginInfo.Name} Headset Alerts").transform;
-            }
-            if (root.parent != head)
-            {
-                root.SetParent(head, false);
-                root.localRotation = Quaternion.identity;
-            }
-            return root;
+            text.HideRowsFrom(alerts.Count);
+            text.Show();
         }
 
         private static void Place(Transform target)
@@ -97,62 +69,10 @@ namespace Zetori.Cheats
             if (target.localScale != size) target.localScale = size;
         }
 
-        private TextMeshPro RowAt(int index, Transform parent)
-        {
-            while (rows.Count <= index) rows.Add(CreateRow(parent, rows.Count));
-            TextMeshPro row = rows[index];
-            if (!row.gameObject.activeSelf) row.gameObject.SetActive(true);
-            return row;
-        }
-
-        private TextMeshPro CreateRow(Transform parent, int index)
-        {
-            var rowObject = new GameObject($"Alert{index}");
-            rowObject.transform.SetParent(parent, false);
-            rowObject.transform.localPosition = new Vector3(0f, -index * RowPitch, 0f);
-            var row = rowObject.AddComponent<TextMeshPro>();
-            row.rectTransform.sizeDelta = RowSize;
-            row.fontSize = FontSize;
-            row.alignment = TextAlignmentOptions.Midline;
-            row.textWrappingMode = TextWrappingModes.NoWrap;
-            row.overflowMode = TextOverflowModes.Overflow;
-            row.color = Color.white;
-            Style(row);
-            renderers.Add(rowObject.GetComponent<Renderer>());
-            return row;
-        }
-
-        private void ApplyFont()
-        {
-            TMP_FontAsset? font = HudAssets.CurrentFont;
-            if (font == null || font == appliedFont) return;
-            appliedFont = font;
-            if (overlay != null) Destroy(overlay);
-            overlay = new Material(font.material);
-            overlay.SetFloat(ShaderUtilities.ShaderTag_ZTestMode, (float)CompareFunction.Always);
-            overlay.renderQueue = (int)RenderQueue.Overlay;
-            foreach (TextMeshPro row in rows) Style(row);
-        }
-
-        private void Style(TextMeshPro row)
-        {
-            if (appliedFont == null || overlay == null) return;
-            row.font = appliedFont;
-            row.fontSharedMaterial = overlay;
-        }
-
-        private void OnBeginCameraRendering(ScriptableRenderContext context, Camera camera)
-        {
-            bool hidden = camera != headset;
-            foreach (Renderer renderer in renderers)
-                if (renderer != null && renderer.forceRenderingOff != hidden) renderer.forceRenderingOff = hidden;
-        }
-
         protected override void OnDestroy()
         {
-            RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;
-            if (root != null) Destroy(root.gameObject);
-            if (overlay != null) Destroy(overlay);
+            text?.Dispose();
+            text = null;
             base.OnDestroy();
         }
     }

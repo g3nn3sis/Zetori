@@ -13,6 +13,7 @@ using Zetori.GameCamera.Vr;
 using Zetori.Replay;
 using Zetori.Replay.Render;
 using Zetori.Shared.Vr;
+using Zetori.UI.Tips;
 
 namespace Zetori.UI.InGame
 {
@@ -142,7 +143,11 @@ namespace Zetori.UI.InGame
         private void Toggle(GorillaTagger tagger, GTPlayer player)
         {
             if (open) Close();
-            else Summon(tagger, player);
+            else
+            {
+                Summon(tagger, player);
+                TipsSeen.MarkInGamePanelOpened();
+            }
             if (CasterConfig.InGamePanelHaptics.Value) tagger.StartVibration(true, SummonStrength, SummonSeconds);
         }
 
