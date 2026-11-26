@@ -33,6 +33,7 @@ namespace Zetori.UI.Icons
         History,
         Chart,
         Crown,
-        Shield
+        Shield,
+        Bell
     }
 }

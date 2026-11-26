@@ -7,6 +7,7 @@ using Zetori.GameCamera;
 using Zetori.GameCamera.Photo;
 using Zetori.GameCamera.Vr;
 using Zetori.Hud;
+using Zetori.Notifications;
 using Zetori.Replay.Render;
 using Zetori.Replay.Timeline;
 using Zetori.UI;
@@ -110,9 +111,6 @@ namespace Zetori.Base.Config
         internal static ConfigEntry<float> CheatAlertsOffsetX = null!;
         internal static ConfigEntry<float> CheatAlertsOffsetY = null!;
         internal static ConfigEntry<bool> CheatAlertsInHeadset = null!;
-        internal static ConfigEntry<float> CheatAlertsHeadsetScale = null!;
-        internal static ConfigEntry<float> CheatAlertsHeadsetX = null!;
-        internal static ConfigEntry<float> CheatAlertsHeadsetY = null!;
         internal static ConfigEntry<bool> CheatAlertsReasons = null!;
         internal static ConfigEntry<bool> CheatAlertGameReports = null!;
         internal static ConfigEntry<bool> CheatAlertModData = null!;
@@ -136,6 +134,19 @@ namespace Zetori.Base.Config
         internal static ConfigEntry<bool> CheatAlertMasterTheft = null!;
         internal static ConfigEntry<bool> CheatAlertPropertyTampering = null!;
         internal static ConfigEntry<bool> CheatAlertLagTricks = null!;
+        internal static ConfigEntry<float> NotificationScale = null!;
+        internal static ConfigEntry<float> NotificationX = null!;
+        internal static ConfigEntry<float> NotificationY = null!;
+        internal static ConfigEntry<NotificationTheme> NotificationTheme = null!;
+        internal static ConfigEntry<float> NotificationRed = null!;
+        internal static ConfigEntry<float> NotificationGreen = null!;
+        internal static ConfigEntry<float> NotificationBlue = null!;
+        internal static ConfigEntry<bool> NotificationBackground = null!;
+        internal static ConfigEntry<bool> NotificationRoundedCorners = null!;
+        internal static ConfigEntry<int> NotificationFont = null!;
+        internal static ConfigEntry<float> NotificationTextRed = null!;
+        internal static ConfigEntry<float> NotificationTextGreen = null!;
+        internal static ConfigEntry<float> NotificationTextBlue = null!;
 
         internal static ConfigEntry<int> HudFont = null!;
 
@@ -304,9 +315,6 @@ namespace Zetori.Base.Config
             CheatAlertsOffsetX = Range(config, "Cheat Alerts", "Offset X", 0f, -800f, 800f, "Where the top of the on-screen alerts sits left (negative) or right (positive) of the screen centre, in 1080p pixels.");
             CheatAlertsOffsetY = Range(config, "Cheat Alerts", "Offset Y", -150f, -500f, 500f, "Where the top of the on-screen alerts sits below (negative) or above (positive) the screen centre, in 1080p pixels.");
             CheatAlertsInHeadset = config.Bind("Cheat Alerts", "In Headset", true, "With a headset on, also show the alerts in your view, seen only by your headset.");
-            CheatAlertsHeadsetScale = Range(config, "Cheat Alerts", "Headset Scale", 1f, 0.5f, 2f, "Size multiplier of the alerts in your headset view.");
-            CheatAlertsHeadsetX = Range(config, "Cheat Alerts", "Headset X", 0f, -40f, 40f, "Where the alerts sit left (negative) or right (positive) of the centre of your headset view, in centimetres at 80 cm away.");
-            CheatAlertsHeadsetY = Range(config, "Cheat Alerts", "Headset Y", -17f, -40f, 40f, "Where the alerts sit below (negative) or above (positive) the centre of your headset view, in centimetres at 80 cm away.");
             CheatAlertsReasons = config.Bind("Cheat Alerts", "Report Reasons", true, "Add the game's reason after a game report.");
             CheatAlertGameReports = config.Bind("Cheat Alerts", "Game Reports", true, "Alert when the game's own cheat checks report a player.");
             CheatAlertModData = config.Bind("Cheat Alerts", "Mod Data", true, "Alert when a player's profile carries mod data.");
@@ -330,6 +338,19 @@ namespace Zetori.Base.Config
             CheatAlertMasterTheft = config.Bind("Cheat Alerts", "Took Master", true, "Alert when a player makes themselves master client, which the game never does.");
             CheatAlertPropertyTampering = config.Bind("Cheat Alerts", "Property Tampering", true, "Alert when a player who is not master client changes the room's or another player's properties.");
             CheatAlertLagTricks = config.Bind("Cheat Alerts", "Lag Tricks", true, "Alert when a player's updates stop and jump while everyone else's keep coming, run backwards in time or arrive far out of step with the room, as lag switches do.");
+            NotificationScale = Range(config, "Cheat Alerts", "Headset Scale", 1f, 0.5f, 2f, "Size multiplier of notifications in your headset view.");
+            NotificationX = Range(config, "Cheat Alerts", "Headset X", 0f, -40f, 40f, "Where notifications sit left (negative) or right (positive) of the centre of your headset view, in centimetres at 80 cm away.");
+            NotificationY = Range(config, "Cheat Alerts", "Headset Y", -17f, -40f, 40f, "Where notifications sit below (negative) or above (positive) the centre of your headset view, in centimetres at 80 cm away.");
+            NotificationTheme = config.Bind("Notifications", "Theme", Notifications.NotificationTheme.Interface, "Interface colours notification backgrounds with the Interface panel's theme colour; Custom uses the custom colour.");
+            NotificationRed = Range(config, "Notifications", "Custom Red", 0.12f, 0f, 1f, "Red part of the custom notification background colour.");
+            NotificationGreen = Range(config, "Notifications", "Custom Green", 0.12f, 0f, 1f, "Green part of the custom notification background colour.");
+            NotificationBlue = Range(config, "Notifications", "Custom Blue", 0.12f, 0f, 1f, "Blue part of the custom notification background colour.");
+            NotificationBackground = config.Bind("Notifications", "Background", false, "Draw a coloured box behind each notification.");
+            NotificationRoundedCorners = config.Bind("Notifications", "Rounded Corners", true, "Round the corners of the box behind each notification.");
+            NotificationFont = config.Bind("Notifications", "Font Index", 0, new ConfigDescription("Index into the fonts found in the game, used by notifications in your headset view.", new AcceptableValueRange<int>(0, 255)));
+            NotificationTextRed = Range(config, "Notifications", "Text Red", 1f, 0f, 1f, "Red part of the notification text colour.");
+            NotificationTextGreen = Range(config, "Notifications", "Text Green", 1f, 0f, 1f, "Green part of the notification text colour.");
+            NotificationTextBlue = Range(config, "Notifications", "Text Blue", 1f, 0f, 1f, "Blue part of the notification text colour.");
             HideRoomCodes = config.Bind("Streamer", "Hide Room Codes", false, "Show Hidden instead of room codes in every panel, the in-game panel and its keyboard, so they never appear on stream or in a recording.");
 
             HudFont = config.Bind("HUD", "Font Index", 0, new ConfigDescription("Index into the fonts found in the game, shared by the leaderboard and closest-lava overlays.", new AcceptableValueRange<int>(0, 255)));

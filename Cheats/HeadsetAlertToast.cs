@@ -9,6 +9,7 @@ using Zetori.Base;
 using Zetori.Base.Config;
 using Zetori.GameCamera.Vr;
 using Zetori.Hud;
+using Zetori.Notifications;
 using Zetori.Replay;
 
 namespace Zetori.Cheats
@@ -19,6 +20,9 @@ namespace Zetori.Cheats
         private const float RowPitch = 0.04f;
         private const float FontSize = 0.2f;
         private const float CentimetresToMetres = 0.01f;
+        private const float BackdropPaddingX = 0.012f;
+        private const float BackdropPaddingY = 0.006f;
+        private const float BackdropGap = 0.004f;
 
         private static readonly Vector2 RowSize = new Vector2(1.2f, RowPitch);
 
@@ -49,23 +53,39 @@ namespace Zetori.Cheats
                 return;
             }
             Place(text.RootUnder(headset.transform));
-            text.ApplyFont();
+            text.ApplyFont(NotificationStyle.Font);
             float now = Time.unscaledTime;
+            bool backdrops = NotificationStyle.HasBackground;
+            Color textColor = NotificationStyle.TextColor;
             for (int i = 0; i < alerts.Count; i++)
             {
                 TextMeshPro row = text.RowAt(i);
                 if (row.text != alerts[i].Text) row.text = alerts[i].Text;
-                row.alpha = alerts[i].Opacity(now);
+                textColor.a = alerts[i].Opacity(now);
+                if (row.color != textColor) row.color = textColor;
+                if (backdrops) Frame(text.BackdropAt(i), row, textColor.a);
             }
             text.HideRowsFrom(alerts.Count);
+            text.HideBackdropsFrom(backdrops ? alerts.Count : 0);
             text.Show();
+        }
+
+        private static void Frame(SpriteRenderer backdrop, TextMeshPro row, float opacity)
+        {
+            Sprite sprite = NotificationStyle.BackgroundSprite;
+            if (backdrop.sprite != sprite) backdrop.sprite = sprite;
+            var size = new Vector2(row.preferredWidth + BackdropPaddingX * 2f, Mathf.Min(row.preferredHeight + BackdropPaddingY * 2f, RowPitch - BackdropGap));
+            if (backdrop.size != size) backdrop.size = size;
+            Color color = NotificationStyle.BackgroundColor;
+            color.a *= opacity;
+            if (backdrop.color != color) backdrop.color = color;
         }
 
         private static void Place(Transform target)
         {
-            var position = new Vector3(CasterConfig.CheatAlertsHeadsetX.Value * CentimetresToMetres, CasterConfig.CheatAlertsHeadsetY.Value * CentimetresToMetres, Distance);
+            var position = new Vector3(CasterConfig.NotificationX.Value * CentimetresToMetres, CasterConfig.NotificationY.Value * CentimetresToMetres, Distance);
             if (target.localPosition != position) target.localPosition = position;
-            Vector3 size = Vector3.one * CasterConfig.CheatAlertsHeadsetScale.Value;
+            Vector3 size = Vector3.one * CasterConfig.NotificationScale.Value;
             if (target.localScale != size) target.localScale = size;
         }
 

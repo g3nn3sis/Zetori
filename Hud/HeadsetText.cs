@@ -10,8 +10,13 @@ namespace Zetori.Hud
 {
     internal sealed class HeadsetText : IDisposable
     {
+        private const string BackdropName = "Backdrop";
+
+        private static readonly int GuiZTestMode = Shader.PropertyToID("unity_GUIZTestMode");
+
         private readonly List<TextMeshPro> rows = new List<TextMeshPro>();
         private readonly List<Renderer> renderers = new List<Renderer>();
+        private readonly List<SpriteRenderer?> backdrops = new List<SpriteRenderer?>();
         private readonly string rootName;
         private readonly string rowName;
         private readonly Vector2 rowSize;
@@ -21,6 +26,7 @@ namespace Zetori.Hud
         private Transform? root;
         private TMP_FontAsset? appliedFont;
         private Material? overlay;
+        private Material? backdropMaterial;
 
         internal HeadsetText(string rootName, string rowName, Vector2 rowSize, float rowPitch, float fontSize)
         {
@@ -50,6 +56,7 @@ namespace Zetori.Hud
             {
                 rows.Clear();
                 renderers.Clear();
+                backdrops.Clear();
                 root = new GameObject(rootName).transform;
             }
             if (root.parent != head)
@@ -74,9 +81,33 @@ namespace Zetori.Hud
                 if (rows[i].gameObject.activeSelf) rows[i].gameObject.SetActive(false);
         }
 
-        internal void ApplyFont()
+        internal SpriteRenderer BackdropAt(int index)
         {
-            TMP_FontAsset? font = HudAssets.CurrentFont;
+            TextMeshPro row = RowAt(index);
+            while (backdrops.Count <= index) backdrops.Add(null);
+            SpriteRenderer? backdrop = backdrops[index];
+            if (backdrop == null)
+            {
+                backdrop = CreateBackdrop(row.transform);
+                backdrops[index] = backdrop;
+            }
+            if (!backdrop.gameObject.activeSelf) backdrop.gameObject.SetActive(true);
+            return backdrop;
+        }
+
+        internal void HideBackdropsFrom(int index)
+        {
+            for (int i = index; i < backdrops.Count; i++)
+            {
+                SpriteRenderer? backdrop = backdrops[i];
+                if (backdrop != null && backdrop.gameObject.activeSelf) backdrop.gameObject.SetActive(false);
+            }
+        }
+
+        internal void ApplyFont() => ApplyFont(HudAssets.CurrentFont);
+
+        internal void ApplyFont(TMP_FontAsset? font)
+        {
             if (font == null || font == appliedFont) return;
             appliedFont = font;
             if (overlay != null) UnityEngine.Object.Destroy(overlay);
@@ -103,6 +134,28 @@ namespace Zetori.Hud
             return row;
         }
 
+        private SpriteRenderer CreateBackdrop(Transform row)
+        {
+            var backdropObject = new GameObject(BackdropName);
+            backdropObject.transform.SetParent(row, false);
+            var backdrop = backdropObject.AddComponent<SpriteRenderer>();
+            backdrop.drawMode = SpriteDrawMode.Sliced;
+            backdrop.sharedMaterial = BackdropMaterial();
+            renderers.Add(backdrop);
+            return backdrop;
+        }
+
+        private Material BackdropMaterial()
+        {
+            if (backdropMaterial == null)
+            {
+                backdropMaterial = new Material(Canvas.GetDefaultCanvasMaterial());
+                backdropMaterial.SetFloat(GuiZTestMode, (float)CompareFunction.Always);
+                backdropMaterial.renderQueue = (int)RenderQueue.Overlay - 1;
+            }
+            return backdropMaterial;
+        }
+
         private void Style(TextMeshPro row)
         {
             if (appliedFont == null || overlay == null) return;
@@ -122,6 +175,7 @@ namespace Zetori.Hud
             RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;
             if (root != null) UnityEngine.Object.Destroy(root.gameObject);
             if (overlay != null) UnityEngine.Object.Destroy(overlay);
+            if (backdropMaterial != null) UnityEngine.Object.Destroy(backdropMaterial);
         }
     }
 }

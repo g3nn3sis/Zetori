@@ -54,6 +54,7 @@ Player/Moderation/     Mute and report through the game's scoreboard
 History/               Recent players, saved rooms, session stats
 Cheats/                Cheat alerts: on-screen feed, headset toast
 Cheats/Signals/        Cheat and mod signal detection, flagged players, the patches that feed them
+Notifications/         Headset notification style: placement, background, font and colours
 Hud/                   Canvas HUD framework: HudOverlay, slots, positions, HUD asset bundle, headset-only text
 Hud/Overlays/          Leaderboard, Scoreboard, Closest Lava, Kill Feed, MiniMap
 NameTags/              Nametags

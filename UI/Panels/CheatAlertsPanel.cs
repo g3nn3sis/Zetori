@@ -19,9 +19,6 @@ namespace Zetori.UI.Panels
             CasterConfig.CheatAlertsOffsetX.Value = panel.Slider("Screen X", CasterConfig.CheatAlertsOffsetX.Value, -800f, 800f, "F0", "px");
             CasterConfig.CheatAlertsOffsetY.Value = panel.Slider("Screen Y", CasterConfig.CheatAlertsOffsetY.Value, -500f, 500f, "F0", "px");
             CasterConfig.CheatAlertsInHeadset.Value = panel.Toggle("In Headset", CasterConfig.CheatAlertsInHeadset.Value);
-            CasterConfig.CheatAlertsHeadsetScale.Value = panel.Slider("Headset Scale", CasterConfig.CheatAlertsHeadsetScale.Value, 0.5f, 2f, "F2", "x");
-            CasterConfig.CheatAlertsHeadsetX.Value = panel.Slider("Headset X", CasterConfig.CheatAlertsHeadsetX.Value, -40f, 40f, "F0", "cm");
-            CasterConfig.CheatAlertsHeadsetY.Value = panel.Slider("Headset Y", CasterConfig.CheatAlertsHeadsetY.Value, -40f, 40f, "F0", "cm");
             panel.HorizontalArea(() =>
             {
                 panel.Button("Show Test Alert", CheatAlerts.ShowTest, CasterConfig.CheatAlerts.Value);
@@ -58,9 +55,6 @@ namespace Zetori.UI.Panels
             Reset(CasterConfig.CheatAlertsScale);
             Reset(CasterConfig.CheatAlertsOffsetX);
             Reset(CasterConfig.CheatAlertsOffsetY);
-            Reset(CasterConfig.CheatAlertsHeadsetScale);
-            Reset(CasterConfig.CheatAlertsHeadsetX);
-            Reset(CasterConfig.CheatAlertsHeadsetY);
         }
 
         private static void Reset(ConfigEntry<float> entry) => entry.Value = (float)entry.DefaultValue;
