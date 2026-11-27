@@ -10,7 +10,7 @@ namespace Zetori.UI
     {
         internal static readonly PanelGroup[] Groups =
         {
-            new PanelGroup("Room", PanelId.Main, PanelId.RecentPlayers, PanelId.Replay, PanelId.Capture),
+            new PanelGroup("Room", PanelId.Main, PanelId.Replay, PanelId.Capture),
             new PanelGroup("Camera", PanelId.Camera, PanelId.FreecamCamera, PanelId.Web, PanelId.Wasd),
             new PanelGroup("Overlays", PanelId.Nametag, PanelId.Leaderboard, PanelId.Scoreboard, PanelId.KillFeed, PanelId.ClosestLava, PanelId.MiniMap, PanelId.CheatAlerts),
             new PanelGroup("Match & World", PanelId.TagManager, PanelId.Time, PanelId.MapLoader),
@@ -42,7 +42,6 @@ namespace Zetori.UI
             PanelId.Presets => "Presets",
             PanelId.Keybinds => "Keybinds",
             PanelId.Capture => "Capture",
-            PanelId.RecentPlayers => "Recent Players",
             PanelId.Stats => "Session Stats",
             PanelId.CheatAlerts => "Cheat Alerts",
             _ => id.ToString()
@@ -50,8 +49,7 @@ namespace Zetori.UI
 
         internal static string Description(PanelId id) => id switch
         {
-            PanelId.Main => "Join a room by code or a public room, rejoin, leave, and keep saved room codes.",
-            PanelId.RecentPlayers => "Players you shared a room with lately. Spectate them or join their last room.",
+            PanelId.Main => "Join a room by code or a public room, leave, and keep saved room codes.",
             PanelId.Replay => "Record the match and play back saved replays.",
             PanelId.Capture => "Clip the last moments, record, and take 4K photos.",
             PanelId.Camera => "Camera mode, field of view, orbit distance and smoothing.",
@@ -100,7 +98,6 @@ namespace Zetori.UI
             PanelId.Presets => IconGlyph.Layers,
             PanelId.Keybinds => IconGlyph.Keyboard,
             PanelId.Capture => IconGlyph.Record,
-            PanelId.RecentPlayers => IconGlyph.History,
             PanelId.Stats => IconGlyph.Chart,
             PanelId.CheatAlerts => IconGlyph.Shield,
             _ => IconGlyph.Zetori

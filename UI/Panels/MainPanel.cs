@@ -28,16 +28,8 @@ namespace Zetori.UI.Panels
             if (PhotonNetwork.InRoom) panel.Button("Leave Room", LocalPlayerManager.LeaveRoom);
             else panel.Button("Join Room", () => Join(roomToJoin), roomToJoin.Length > 0);
             panel.Button("Join Public", () => LocalPlayerManager.AttemptPublicRoomJoin(JoinType.Solo, true), !PhotonNetwork.InRoom);
-            DrawRejoin(panel);
             DrawSavedRooms(panel);
             panel.Button("Reset Layout", owner.ResetLayout);
-        }
-
-        private static void DrawRejoin(IPanelSurface panel)
-        {
-            string? last = RoomBook.LastRoom;
-            if (last == null || PhotonNetwork.InRoom) return;
-            panel.Button($"Rejoin {StreamerMode.RoomCode(last)}", () => Join(last));
         }
 
         private void DrawSavedRooms(IPanelSurface panel)

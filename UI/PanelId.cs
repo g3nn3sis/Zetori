@@ -27,7 +27,6 @@ namespace Zetori.UI
         FreecamCamera,
         TagManager,
         Capture,
-        RecentPlayers,
         CheatAlerts,
         Count,
         Stats

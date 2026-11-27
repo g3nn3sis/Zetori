@@ -51,7 +51,7 @@ Player/Movement/       WASD flight, Teleport Here
 Player/Exaggeration/   Rig Exaggeration and its patch
 Player/Voice/          Microphone device, per-player volume
 Player/Moderation/     Mute and report through the game's scoreboard
-History/               Recent players, saved rooms, session stats
+History/               Players met, saved rooms, session stats
 Cheats/                Cheat alerts: on-screen feed, headset toast
 Cheats/Signals/        Cheat and mod signal detection, flagged players, the patches that feed them
 Notifications/         Headset notification style: placement, background, font and colours

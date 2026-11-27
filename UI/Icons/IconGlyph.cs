@@ -30,7 +30,6 @@ namespace Zetori.UI.Icons
         Camcorder,
         Panel,
         Record,
-        History,
         Chart,
         Crown,
         Shield,
