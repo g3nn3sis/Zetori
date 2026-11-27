@@ -8,12 +8,18 @@
 		<Error Condition="'$(PluginVersion)' != '$(Version)'"
 		       Text="PluginInfo.Version ($(PluginVersion)) does not match &lt;Version&gt; $(Version) in Directory.Build.props." />
 	</Target>
-	<Target Name="CopyToPlugins" AfterTargets="Build" Condition="'$(MSBuildProjectName)' == 'Zetori'">
+	<Target Name="WritePluginHash" AfterTargets="Build" Condition="'$(MSBuildProjectName)' == 'Zetori'">
+		<GetFileHash Files="$(TargetPath)" Algorithm="SHA256" HashEncoding="hex">
+			<Output TaskParameter="Hash" PropertyName="PluginHash" />
+		</GetFileHash>
+		<WriteLinesToFile File="$(TargetPath).sha256" Lines="$(PluginHash.ToLowerInvariant())  $(TargetFileName)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+	</Target>
+	<Target Name="CopyToPlugins" AfterTargets="WritePluginHash" Condition="'$(MSBuildProjectName)' == 'Zetori'">
 		<ItemGroup>
-			<StalePluginBuild Include="$(PluginsPath)\$(ProjectName)\$(ProjectName).dll;$(PluginsPath)\$(ProjectName)\$(ProjectName)-*.dll" Exclude="$(PluginsPath)\$(ProjectName)\$(TargetFileName)" />
+			<StalePluginBuild Include="$(PluginsPath)\$(ProjectName)\$(ProjectName).dll;$(PluginsPath)\$(ProjectName)\$(ProjectName)-*.dll;$(PluginsPath)\$(ProjectName)\$(ProjectName)-*.dll.sha256" Exclude="$(PluginsPath)\$(ProjectName)\$(TargetFileName);$(PluginsPath)\$(ProjectName)\$(TargetFileName).sha256" />
 		</ItemGroup>
 		<Delete Files="@(StalePluginBuild)" />
-		<Copy SourceFiles="$(TargetPath)" DestinationFiles="$(PluginsPath)\$(ProjectName)\$(TargetFileName)" />
+		<Copy SourceFiles="$(TargetPath);$(TargetPath).sha256" DestinationFolder="$(PluginsPath)\$(ProjectName)" />
 		<Message Text="Copied to $(PluginsPath)\$(ProjectName)" Importance="high" />
 	</Target>
 </Project>
