@@ -4,6 +4,7 @@
 
 using Zetori.Base.Config;
 using Zetori.GameCamera;
+using Zetori.GameCamera.SelfRig;
 using Zetori.Player;
 using Zetori.Player.Exaggeration;
 using Zetori.Replay;
@@ -73,6 +74,7 @@ namespace Zetori.UI.Panels
             CasterConfig.UncapFps.Value = panel.Toggle("Uncap FPS", CasterConfig.UncapFps.Value);
             CasterConfig.DisableAfkKick.Value = panel.Toggle("Disable AFK Kick", CasterConfig.DisableAfkKick.Value);
             NetworkedPlayerManager.bodyLerping = panel.Slider("Rig Interpolation", NetworkedPlayerManager.bodyLerping, 0.1f, 2.5f, "F2", "x");
+            SelfRigLerp.Enabled = panel.Toggle("Self Rig Lerping", SelfRigLerp.Enabled);
             DrawRigExaggeration(panel);
         }
 

@@ -18,9 +18,13 @@ namespace Zetori.GameCamera.Modes
             GorillaTagger? tagger = GorillaTagger.Instance;
             if (tagger != null && target == tagger.offlineVRRig && GTPlayer.Instance != null)
                 return new Pose(GTPlayer.Instance.headCollider.transform.position, target.headMesh.transform.rotation);
-            Transform body = target.transform;
-            Vector3 eyes = body.position + target.headBodyOffset + body.up * 0.09f + body.forward * 0.06f;
-            return new Pose(eyes, target.headMesh.transform.rotation);
+            return BodyEyes(target.transform, target.headBodyOffset, target.headMesh.transform.rotation);
+        }
+
+        internal static Pose BodyEyes(Transform body, Vector3 headBodyOffset, Quaternion headRotation)
+        {
+            Vector3 eyes = body.position + headBodyOffset + body.up * 0.09f + body.forward * 0.06f;
+            return new Pose(eyes, headRotation);
         }
     }
 }
