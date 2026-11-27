@@ -85,9 +85,7 @@ namespace Zetori.Replay.Playback
             Transform transform = root.transform;
 
             var recordedRoot = new Pose(Vector3.Lerp(from.Position, to.Position, blend), PackedRotation.Blend(from.Rotation, to.Rotation, blend));
-            Pose rawRoot = NetworkHold.Applies(Actor)
-                ? NetworkHold.RawRoot(Actor, index, blend)
-                : new Pose(Vector3.Lerp(from.RawPosition, to.RawPosition, blend), PackedRotation.Blend(from.RawRotation, to.RawRotation, blend));
+            var rawRoot = new Pose(Vector3.Lerp(from.RawPosition, to.RawPosition, blend), PackedRotation.Blend(from.RawRotation, to.RawRotation, blend));
             filteredRoot = Approach(filteredRoot, rawRoot, follow);
             Pose shownRoot = Vector3.Distance(filteredRoot.position, recordedRoot.position) <= MaxRootCorrection ? filteredRoot : recordedRoot;
             transform.SetPositionAndRotation(shownRoot.position, shownRoot.rotation);
@@ -97,7 +95,7 @@ namespace Zetori.Replay.Playback
             var eyes = new Pose(
                 transform.TransformPoint(Vector3.Lerp(from.EyePosition, to.EyePosition, blend)),
                 transform.rotation * PackedRotation.Blend(from.EyeRotation, to.EyeRotation, blend));
-            Eyes = CorrectLimbs(index, from, to, blend, follow, eyes);
+            Eyes = CorrectLimbs(from, to, blend, follow, eyes);
             handTaps.Place(filteredLimbs[LimbSample.LeftHand].position, filteredLimbs[LimbSample.RightHand].position);
             DressCosmetics(from, to, blend, playing);
             voice.Transform.position = Eyes.position;
@@ -127,14 +125,10 @@ namespace Zetori.Replay.Playback
             return swing.Exaggerate(root.transform, reach, ArmExaggeration.Amount, armStep);
         }
 
-        private Pose CorrectLimbs(int index, ActorFrame from, ActorFrame to, float blend, float follow, Pose eyes)
+        private Pose CorrectLimbs(ActorFrame from, ActorFrame to, float blend, float follow, Pose eyes)
         {
-            bool held = NetworkHold.Applies(Actor);
             for (int limb = 0; limb < LimbSample.Count; limb++)
-            {
-                Pose raw = held ? NetworkHold.RawLimb(Actor, index, blend, limb) : LimbSample.Raw(from.Limbs[limb], to.Limbs[limb], blend);
-                filteredLimbs[limb] = Approach(filteredLimbs[limb], raw, follow);
-            }
+                filteredLimbs[limb] = Approach(filteredLimbs[limb], LimbSample.Raw(from.Limbs[limb], to.Limbs[limb], blend), follow);
             CorrectArm(LimbSample.LeftHand, from, to, blend, RigSkeleton.IkLeftUpper, RigSkeleton.IkLeftLower, RigSkeleton.IkLeftHand);
             CorrectArm(LimbSample.RightHand, from, to, blend, RigSkeleton.IkRightUpper, RigSkeleton.IkRightLower, RigSkeleton.IkRightHand);
             return CorrectHead(from, to, blend, eyes);

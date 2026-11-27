@@ -5,7 +5,6 @@
 using Zetori.Base;
 using Zetori.Base.Config;
 using Zetori.GameCamera.Modes;
-using Zetori.GameCamera.SelfRig;
 using Zetori.GameCamera.Vr;
 using Zetori.Player;
 using Zetori.Player.Movement;
@@ -134,10 +133,7 @@ namespace Zetori.GameCamera
             }
             VRRig? target = NetworkedPlayerManager.selectedPlayer;
             if (target == null) return;
-            try
-            {
-                if (!SelfRigLerp.TryFollow(camera, target)) SpectatorCamera.Run(camera, target);
-            }
+            try { SpectatorCamera.Run(camera, target); }
             catch (Exception e) { Log.ExceptionOnce("spectator-camera", e, "Moving the spectator camera failed"); }
         }
 

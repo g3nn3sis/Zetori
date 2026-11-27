@@ -45,7 +45,6 @@ namespace Zetori.Base.Config
         internal static ConfigEntry<float> OrbitSpeed = null!;
         internal static ConfigEntry<bool> OrbitAutoRotate = null!;
         internal static ConfigEntry<float> BodyLerping = null!;
-        internal static ConfigEntry<bool> SelfRigLerp = null!;
         internal static ConfigEntry<bool> RigExaggeration = null!;
         internal static ConfigEntry<float> RigExaggerationAmount = null!;
         internal static ConfigEntry<bool> RegisterNewRigs = null!;
@@ -249,7 +248,6 @@ namespace Zetori.Base.Config
             OrbitSpeed = Range(config, "Camera", "Orbit Speed", 150f, 10f, 600f, "Arrow key orbit speed in degrees per second.");
             OrbitAutoRotate = config.Bind("Camera", "Auto Orbit", false, "Slowly rotate the orbit camera around the spectated player with no input. Arrow keys still steer on top.");
             BodyLerping = Range(config, "Camera", "Body Lerping", 1f, 0.1f, 2.5f, "Multiplier on how quickly other players' rigs move to their networked position.");
-            SelfRigLerp = config.Bind("Camera", "Self Rig Lerping", false, "Show your own rig on the spectator camera the way other players see it, with the same rig interpolation. Your headset view and what other players see are unchanged.");
             RigExaggeration = config.Bind("Camera", "Rig Exaggeration", false, "Make the spectated player's arm movements bigger on your screen only.");
             RigExaggerationAmount = Range(config, "Camera", "Rig Exaggeration Amount", 1.5f, 1f, 3f, "How much the spectated player's arm movements are multiplied.");
             RegisterNewRigs = config.Bind("Camera", "Register New Rigs", true, "Keep the player list updated as players join and leave.");
