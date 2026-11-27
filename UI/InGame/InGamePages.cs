@@ -29,7 +29,7 @@ namespace Zetori.UI.InGame
         private const string PlayersTip = "Everyone in the room: spectate, mute or report them, and see their cheat signals.";
         private const string VrCameraTip = "Stream from the camera tablet, pick its shot and set its field of view.";
         private const string HostTip = "Run your own matches: the scoreboard, match timer and Tag Manager.";
-        private const string PanelTip = "Size, haptics and placement of this panel.";
+        private const string PanelTip = "Size, haptics, tips and placement of this panel.";
         private const string NotificationsTitle = "Notifications";
         private const string NotificationsTip = "Where notifications such as cheat alerts sit in your headset view, and how they look.";
         private const string Offline = "Not in a room";

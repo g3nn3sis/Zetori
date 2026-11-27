@@ -88,7 +88,6 @@ namespace Zetori.UI.Panels
         {
             DrawUiScale(panel);
             CasterConfig.SnapPanels.Value = panel.Toggle("Panel Snapping", CasterConfig.SnapPanels.Value);
-            CasterConfig.ShowTips.Value = panel.Toggle("Tips", CasterConfig.ShowTips.Value);
             DrawThemes(panel);
         }
 

@@ -69,7 +69,7 @@ namespace Zetori.UI
             PanelId.Player => "Your name, colour and microphone mode.",
             PanelId.PlayerSettings => "Camera audio, Discord, hidden room codes, frame rate, AFK kick and arm exaggeration.",
             PanelId.Keybinds => "Change any key Zetori uses.",
-            PanelId.Theme => "Panel size, snapping, colour theme and these tips.",
+            PanelId.Theme => "Panel size, snapping and colour theme.",
             PanelId.Presets => "Save whole setups and pick which one loads at startup.",
             PanelId.Stats => "Your time in rooms, tags, runs and distance since the game started.",
             _ => string.Empty
