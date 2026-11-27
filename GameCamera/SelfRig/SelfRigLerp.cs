@@ -7,7 +7,7 @@ using Zetori.Base.Config;
 using Zetori.GameCamera.Modes;
 using Zetori.Player;
 using Zetori.Replay;
-using Photon.Pun;
+using Zetori.Shared;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -16,7 +16,6 @@ namespace Zetori.GameCamera.SelfRig
     internal sealed class SelfRigLerp : ObjectComponent
     {
         private const string AnchorName = "_Zetori Self Rig Anchor";
-        private const float FallbackSendRate = 10f;
 
         private static SelfRigLerp? instance;
 
@@ -93,11 +92,9 @@ namespace Zetori.GameCamera.SelfRig
         {
             float now = Time.unscaledTime;
             if (pose.Ready && now < nextSample) return;
-            nextSample = now + 1f / SendRate;
+            nextSample = now + NetworkSampling.SendInterval;
             pose.Receive(RigNetworkSample.Capture(localRig), localRig.justTeleportedSendsRemaining > 0);
         }
-
-        private static float SendRate => PhotonNetwork.SerializationRate > 0 ? PhotonNetwork.SerializationRate : FallbackSendRate;
 
         private Quaternion HeadRotation(VRRig target)
         {

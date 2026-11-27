@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: LicenseRef-Zetori-Source-Available
 // Unauthorized use, modification, or distribution is prohibited. See LICENSE.
 
+using Zetori.Shared;
 using UnityEngine;
 
 namespace Zetori.GameCamera.SelfRig
@@ -27,21 +28,17 @@ namespace Zetori.GameCamera.SelfRig
         {
             Transform body = rig.transform;
             return new RigNetworkSample(
-                BitPackUtils.UnpackWorldPosFromNetwork(BitPackUtils.PackWorldPosForNetwork(body.position)),
-                Quantize(body.rotation),
-                Quantize(rig.head.rigTarget.localRotation),
-                QuantizeHand(rig.leftHand.rigTarget),
-                QuantizeHand(rig.rightHand.rigTarget));
+                NetworkSampling.WorldPosition(body.position),
+                NetworkSampling.Rotation(body.rotation),
+                NetworkSampling.Rotation(rig.head.rigTarget.localRotation),
+                Hand(rig.leftHand.rigTarget),
+                Hand(rig.rightHand.rigTarget));
         }
 
-        private static Quaternion Quantize(Quaternion rotation) =>
-            BitPackUtils.UnpackQuaternionFromNetwork(BitPackUtils.PackQuaternionForNetwork(rotation));
-
-        private static Pose QuantizeHand(Transform hand)
+        private static Pose Hand(Transform hand)
         {
             hand.GetLocalPositionAndRotation(out Vector3 localPosition, out Quaternion localRotation);
-            BitPackUtils.UnpackHandPosRotFromNetwork(BitPackUtils.PackHandPosRotForNetwork(localPosition, localRotation), out Vector3 position, out Quaternion rotation);
-            return new Pose(position, rotation);
+            return NetworkSampling.Hand(localPosition, localRotation);
         }
     }
 }
