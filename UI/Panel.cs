@@ -93,6 +93,8 @@ namespace Zetori.UI
 
         internal void ClampToScreen() => rect = UiScale.ClampToScreen(rect);
 
+        internal void BringToFront() => GUI.BringWindowToFront(windowId);
+
         internal void SetAccent(Color32 color)
         {
             if (accent.Equals(color)) return;

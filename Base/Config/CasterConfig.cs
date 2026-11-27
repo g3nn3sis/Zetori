@@ -225,6 +225,8 @@ namespace Zetori.Base.Config
         internal static ConfigEntry<bool> InGamePanelHaptics = null!;
         internal static ConfigEntry<bool> InGamePanelOnStream = null!;
 
+        internal static ConfigEntry<string> IgnoredUpdate = null!;
+
         internal static void Bind(ConfigFile config)
         {
             file = config;
@@ -416,6 +418,8 @@ namespace Zetori.Base.Config
             InGamePanelHaptics = config.Bind("In-Game Panel", "Haptics", true, "Vibrate the controller when a finger presses the in-game panel.");
             InGamePanelOnStream = config.Bind("In-Game Panel", "Show On Stream", false, "Let the Spectator, Freecam and Web views see the in-game panel. The VR camera view always shows it.");
 
+            IgnoredUpdate = config.Bind("Updates", "Ignored Version", string.Empty, "Release the update popup no longer offers.");
+
             BindPanelPositions(config);
 
             try { ConfigCleanup.RemoveUnusedSettings(BoundKeys(config)); }
@@ -487,8 +491,10 @@ namespace Zetori.Base.Config
             try
             {
                 HashSet<(string Section, string Key)> stored = ConfigFormat.StoredKeys(File.ReadAllText(file.ConfigFilePath));
+                string ignoredUpdate = IgnoredUpdate.Value;
                 file.Reload();
                 ResetUnstored(file, stored);
+                IgnoredUpdate.Value = ignoredUpdate;
             }
             catch (Exception e) { Log.Exception(e, "Reloading the config failed"); }
         }

@@ -11,6 +11,7 @@ using Zetori.Replay;
 using Zetori.Replay.Playback;
 using Zetori.Replay.Timeline;
 using Zetori.UI.InGame;
+using Zetori.Updates;
 using UnityEngine;
 
 namespace Zetori.UI
@@ -28,11 +29,18 @@ namespace Zetori.UI
         private bool wasInVr;
         private bool desktopDefaultApplied;
         private bool vrDefaultApplied;
+        private UpdatePrompt? updatePrompt;
+        private bool updateOffered;
         internal static bool Visible = true;
         internal static bool TimelineVisible = true;
 
+        private bool UpdatePromptHoldsPanels => panels == null && updatePrompt != null && !VrCameraRig.HeadsetActive;
+
         internal void Update()
         {
+            if (!UpdateCheck.Settled) return;
+            TickUpdatePrompt();
+            if (UpdatePromptHoldsPanels) return;
             panels ??= new PanelOrchestrator();
             KeyBinds.Tick();
             ApplyDefaultPreset(panels);
@@ -44,6 +52,20 @@ namespace Zetori.UI
             panelProgress = Mathf.MoveTowards(panelProgress, Visible ? 1f : 0f, step);
             timelineProgress = Mathf.MoveTowards(timelineProgress, TimelineVisible ? 1f : 0f, step);
             if (panelProgress > 0f) panels.Tick(Time.unscaledDeltaTime, Fade(timelineProgress));
+        }
+
+        private void TickUpdatePrompt()
+        {
+            if (!updateOffered && UpdateCheck.Offered is ReleaseInfo release)
+            {
+                updateOffered = true;
+                updatePrompt = new UpdatePrompt(release);
+            }
+            if (updatePrompt == null) return;
+            updatePrompt.Tick(Time.unscaledDeltaTime);
+            if (!updatePrompt.Dismissed) return;
+            updatePrompt.Dispose();
+            updatePrompt = null;
         }
 
         internal void LateUpdate()
@@ -84,7 +106,12 @@ namespace Zetori.UI
 
         internal void OnGUI()
         {
-            if (panels == null) return;
+            if (panels != null) DrawLayers(panels);
+            updatePrompt?.Draw();
+        }
+
+        private void DrawLayers(PanelOrchestrator orchestrator)
+        {
             if (CasterConfig.PhotoThirdsGrid.Value) ThirdsGrid.Draw();
             ReplayPlayer? replay = ReplaySession.Player;
             bool showTimeline = replay != null && timelineProgress > 0f;
@@ -103,7 +130,7 @@ namespace Zetori.UI
                 if (panelProgress > 0f)
                 {
                     BeginLayer(previousColor, previousEnabled, panelProgress, Visible);
-                    panels.Draw();
+                    orchestrator.Draw();
                 }
             }
             finally
@@ -128,6 +155,8 @@ namespace Zetori.UI
             panels = null;
             timeline?.Dispose();
             timeline = null;
+            updatePrompt?.Dispose();
+            updatePrompt = null;
             base.OnDestroy();
         }
     }

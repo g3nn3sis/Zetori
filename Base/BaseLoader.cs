@@ -4,6 +4,7 @@
 
 using BepInEx;
 using Zetori.Base.Config;
+using Zetori.Updates;
 
 namespace Zetori.Base
 {
@@ -16,6 +17,8 @@ namespace Zetori.Base
             Log.Init(Logger);
             CasterConfig.Bind(ConfigStorage.Open(Config.ConfigFilePath, MetadataHelper.GetMetadata(this)));
             Log.Info($"{PluginInfo.Name} v{PluginInfo.Version} loaded.");
+            StaleVersions.Remove();
+            UpdateCheck.Begin();
         }
 
         void Start()
